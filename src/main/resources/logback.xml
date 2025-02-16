@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="false">
+    <!-- disable internal logback status printed -->
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+
+    <appender name="Stdout" class="ch.qos.logback.core.ConsoleAppender">
+        <immediateFlush>true</immediateFlush>
+        <encoder>
+            <charset>UTF-8</charset>
+            <pattern>%date{ISO8601} component=ollamadrama component_class=%-5logger{0} thread=%thread log_level="%level" %msg%n</pattern>
+        </encoder>
+    </appender>
+
+ <logger name="io.github.amithkoujalgi.ollama4j" level="warn" />
+
+    <root level="info">
+        <appender-ref ref="Stdout" />
+    </root>
+</configuration>

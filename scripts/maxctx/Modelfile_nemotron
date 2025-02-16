@@ -1,0 +1,3 @@
+FROM nemotron 
+
+PARAMETER num_ctx 8192

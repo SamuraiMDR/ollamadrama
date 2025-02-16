@@ -1,0 +1,3 @@
+FROM gemma2 
+
+PARAMETER num_ctx 8192
