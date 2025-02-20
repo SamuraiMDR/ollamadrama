@@ -54,6 +54,36 @@ public class OpenAIandOllama_KnowledgeTest {
 			scorecard.print();
 
 			/*
+			dolphin3:8b                              pos: 2   neg: 0  
+			tulu3:70b                                pos: 2   neg: 0  
+			nemotron:70b                             pos: 2   neg: 0  
+			gpt-4-turbo                              pos: 2   neg: 0  
+			qwen2.5:7b                               pos: 2   neg: 0  
+			llama3.1:8b                              pos: 2   neg: 0  
+			qwen2:7b                                 pos: 2   neg: 0  
+			granite3.1-dense:8b                      pos: 2   neg: 0  
+			tulu3:8b                                 pos: 2   neg: 0  
+			sailor2:20b                              pos: 2   neg: 0  
+			gpt-4o-mini                              pos: 2   neg: 0  
+			exaone3.5:32b                            pos: 2   neg: 0  
+			gemma2:9b                                pos: 2   neg: 0  
+			qwen2.5:72b                              pos: 2   neg: 0  
+			olmo2:7b                                 pos: 2   neg: 0  
+			gemma2:27b                               pos: 2   neg: 0  
+			mistral:7b                               pos: 2   neg: 0  
+			llama3.3:70b                             pos: 2   neg: 0  
+			llama3.1:70b                             pos: 2   neg: 0  
+			marco-o1:7b                              pos: 2   neg: 0  
+			gpt-4                                    pos: 2   neg: 0  
+			gpt-3.5-turbo                            pos: 2   neg: 0  
+			phi4:14b                                 pos: 2   neg: 0  
+			dolphin-mistral:7b                       pos: 2   neg: 0  
+			openhermes:7b-mistral-v2.5-q4_0          pos: 2   neg: 0  
+			athene-v2:72b                            pos: 2   neg: 0  
+			openchat:7b                              pos: 2   neg: 0  
+			gpt-4o                                   pos: 2   neg: 0  
+			-----
+			llama3.2:3b                              pos: 0   neg: 1  
 			 */
 
 			// Assert
@@ -85,6 +115,37 @@ public class OpenAIandOllama_KnowledgeTest {
 			scorecard.print();
 
 			/*
+			dolphin3:8b                              pos: 1   neg: 0  
+			tulu3:70b                                pos: 1   neg: 0  
+			nemotron:70b                             pos: 1   neg: 0  
+			gpt-4-turbo                              pos: 1   neg: 0  
+			qwen2.5:7b                               pos: 1   neg: 0  
+			llama3.1:8b                              pos: 1   neg: 0  
+			qwen2:7b                                 pos: 1   neg: 0  
+			granite3.1-dense:8b                      pos: 1   neg: 0  
+			tulu3:8b                                 pos: 1   neg: 0  
+			llama3.2:3b                              pos: 1   neg: 0  
+			sailor2:20b                              pos: 1   neg: 0  
+			gpt-4o-mini                              pos: 1   neg: 0  
+			exaone3.5:32b                            pos: 1   neg: 0  
+			gemma2:9b                                pos: 1   neg: 0  
+			qwen2.5:72b                              pos: 1   neg: 0  
+			olmo2:7b                                 pos: 1   neg: 0  
+			gemma2:27b                               pos: 1   neg: 0  
+			mistral:7b                               pos: 1   neg: 0  
+			llama3.3:70b                             pos: 1   neg: 0  
+			llama3.1:70b                             pos: 1   neg: 0  
+			marco-o1:7b                              pos: 1   neg: 0  
+			gpt-4                                    pos: 1   neg: 0  
+			phi4:14b                                 pos: 1   neg: 0  
+			dolphin-mistral:7b                       pos: 1   neg: 0  
+			openhermes:7b-mistral-v2.5-q4_0          pos: 1   neg: 0  
+			athene-v2:72b                            pos: 1   neg: 0  
+			openchat:7b                              pos: 1   neg: 0  
+			gpt-4o                                   pos: 1   neg: 0  
+			-----
+			gpt-3.5-turbo                            pos: 0   neg: 1  
+
 			 */
 
 			// Assert
@@ -115,6 +176,36 @@ public class OpenAIandOllama_KnowledgeTest {
 			scorecard.print();
 
 			/*		
+			tulu3:70b                                pos: 1   neg: 0  
+			nemotron:70b                             pos: 1   neg: 0  
+			gpt-4-turbo                              pos: 1   neg: 0  
+			qwen2.5:7b                               pos: 1   neg: 0  
+			llama3.1:8b                              pos: 1   neg: 0  
+			qwen2:7b                                 pos: 1   neg: 0  
+			granite3.1-dense:8b                      pos: 1   neg: 0  
+			llama3.2:3b                              pos: 1   neg: 0  
+			sailor2:20b                              pos: 1   neg: 0  
+			gpt-4o-mini                              pos: 1   neg: 0  
+			exaone3.5:32b                            pos: 1   neg: 0  
+			gemma2:9b                                pos: 1   neg: 0  
+			qwen2.5:72b                              pos: 1   neg: 0  
+			olmo2:7b                                 pos: 1   neg: 0  
+			gemma2:27b                               pos: 1   neg: 0  
+			mistral:7b                               pos: 1   neg: 0  
+			llama3.3:70b                             pos: 1   neg: 0  
+			llama3.1:70b                             pos: 1   neg: 0  
+			marco-o1:7b                              pos: 1   neg: 0  
+			gpt-4                                    pos: 1   neg: 0  
+			gpt-3.5-turbo                            pos: 1   neg: 0  
+			phi4:14b                                 pos: 1   neg: 0  
+			dolphin-mistral:7b                       pos: 1   neg: 0  
+			athene-v2:72b                            pos: 1   neg: 0  
+			openchat:7b                              pos: 1   neg: 0  
+			gpt-4o                                   pos: 1   neg: 0  
+			-----
+			dolphin3:8b                              pos: 0   neg: 1  
+			tulu3:8b                                 pos: 0   neg: 1  
+			openhermes:7b-mistral-v2.5-q4_0          pos: 0   neg: 1  
 			 */
 
 			// Assert
@@ -143,11 +234,41 @@ public class OpenAIandOllama_KnowledgeTest {
 			scorecard.print();
 
 			/*
+			gpt-4-turbo                              pos: 1   neg: 0  
+			qwen2.5:7b                               pos: 1   neg: 0  
+			sailor2:20b                              pos: 1   neg: 0  
+			gemma2:9b                                pos: 1   neg: 0  
+			olmo2:7b                                 pos: 1   neg: 0  
+			mistral:7b                               pos: 1   neg: 0  
+			marco-o1:7b                              pos: 1   neg: 0  
+			dolphin-mistral:7b                       pos: 1   neg: 0  
+			openchat:7b                              pos: 1   neg: 0  
+			gpt-4o                                   pos: 1   neg: 0  
+			-----
+			dolphin3:8b                              pos: 0   neg: 1  
+			tulu3:70b                                pos: 0   neg: 1  
+			nemotron:70b                             pos: 0   neg: 1  
+			llama3.1:8b                              pos: 0   neg: 1  
+			qwen2:7b                                 pos: 0   neg: 1  
+			granite3.1-dense:8b                      pos: 0   neg: 1  
+			tulu3:8b                                 pos: 0   neg: 1  
+			llama3.2:3b                              pos: 0   neg: 1  
+			gpt-4o-mini                              pos: 0   neg: 1  
+			exaone3.5:32b                            pos: 0   neg: 1  
+			qwen2.5:72b                              pos: 0   neg: 1  
+			gemma2:27b                               pos: 0   neg: 1  
+			llama3.3:70b                             pos: 0   neg: 1  
+			llama3.1:70b                             pos: 0   neg: 1  
+			gpt-4                                    pos: 0   neg: 1  
+			gpt-3.5-turbo                            pos: 0   neg: 1  
+			phi4:14b                                 pos: 0   neg: 1  
+			openhermes:7b-mistral-v2.5-q4_0          pos: 0   neg: 1  
+			athene-v2:72b                            pos: 0   neg: 1   
 			 */
 
 			// Assert
 			assertTrue("Make sure we have a clean sheet for all default ensemble models", scorecard.isCleanSheetPositive(Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M));
-			assertTrue("Make sure we have a clean sheet for all default ensemble models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OPENAI_TIER2));
+			assertTrue("Make sure we have a clean sheet for all default ensemble models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OPENAI_TIER1));
 		}
 	}
 
@@ -173,11 +294,41 @@ public class OpenAIandOllama_KnowledgeTest {
 			scorecard.print();
 
 			/*
+			dolphin3:8b                              pos: 1   neg: 0  
+			gpt-4-turbo                              pos: 1   neg: 0  
+			qwen2.5:7b                               pos: 1   neg: 0  
+			llama3.1:8b                              pos: 1   neg: 0  
+			granite3.1-dense:8b                      pos: 1   neg: 0  
+			sailor2:20b                              pos: 1   neg: 0  
+			exaone3.5:32b                            pos: 1   neg: 0  
+			gemma2:9b                                pos: 1   neg: 0  
+			qwen2.5:72b                              pos: 1   neg: 0  
+			olmo2:7b                                 pos: 1   neg: 0  
+			mistral:7b                               pos: 1   neg: 0  
+			llama3.3:70b                             pos: 1   neg: 0  
+			llama3.1:70b                             pos: 1   neg: 0  
+			marco-o1:7b                              pos: 1   neg: 0  
+			athene-v2:72b                            pos: 1   neg: 0  
+			openchat:7b                              pos: 1   neg: 0  
+			gpt-4o                                   pos: 1   neg: 0  
+			-----
+			tulu3:70b                                pos: 0   neg: 1  
+			nemotron:70b                             pos: 0   neg: 1  
+			qwen2:7b                                 pos: 0   neg: 1  
+			tulu3:8b                                 pos: 0   neg: 1  
+			llama3.2:3b                              pos: 0   neg: 1  
+			gpt-4o-mini                              pos: 0   neg: 1  
+			gemma2:27b                               pos: 0   neg: 1  
+			gpt-4                                    pos: 0   neg: 1  
+			gpt-3.5-turbo                            pos: 0   neg: 1  
+			phi4:14b                                 pos: 0   neg: 1  
+			dolphin-mistral:7b                       pos: 0   neg: 1  
+			openhermes:7b-mistral-v2.5-q4_0          pos: 0   neg: 1  
 			 */
 
 			// Assert
 			assertTrue("Make sure we have a clean sheet for all default ensemble models", scorecard.isCleanSheetPositive(Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M));
-			assertTrue("Make sure we have a clean sheet for all default ensemble models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OPENAI_TIER2));
+			assertTrue("Make sure we have a clean sheet for all default ensemble models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OPENAI_TIER1));
 		}
 	}
 

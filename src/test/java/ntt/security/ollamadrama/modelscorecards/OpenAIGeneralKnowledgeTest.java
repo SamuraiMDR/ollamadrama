@@ -54,10 +54,13 @@ public class OpenAIGeneralKnowledgeTest {
 			gpt-3.5-turbo                            pos: 2   neg: 0  
 			gpt-4-turbo                              pos: 2   neg: 0  
 			gpt-4o                                   pos: 2   neg: 0  
+			----- 
 			 */
 
 			// Assert
 			assertTrue("Make sure we have a clean sheet for tier1 models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OPENAI_TIER2));
+		} else {
+			LOGGER.info("OpenAI key not set so skipping");
 		}
 
 	}
@@ -92,6 +95,8 @@ public class OpenAIGeneralKnowledgeTest {
 
 			// Assert
 			assertTrue("Make sure we have a clean sheet for all default ensemble models", scorecard.isCleanSheetPositive(Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M));
+		} else {
+			LOGGER.info("OpenAI key not set so skipping");
 		}
 
 	}
@@ -124,6 +129,8 @@ public class OpenAIGeneralKnowledgeTest {
 
 			// Assert
 			assertTrue("Make sure we have a clean sheet for all default ensemble models", scorecard.isCleanSheetPositive(Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M));
+		} else {
+			LOGGER.info("OpenAI key not set so skipping");
 		}
 	}
 
@@ -154,6 +161,8 @@ public class OpenAIGeneralKnowledgeTest {
 
 			// Assert
 			assertTrue("Make sure we have a clean sheet for all default ensemble models", scorecard.isCleanSheetPositive(Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M));
+		} else {
+			LOGGER.info("OpenAI key not set so skipping");
 		}
 	}
 
@@ -187,6 +196,8 @@ public class OpenAIGeneralKnowledgeTest {
 
 			// Assert
 			assertTrue("Make sure we have a clean sheet for all default ensemble models", scorecard.isCleanSheetPositive(Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M));
+		} else {
+			LOGGER.info("OpenAI key not set so skipping");
 		}
 	}
 

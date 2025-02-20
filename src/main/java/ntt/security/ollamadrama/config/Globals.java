@@ -91,40 +91,39 @@ public class Globals {
 	// T_T
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL = ""
 			// tier1
-			+ "llama3.1:405b"
+			+ "llama3.1:405b"	// 243 GB
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L = ""
 			// tier1
-			+ "llama3.1:70b,"
-			+ "llama3.3:70b,"
-			+ "nemotron:70b,"
-			+ "qwen2.5:72b,"
-			+ "gemma2:27b"
+			+ "llama3.1:70b," 	// 43 GB
+			+ "llama3.3:70b," 	// 43 GB
+			+ "nemotron:70b,"	// 43 GB
+			+ "qwen2.5:72b,"	// 47 GB
+			+ "gemma2:27b"		// 16 GB
 			+ "";
 	
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L_MINIDIVERSE = ""
 			// tier1
-			+ "llama3.1:70b,"
-			+ "qwen2.5:72b,"
-			+ "gemma2:27b"
+			+ "llama3.1:70b,"	// 43 GB
+			+ "qwen2.5:72b,"	// 47 GB
+			+ "gemma2:27b"		// 16 GB
 			+ "";
 	
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M_MINIDIVERSE = ""
 			// tier1
-			+ "openchat:7b,"
-			+ "qwen2.5:7b," 
-			+ "gemma2:9b"
+			+ "openchat:7b,"	// 4.1 GB
+			+ "qwen2.5:7b," 	// 4.1 GB
+			+ "gemma2:9b"		// 5.4 GB
 			+ "";
 	
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M = ""
 			// tier1
-			+ "openchat:7b,"
-			+ "marco-o1:7b,"
-			+ "mistral:7b," 
-			+ "qwen2.5:7b," 
-			+ "olmo2:7b,"
-			+ "gemma2:9b"
+			+ "marco-o1:7b,"	// 4.1 GB
+			+ "mistral:7b," 	// 4.1 GB
+			+ "qwen2.5:7b," 	// 4.1 GB
+			+ "olmo2:7b,"		// 4.1 GB
+			+ "gemma2:9b"		// 5.4 GB
 			+ "";
 	
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_L = ""
@@ -143,6 +142,7 @@ public class Globals {
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_M = ""
 			// tier2
+			+ "openchat:7b,"
 			+ "llama3.1:8b"
 			+"";
 
@@ -254,8 +254,11 @@ public class Globals {
 
 			+"";
 
+	public static String MODEL_NAMES_OPENAI_TIER1 = ""
+			+ "gpt-4o"
+			+ "";
+	
 	public static String MODEL_NAMES_OPENAI_TIER2 = ""
-			+ "gpt-4o," 
 			+ "gpt-4,"
 			+ "";
 

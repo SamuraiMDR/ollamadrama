@@ -119,5 +119,26 @@ public class SingleStringEnsembleResponse {
 
 		return confident_response;
 	}
+	
+	public String getRandomBestMotivation(int _confident_threshold) {
+		String confident_motivation = "";
+		
+		// pick the motivation from the most certain LLM
+		if (this.getUniq_confident_replies().size() >= 1) {
+			int max_confident_percent = 0;
+			for (String resp: this.getUniq_confident_replies().keySet()) {
+				HashMap<String, Boolean> llms = this.getUniq_confident_replies().get(resp);
+				for (String model_name: llms.keySet()) {
+					SingleStringQuestionResponse session_response = this.getSession_responses().get(model_name);
+					if (session_response.getProbability() > max_confident_percent) {
+						confident_motivation = session_response.getMotivation();
+						max_confident_percent = session_response.getProbability();
+					}
+				}
+			}
+		}
+
+		return confident_motivation;
+	}
 
 }

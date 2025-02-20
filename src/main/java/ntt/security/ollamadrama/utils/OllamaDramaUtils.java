@@ -109,6 +109,8 @@ public class OllamaDramaUtils {
 				SingleStringQuestionResponse ssr1 = a1.askChatQuestion(q1, _hide_llm_reply_if_uncertain);
 				ssr1 = OllamaUtils.applyResponseSanity(ssr1, model_name, _hide_llm_reply_if_uncertain);
 				scorecard = OllamaUtils.updateScoreCard(scorecard, model_name, "q" + queryindex, q1, _acceptable_answers, ssr1);
+			} else {
+				LOGGER.info("Configured not to use OpenAI");
 			}
 		}
 		return scorecard;
@@ -158,6 +160,8 @@ public class OllamaDramaUtils {
 				ssr1.print();
 
 				scorecard = OllamaUtils.updateScoreCard(scorecard, model_name, "q" + queryindex, q1, _acceptable_answers, ssr1);
+			} else {
+				LOGGER.info("Configured not to use OpenAI");
 			}
 		}
 		return scorecard;
