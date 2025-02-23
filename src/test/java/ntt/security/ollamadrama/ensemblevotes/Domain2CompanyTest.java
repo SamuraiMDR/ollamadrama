@@ -1,5 +1,8 @@
 package ntt.security.ollamadrama.ensemblevotes;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,84 +28,101 @@ public class Domain2CompanyTest {
 
 		SingleStringEnsembleResponse sser = OllamaDramaUtils.collectEnsembleVotes(
 				"What company or organization is associated with the domain global.ntt? Reply with only the name in uppercase",
-				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_L,
+				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL,
 				Globals.MODEL_NAMES_OPENAI_ALL,
 				ollama_settings,
 				true);
 		sser.printEnsemble();
 		
 		/*
-		uniq confident responses: 7
+		uniq confident responses: 9
 		response #1: NIPPON TELEGRAPH AND TELEPHONE
-		 - openhermes:7b-mistral-v2.5-q4_0::9d6f73a1-6679-4344-84b5-3dae8b68f763
+		 - openhermes:7b-mistral-v2.5-q4_0::85d7af98-7238-4996-81c9-49320b46e907
 		response #2: NTT CORPORATION
-		 - gpt-4-turbo::fdc25e89-2e48-4240-9937-48bebf88f9d4
-		response #3: NTT LIMITED
-		 - exaone3.5:32b::f64dae26-2253-425c-8f44-4a9349f05b71
-		 - nemotron:70b::3ec98f9a-7807-4b1b-82dd-484b3033bd59
-		response #4: NIPPON TELEGRAPH AND TELEPHONE CORPORATION
-		 - dolphin-mistral:7b::ee0c686e-e91a-4c50-b035-0ed8fd4cf6cb
-		response #5: NIPPON TELEGRAPH AND TELEPHONE EXCHANGE
-		 - openchat:7b::e81d44c9-f27a-4c9a-b75c-34bcc3f408c6
-		response #6: NTT
-		 - olmo2:7b::16f3558a-1dd9-41e7-8a30-aaa88e0cb810
-		 - sailor2:20b::ca885eec-e393-4b41-b5b0-ad0d0d57343f
-		 - tulu3:70b::313826c2-d4f1-4ca3-b418-1508306cde78
-		 - gpt-4o::3a3b86ea-b7c2-4008-8939-30d15debdb9c
-		 - marco-o1:7b::0d8a2320-0f3f-4899-ab01-bfd543647c3d
-		 - qwen2.5:7b::5fd5e7b6-3115-4b15-9bf8-2b17867cd3eb
-		 - llama3.3:70b::1f19a4c3-b0e1-4f5c-92df-4f2d88d343db
-		 - gpt-4::73fe0ac2-cc0b-4ad1-9beb-79696860c743
-		 - gemma2:9b::adab0e8a-2588-441a-81c2-327c5b22a84b
-		 - qwen2.5:72b::9fa183e9-00aa-49f6-8734-55653475520f
-		 - athene-v2:72b::7cede0ec-ae1a-4ba1-950f-1dfbae7983a6
-		 - gpt-3.5-turbo::dbfc1cc0-f4a9-4bb5-8ce4-153f95e689f0
-		 - mistral:7b::3dbdf54e-ff53-455b-bc8c-bae0b38fb92e
-		 - llama3.1:70b::095542cd-099a-48a4-bb25-1677707fb6a3
-		 - llama3.1:8b::7bd00e64-7295-4d84-b4a8-0063c1a1279d
-		 - gemma2:27b::1694647c-8460-4258-b11f-9c273e189280
-		 - tulu3:8b::0619d972-ae07-420c-94f9-ee81018ac924
-		response #7: NTT GLOBAL
-		 - granite3.1-dense:8b::8f46c6e2-3730-4fad-9a36-4a9854d69f73
+		 - gpt-4-turbo::5bf417f7-123a-492f-b40f-2223a92246ea
+		response #3: NTT LTD.
+		 - gpt-4::6ef810ed-5752-4a9a-beec-6cffecaaf566
+		response #4: NTT LIMITED
+		 - exaone3.5:32b::1949f946-b1aa-434c-9365-2ef677290615
+		 - nemotron:70b::94da5c79-3c1b-4444-b75e-e076e9b07ba5
+		response #5: NIPPON TELEGRAPH AND TELEPHONE CORPORATION
+		 - dolphin-mistral:7b::fdafeb01-c606-40ce-b789-e20a245276dd
+		response #6: NTT COMMUNICATIONS CORPORATION
+		 - aya-expanse:32b::5d12e34c-1482-4fe0-a53e-8fdbb3c3bd35
+		response #7: NIPPON TELEGRAPH AND TELEPHONE EXCHANGE
+		 - openchat:7b::1164cfdc-2d07-444e-b4bf-a61ffe6bbf8d
+		response #8: NTT
+		 - llama3.1:8b::abe5564e-8aaa-4fec-8360-9ec031f770b4
+		 - gpt-3.5-turbo::9e27b8b1-5b2f-4024-bc48-606d41348304
+		 - gpt-4o::d1df788e-9dd2-49bc-82fb-901baf7cbcb9
+		 - sailor2:20b::5497b38b-32e0-47bb-bd2c-fc0fe3cee114
+		 - qwen2.5:72b::44e81a3b-cb95-4b10-93b7-07691f87feec
+		 - athene-v2:72b::bc7bd144-6c86-4cdc-93c2-c688191b9960
+		 - wizard-vicuna-uncensored:30b::dec9b7cc-f533-4612-811f-6f706b2011f7
+		 - olmo2:7b::5c8cdfe0-d3f5-46c1-b6c1-e47a468d9537
+		 - marco-o1:7b::da07e8a7-4e0b-4406-9f5c-50f6b2c1e8ec
+		 - tulu3:70b::18728afb-816d-4fcd-b3b1-6db52ae88363
+		 - llama3.1:70b::303edbcb-afaa-4adc-8964-2aff9a5e6a2a
+		 - gemma2:9b::5725ab79-f4d8-4e13-8011-02d5062f029e
+		 - qwen2.5:7b::25f859a8-5f34-42e2-b4e7-bf55447ed9d0
+		 - llama3.3:70b::3581d10d-5ce1-4d4e-9f42-371be619b5c3
+		 - mistral:7b::d2acab90-c9e8-4bf5-b563-e6fdc56dd5ba
+		 - tulu3:8b::28a07d21-5ee3-4b82-b9ac-8ea65d3a3517
+		 - gemma2:27b::3fecdf08-0c8c-439c-8252-a7dd4f78d875
+		 - aya-expanse:8b::f9a84f36-8f2c-4e85-a78b-862c0a5ca443
+		response #9: NTT GLOBAL
+		 - granite3.1-dense:8b::795bf40c-6487-4d4c-8044-10e4d7d59e82
 		 */
+		
+		// Assert
+		String best_response = sser.getBestResponse(5);
+		assertEquals("Make sure the winning company name is simply 'NTT'", "NTT", best_response);
 	}
 
 	@Test
-	public void strict_ENSAMBLE_Ollama_Domain2CompanyKnowledge() {
+	public void strict_ENSAMBLE_Ollama_Domain2CompanyKnowledge_Ollama() {
 		SingleStringEnsembleResponse sser1 = OllamaUtils.strictEnsembleRun(
 				"What company or organization is associated with the domain global.ntt? Reply with only the name in uppercase",
-				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_L, true);
+				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, true);
 		sser1.printEnsemble();
 		
 		/*
-		uniq confident responses: 6
+		uniq confident responses: 7
 		response #1: NIPPON TELEGRAPH AND TELEPHONE
-		 - openhermes:7b-mistral-v2.5-q4_0::05179084-b959-417e-8c69-227aefe2e394
+		 - openhermes:7b-mistral-v2.5-q4_0::fc7cf6c0-00ec-4689-8b45-b9c7af0adb30
 		response #2: NTT LIMITED
-		 - exaone3.5:32b::c13d63ac-24c1-4c88-9a92-a68e22ac781b
-		 - nemotron:70b::df74779d-1185-49e6-9cc3-c04aeb2f5d6b
+		 - exaone3.5:32b::60a586f9-09fb-42da-85d3-77c9c7d33da9
+		 - nemotron:70b::3d1a79d7-6f10-4bcf-b982-9e0e36622e37
 		response #3: NIPPON TELEGRAPH AND TELEPHONE CORPORATION
-		 - dolphin-mistral:7b::c20d4bf1-8a60-4f4f-9740-8203cfa89f44
-		response #4: NIPPON TELEGRAPH AND TELEPHONE EXCHANGE
-		 - openchat:7b::fa49aead-830e-48a7-a20c-935c36a5a051
-		response #5: NTT
-		 - qwen2.5:7b::d2bd7d1d-7e00-410e-ba06-5efefdc48852
-		 - qwen2.5:72b::0d0c7978-c80d-4090-b9dd-1ef33c77b1ff
-		 - olmo2:7b::b640b3ba-d219-4226-b03b-53c6868afc34
-		 - gemma2:9b::620024ff-8bc6-408c-9750-9a83402cd1e7
-		 - llama3.1:8b::82b28f07-34f7-41ac-bca9-91430fbbe645
-		 - llama3.3:70b::07c0d5a8-ae39-4919-9d64-1dffa3e7e38b
-		 - athene-v2:72b::76644c74-9e3f-4f86-9e45-77786305fc6c
-		 - mistral:7b::6a6bbb1c-2ebe-4c59-8ee3-f35825c7207a
-		 - sailor2:20b::14834743-5571-43f0-8893-fa72993e0e3f
-		 - marco-o1:7b::5d106070-199b-44b6-b72b-11502d9417ef
-		 - tulu3:70b::a1f0020d-f5eb-423b-afd9-56ea56e18a71
-		 - gemma2:27b::50662dbe-6e09-4595-b101-89088226044e
-		 - llama3.1:70b::de974c3f-5195-4629-bd9f-c5ee7685f6cf
-		 - tulu3:8b::6698b856-5c01-404c-996d-a9a2bcf40fe3
-		response #6: NTT GLOBAL
-		 - granite3.1-dense:8b::2f60951b-00e4-4d4a-b815-def213d4d987
+		 - dolphin-mistral:7b::78e51268-8ce4-4cfe-b8c1-7805a2f4db50
+		response #4: NTT COMMUNICATIONS CORPORATION
+		 - aya-expanse:32b::b2c131f0-1305-402f-a474-a4e343b9ffc7
+		response #5: NIPPON TELEGRAPH AND TELEPHONE EXCHANGE
+		 - openchat:7b::415fd724-d3da-4685-8773-3794caff5a18
+		response #6: NTT
+		 - sailor2:20b::832af0c3-c788-4f2b-802f-2d962d766d05
+		 - qwen2.5:7b::7f9c894d-c8b4-4393-b763-952c878209fa
+		 - wizard-vicuna-uncensored:30b::0ea50ae3-4e3f-49c9-8308-0444e18c3d1e
+		 - marco-o1:7b::c9b4da02-90d2-4eb8-b738-a178dfb3f2b5
+		 - llama3.3:70b::719f0913-ec6c-4c82-a335-22007e033d16
+		 - tulu3:70b::eba4b325-c5e6-487a-b111-adc8baf53b4f
+		 - olmo2:7b::8ba14b5c-2a75-4e7b-9b7f-06248ca4dd63
+		 - mistral:7b::a9414601-0ead-4c23-8700-46ae9523a17d
+		 - tulu3:8b::3a5f1b11-e0de-404c-867f-f5b1a47a324c
+		 - qwen2.5:72b::ef21f248-c04f-4416-928e-4cbfc10ea32e
+		 - aya-expanse:8b::c35993c8-1478-43e6-a02b-a02ef7835e37
+		 - llama3.1:70b::c1d5970a-bb0f-4fe5-a78d-d34128064954
+		 - llama3.1:8b::8c615a6f-7217-4d4a-aade-0d197e38226c
+		 - gemma2:27b::b9e090a8-eec8-4c65-9ed3-c0fd1074858c
+		 - athene-v2:72b::fcb8d979-074f-4bcd-a81c-d350e9623a5f
+		 - gemma2:9b::866510d9-4cae-479b-9b5d-c8eac2665f50
+		response #7: NTT GLOBAL
+		 - granite3.1-dense:8b::9320abd9-5479-410c-a564-4841a9daf721
 		 */
+		
+		// Assert
+		String best_response = sser1.getBestResponse(5);
+		assertEquals("Make sure the winning company name is simply 'NTT'", "NTT", best_response);
 	}
 	
 	@Test
@@ -112,7 +132,7 @@ public class Domain2CompanyTest {
 
 		SingleStringEnsembleResponse sser = OllamaUtils.collectiveFullEnsembleRun(
 				"What company or organization is associated with the domain global.ntt? Reply with only the name in uppercase",
-				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_L,
+				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL,
 				Globals.MODEL_NAMES_OPENAI_ALL,
 				ollama_settings, true, true);
 		sser.printEnsemble();

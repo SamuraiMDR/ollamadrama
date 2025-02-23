@@ -74,141 +74,198 @@ public class Globals {
 				.build();
 	}
 
-	// models listed here will not be pulled automatically due to GPU requirements
-	@SuppressWarnings("serial")
-	public static HashMap<String, Boolean> ENSEMBLE_MODEL_NAMES_L = new HashMap<String, Boolean>() {{
-		this.put("athene-v2:72b", true);
-		this.put("qwen2.5:72b", true);
-		this.put("llama3.1:70b", true);
-		this.put("llama3.3:70b", true);
-		this.put("nemotron:70b", true);
-		this.put("llama2:70b", true);
-		this.put("tulu3:70b", true);
-		this.put("exaone3.5:32b", true);
-		this.put("sailor2:20b", true);
-	}};
-
-	// T_T
-	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL = ""
-			// tier1
-			+ "llama3.1:405b"	// 243 GB
+	/**
+	 * XXL (<256GB)
+	 */
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XXL = ""
+			+ "llama3.1:405b,"	// 243 GB
 			+ "";
 
-	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L = ""
-			// tier1
+	// task specific
+	
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_VISION_XXL = ""
+			+ "llama3.2-vision:90b"		// 55 GB
+			+ "";
+	
+	/**
+	 * XL (<48GB)
+	 */
+
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL = ""
 			+ "llama3.1:70b," 	// 43 GB
 			+ "llama3.3:70b," 	// 43 GB
 			+ "nemotron:70b,"	// 43 GB
 			+ "qwen2.5:72b,"	// 47 GB
 			+ "gemma2:27b"		// 16 GB
 			+ "";
-	
-	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L_MINIDIVERSE = ""
-			// tier1
+
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_MINIDIVERSE_XL = ""
 			+ "llama3.1:70b,"	// 43 GB
 			+ "qwen2.5:72b,"	// 47 GB
 			+ "gemma2:27b"		// 16 GB
 			+ "";
-	
-	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M_MINIDIVERSE = ""
-			// tier1
-			+ "openchat:7b,"	// 4.1 GB
-			+ "qwen2.5:7b," 	// 4.1 GB
-			+ "gemma2:9b"		// 5.4 GB
+
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_XL = ""
+			+ "athene-v2:72b,"	// 47 GB
+			+ "tulu3:70b,"		// 43 GB
+			+ "exaone3.5:32b"	// 19 GB
 			+ "";
 	
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_XL = ""
+			+ "aya-expanse:32b"	// 20 GB
+			+ "";
+
+	// task specific
+	
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_CODE_XL = ""
+			+ "qwen2.5-coder:32b,"		// 20 GB
+			+ "codellama:70b"			// 39 GB
+			+ "";
+	
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_VISION_XL = ""
+			+ "llava:34b"		// 20 GB
+			+ "";
+
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_UNCENSORED_XL = ""
+			+ "wizard-vicuna-uncensored:30b"	// 18 GB
+			+ "";
+
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_GUARDED_XL = ""
+			+ "shieldgemma:27b"		// 17 GB, 'Yes'/'No' if safe replies only
+			+ "";
+
+	/**
+	 * L (<16GB)
+	 */
+
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L = ""
+			+ "sailor2:20b"	// 12 GB
+			+ "";
+
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_L = ""
+			+ "olmo2:13b,"		// 8.4 GB
+			+ "phi4:14b"		// 9 GB
+			+ "";
+
+	// task specific
+	
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_CODE_L = ""
+			+ "starcoder2:15b"		// 9.1 GB
+			+ "";
+	
+	/**
+	 * M (<8GB)
+	 */
+
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M = ""
-			// tier1
 			+ "marco-o1:7b,"	// 4.1 GB
 			+ "mistral:7b," 	// 4.1 GB
 			+ "qwen2.5:7b," 	// 4.1 GB
 			+ "olmo2:7b,"		// 4.1 GB
 			+ "gemma2:9b"		// 5.4 GB
 			+ "";
-	
-	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_L = ""
-			// tier2
-			+ "sailor2:20b,"
-			+ "athene-v2:72b,"
-			+ "tulu3:70b,"
-			+ "exaone3.5:32b,"
-			+ "phi4:14b"
-			+ "";
-	
-	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_L = ""
-			// tier3
-			+ "olmo2:13b"
+
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_MINIDIVERSE_M = ""
+			+ "marco-o1:7b,"	// 4.1 GB
+			+ "qwen2.5:7b," 	// 4.1 GB
+			+ "gemma2:9b"		// 5.4 GB
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_M = ""
-			// tier2
-			+ "openchat:7b,"
-			+ "llama3.1:8b"
+			+ "openchat:7b,"			// 4.1 GB
+			+ "dolphin-mistral:7b"		// 4.1 GB
 			+"";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_M = ""
-			// tier3
-			+ "qwen2:7b," 	
-			+ "dolphin-mistral:7b,"
-			+ "dolphin3:8b,"
-			+ "openhermes:7b-mistral-v2.5-q4_0" 
-			+ "";
-	
-	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_S = ""
-			// tier1
-			+ "llama3.2:3b"
+			+ "aya-expanse:8b,"						// 5.1 GB
+			+ "llama3.1:8b,"						// 4.9 GB
+			+ "qwen2:7b," 							// 4.4 GB
+			+ "dolphin3:8b,"						// 4.9 GB
+			+ "openhermes:7b-mistral-v2.5-q4_0" 	// 4.1 GB
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER4_M = ""
-			// tier 4 - eval
-			+ "tulu3:8b,"
-			+ "granite3.1-dense:8b"
+			+ "tulu3:8b,"				// 4.9 GB
+			+ "granite3.1-dense:8b"		// 5.0 GB
 			+"";
 
-	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_UNCENSORED_M = ""
-			+ "llama2-uncensored:7b,"				// fails strict mode, no proper JSON
-			+ "wizard-vicuna-uncensored:7b,"		// fails strict mode, no proper JSON
-			+ "wizard-vicuna-uncensored:13b,"		// fails strict mode, no proper JSON
-			+ "wizardlm-uncensored:13b" 			// fails strict mode, no proper JSON
+	// task specific
+	
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_CODE_M = ""
+			+ "codegemma:7b"		// 5.0 GB
+			+ "";
+	
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_GUARDED_M = ""
+			+ "shieldgemma:9b,"		// 5.8 GB, 'Yes'/'No' if safe replies only
+			+ "llama-guard3:8b"		// 4.9 GB, safe/unsafe + Sx category replies only
 			+ "";
 
-	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_UNCENSORED_L = ""
-			+ "wizard-vicuna-uncensored:30b"
-			//+ "llama2-uncensored:70b,"				// fails strict mode, no proper JSON
-			+ "";
+	/**
+	 * S (<4GB)
+	 */
 
-	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_GUARDED = ""
-			+ "shieldgemma:9b,"
-			+ "shieldgemma:27b,"
-			+ "llama-guard3:8b"
-			+ "";
-
-	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_ANDUP = ""
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_S = ""
 			// tier1
-			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M + ","
+			+ "llama3.2:3b"		// 2 GB
+			+ "";
 
-			// tier2
+	/*
+	 * Aliases
+	 */
+
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_ANDUP_M = ""
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M + ","
 			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_M
 			+ "";
 
-	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_ANDUP_ML = ""
-			// tier1
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_ANDUP_M_L_XL = ""
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL + ","
 			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L + ","
 			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M + ","
-
-			// tier2
-			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_L + ","
-			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_M + ","
 			
-			// uncensored
-			+ ENSEMBLE_MODEL_NAMES_OLLAMA_UNCENSORED_L
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_XL + ","
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_L + ","
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_M
 			+ "";
 
-	public static String MODEL_NAMES_OLLAMA_ALL = ""
+	public static String MODEL_NAMES_OLLAMA_ALL_M = ""
 			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M + ","
 			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_M + ","
 			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_M + ","
 			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER4_M
+			+ "";
+
+	public static String MODEL_NAMES_OLLAMA_ALL_TIER1_M_L_XL = ""
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL + ","
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L + ","
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M + ","
+			+"";
+	
+	public static String MODEL_NAMES_OLLAMA_ALL_UP_TO_S = ""
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_S
+			+"";
+	
+	public static String MODEL_NAMES_OLLAMA_ALL_UP_TO_M = ""
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M + ","
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_M + ","
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_M + ","
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER4_M + ","
+			+ MODEL_NAMES_OLLAMA_ALL_UP_TO_S
+			+"";
+	
+	public static String MODEL_NAMES_OLLAMA_ALL_UP_TO_L = ""
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L + ","
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_L + ","
+			+ MODEL_NAMES_OLLAMA_ALL_UP_TO_M
+			+"";
+	
+	public static String MODEL_NAMES_OLLAMA_ALL_UP_TO_XL = ""
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_UNCENSORED_XL + ","
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_VISION_XL + ","
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL + ","
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_XL + ","
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_XL + ","
+			+ MODEL_NAMES_OLLAMA_ALL_UP_TO_L
 
 			// broken uncensored
 			// + "wizard-vicuna-uncensored:7b,"		// Fails to produce valid JSON
@@ -216,18 +273,18 @@ public class Globals {
 			// + "wizardlm-uncensored:13b,"			// fails to follow protocol
 			// + "wizard-vicuna-uncensored:13b,"	// always 0% prob
 
-			// broken in ollama
+			// broken/unsupported in ollama
 			//+ "zephyr:7b," 						// zephyr gives errors over time with multiple ollama reloads, may be related to https://github.com/ollama/ollama/issues/1691
 			//+ "opencoder:8b"						// fails on setting system profile
-			//+ "command-r7b:7b,"					// recheck
-			//+ "aya-expanse:32b,"					// recheck
-			
+			//+ "command-r7b:7b,"					// 500 internal, this model is not supported by your version of Ollama ..
+
 			// broken
+			//+ "r1-1776:70b"						// fails to follow protocol, does its <think> thing
+			//+ "deepseek-r1:7b"					// fails to follow protocol, does its <think> thing
+			//+ "deepseek-r1:70b,"					// fails to follow protocol, does its <think> thing
 			//+ "llama2:7b,"						// fails to reply with FAILTOUNDERSTAND on gibberish input
 			//+ "llama2:70b,"						// often fails to provide valid JSON (missing quotes etc)
 			//+ "solar-pro:22b"						// fails to follow protocol
-			//+ "deepseek-r1:7b"					// fails to follow protocol, does its <think> thing
-			//+ "deepseek-r1:70b,"					// fails to follow protocol, does its <think> thing
 			//+ "falcon3:10b"						// fails at very basic logic
 			//+ "llama3-gradient:8b,"				// fails to follow protocol
 			//+ "internlm2:7b,"						// fails at very basic logic
@@ -242,22 +299,11 @@ public class Globals {
 			//+ "vicuna:7b,"						// fails to follow protocol
 
 			+ "";
-
-	public static String MODEL_NAMES_OLLAMA_ALL_UP_TO_L = ""
-			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L + ","
-			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_L + ","
-			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M + ","
-			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_M + ","
-			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_M + ","
-			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER4_M + ","
-			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_S
-
-			+"";
-
+	
 	public static String MODEL_NAMES_OPENAI_TIER1 = ""
 			+ "gpt-4o"
 			+ "";
-	
+
 	public static String MODEL_NAMES_OPENAI_TIER2 = ""
 			+ "gpt-4,"
 			+ "";
@@ -289,11 +335,11 @@ public class Globals {
 			+ "gpt-4o-mini-2024-07-18,"
 			+ "";
 
-	// an attempt to balance each models scale of probabilities
+	// an attempt to balance each models scale of probabilities (TODO)
 	@SuppressWarnings("serial")
 	public static HashMap<String,Integer> MODEL_PROBABILITY_THRESHOLDS = new HashMap<String,Integer>() {{
 
-		// ollama llms - humble
+		// ollama llms - too humble
 		this.put("llama3.1:8b", 14);
 		this.put("llama3.1:70b", 14);
 		this.put("llama3.2:3b", 14);
@@ -306,6 +352,10 @@ public class Globals {
 		this.put("gemma2:27b", 14);
 
 		// ollama llms - balanced
+		this.put("wizard-vicuna-uncensored:30b", 44);
+		this.put("llava:34b", 44);
+		this.put("aya-expanse:32b", 44);
+		this.put("olmo2:13b", 44);
 		this.put("marco-o1:7b", 44);
 		this.put("athene-v2:72b", 44);
 		this.put("tulu3:70b", 44);
@@ -321,11 +371,11 @@ public class Globals {
 		this.put("mistral:7b", 49);
 		this.put("dolphin-mistral:7b", 49);
 		this.put("granite3.1-dense:8b", 49);
-		
-		// ollama llms - optimistic
+
+		// ollama llms - too optimistic
 		this.put("tulu3:8b", 64);
 
-		// openai llms - humble
+		// openai llms - too humble
 		this.put("gpt-4o", 20);
 		this.put("gpt-4-turbo", 20);
 		this.put("gpt-3.5-turbo", 20);
@@ -337,4 +387,17 @@ public class Globals {
 		this.put("gpt-4", 65);
 	}};
 
+	// models listed here will not be pulled automatically due to GPU requirements
+	@SuppressWarnings("serial")
+	public static HashMap<String, Boolean> MODEL_SKIP_AUTOPULL = new HashMap<String, Boolean>() {{
+		for (String model: ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XXL.split(",")) {
+			this.put(model, true);
+		}
+		for (String model: ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL.split(",")) {
+			this.put(model, true);
+		}
+		for (String model: ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L.split(",")) {
+			this.put(model, true);
+		}
+	}};
 }

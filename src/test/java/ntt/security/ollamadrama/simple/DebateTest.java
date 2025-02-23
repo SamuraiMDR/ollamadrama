@@ -17,35 +17,35 @@ public class DebateTest {
 	private static final Logger LOGGER = LoggerFactory.getLogger(DebateTest.class);
 
 	@Test
-	public void simpleDebate_L() {
+	public void simpleDebate_XL_vs_L() {
 		
 		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
 		settings.sanityCheck();
 		
 		// Launch LLM singletons if needed
-		settings.setOllama_models("llama3.3:latest" + "," + "gemma2:latest");
+		settings.setOllama_models("llama3.3:70b,gemma2:latest");
 		OllamaService.getInstance(settings);
 		
 		OllamaUtils.llmKnowledgeShootout1v1(PreparedQueries.rules_for_knowledgeshootout_on_topic("France"),
 				"llama3.3:70b", 
 				"gemma2:27b",
-				true);
+				false);
 	}
 
 	@Test
-	public void simpleDebate() {
+	public void simpleDebate_M_vs_M() {
 		
 		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
 		settings.sanityCheck();
 		
 		// Launch LLM singletons if needed
-		settings.setOllama_models(Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M);
+		settings.setOllama_models("gemma2:9b");
 		OllamaService.getInstance(settings);
 		
 		OllamaUtils.llmKnowledgeShootout1v1(PreparedQueries.rules_for_knowledgeshootout_on_topic("France"),
 				"gemma2:9b", 
 				"gemma2:9b",
-				true);
+				false);
 	}
 	
 }

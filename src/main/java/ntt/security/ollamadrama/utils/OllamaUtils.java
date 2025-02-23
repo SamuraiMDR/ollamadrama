@@ -145,7 +145,7 @@ public class OllamaUtils {
 						e.getMessage().contains("try pulling it first") ||
 						e.getMessage().contains("not found") ||
 						false) {
-					if (null != Globals.ENSEMBLE_MODEL_NAMES_L.get(_modelname)) {
+					if (null != Globals.MODEL_SKIP_AUTOPULL.get(_modelname)) {
 						LOGGER.info("The model " + _modelname + " is L, will not try to pull it automatically since unsure if the endpoint has enough VRAM. Pull manually if thats the case. ");
 						return false;
 					} else {
@@ -179,7 +179,7 @@ public class OllamaUtils {
 					LOGGER.warn("Exception: " + e.getMessage());
 					LOGGER.warn("Catch all error handler while setting system profile for " + _modelname + ", retryCounter=" + retryCounter);
 					if (e.getMessage().contains("try pulling it first")) {
-						if (null != Globals.ENSEMBLE_MODEL_NAMES_L.get(_modelname)) {
+						if (null != Globals.MODEL_SKIP_AUTOPULL.get(_modelname)) {
 							LOGGER.info("The model " + _modelname + " is L, will not try to pull it automatically since unsure if the endpoint has enough VRAM. Pull manually if thats the case. ");
 							return null;
 						} else {
@@ -390,7 +390,7 @@ public class OllamaUtils {
 		OllamaDramaSettings ollama_settings = OllamaUtils.parseOllamaDramaConfigENV();
 		ollama_settings.sanityCheck();
 
-		return strictEnsembleRun(_query, Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_ANDUP, ollama_settings, _hide_llm_reply_if_uncertain);
+		return strictEnsembleRun(_query, Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_ANDUP_M, ollama_settings, _hide_llm_reply_if_uncertain);
 	}
 
 	public static SingleStringEnsembleResponse strictEnsembleRun(String _query, String _models, boolean _hide_llm_reply_if_uncertain) {

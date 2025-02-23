@@ -1,5 +1,7 @@
 package ntt.security.ollamadrama.ensemblevotes;
 
+import static org.junit.Assert.assertTrue;
+
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,16 +24,17 @@ public class TCPIPTest {
 	public void strict_ENSAMBLE_Ollama_POP3() {
 		SingleStringEnsembleResponse sser1 = OllamaUtils.strictEnsembleRun(
 				"What TCP port does the POP3 protocol typically use? Answer with only a number.",
-				Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M_MINIDIVERSE, true);
+				Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_MINIDIVERSE_M, true);
 		sser1.printEnsemble();
 		
 		/*
 		uniq confident responses: 1
 		response #1: 110
-		 - openchat:7b::7c820ae7-dc37-4ddc-b0e0-af70f94a0a58
-		 - gemma2:9b::d16938f1-027b-451a-986c-f5fdbb15fdf3
-		 - qwen2.5:7b::e174ffba-447b-4121-809d-e1a4d4560c7c
+		 - qwen2.5:7b::262b41c9-9e5a-49f5-bf5b-062f78da30a7
+		 - gemma2:9b::9531e75a-5e69-41e2-8d4f-33574a855606
+		 - marco-o1:7b::ae397a4a-58a2-4ba7-8727-ef06e6d970da
 		 */
+		
 	}
 
 }

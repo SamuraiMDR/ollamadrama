@@ -17,7 +17,7 @@ public class MemoryLossTest {
 	@Ignore
 	@Test
 	public void checkMemoryLengthForAllEnsembleModels_RandomWords_CSV() {
-		ModelsScoreCard scorecard = OllamaDramaUtils.performMemoryTestUsingRandomWords(Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L, 5);
+		ModelsScoreCard scorecard = OllamaDramaUtils.performMemoryTestUsingRandomWords(Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL, 5);
 		System.out.println("SCORECARD:");
 		scorecard.evaluate();
 		scorecard.print();
@@ -26,7 +26,7 @@ public class MemoryLossTest {
 	@Ignore
 	@Test
 	public void checkMemoryLengthForAllEnsembleModels_SequenceOfNumbers_CSV() {
-		ModelsScoreCard scorecard = OllamaDramaUtils.performMemoryTestUsingSequenceOfNumbers(Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_L, 3);
+		ModelsScoreCard scorecard = OllamaDramaUtils.performMemoryTestUsingSequenceOfNumbers(Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, 3);
 		System.out.println("SCORECARD:");
 		scorecard.evaluate();
 		scorecard.print();

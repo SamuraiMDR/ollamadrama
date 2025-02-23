@@ -16,7 +16,7 @@ public class OllamaDramaSettings {
 	
 	private String ollama_username = "";
 	private String ollama_password = "";
-	private String ollama_models = Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M_MINIDIVERSE;
+	private String ollama_models = Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_MINIDIVERSE_M;
 	private Integer ollama_port = 11434;
 	private Integer threadPoolCount = 20;
 	private Integer ollama_timeout = 120;

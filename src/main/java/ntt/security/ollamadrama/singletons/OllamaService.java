@@ -114,7 +114,7 @@ public class OllamaService {
 								if (modelname.length()>3) {
 									if (null == abandoned_ollamas.get(oep.getOllama_url())) {
 										if (!OllamaUtils.verifyModelAvailable(ollamaAPI, modelname)) {
-											if (null != Globals.ENSEMBLE_MODEL_NAMES_L.get(modelname)) {
+											if (null != Globals.MODEL_SKIP_AUTOPULL.get(modelname)) {
 												LOGGER.warn("The model " + modelname + " is marked as L so wont be pulled automatically. Pull manually to qualify this Ollama endpoint.");
 												LOGGER.warn("Skipping the ollama endpoint " + ollama_url);
 												abandoned_ollamas.put(oep.getOllama_url(), oep);

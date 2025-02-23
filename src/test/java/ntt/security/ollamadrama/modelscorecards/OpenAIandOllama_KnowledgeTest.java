@@ -24,7 +24,7 @@ public class OpenAIandOllama_KnowledgeTest {
 	private static final Logger LOGGER = LoggerFactory.getLogger(OpenAIandOllama_KnowledgeTest.class);
 
 	@Test
-	public void simpleDomain2CompanyKnowledge_AllModels() {
+	public void simpleDomain2CompanyKnowledge_AllModels_XL() {
 
 		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
 		settings.sanityCheck();
@@ -41,7 +41,7 @@ public class OpenAIandOllama_KnowledgeTest {
 			}};
 
 			ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOpenAIAndOllamaModels(
-					Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_L,
+					Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL,
 					Globals.MODEL_NAMES_OPENAI_ALL,
 					settings,
 					"What company or organization is associated with google.com? Reply with only the name",
@@ -94,7 +94,7 @@ public class OpenAIandOllama_KnowledgeTest {
 	}
 
 	@Test
-	public void simpleParis_AllModels() {
+	public void simpleParis_AllModels_XL() {
 
 		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
 		settings.sanityCheck();
@@ -102,7 +102,7 @@ public class OpenAIandOllama_KnowledgeTest {
 		if (settings.getOpenaikey().length() > 10) {
 
 			ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOpenAIAndOllamaModels(
-					Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_L,
+					Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL,
 					Globals.MODEL_NAMES_OPENAI_ALL,
 					settings,
 					"Is the capital city of France named Paris? Reply with Yes or No.",
@@ -156,14 +156,14 @@ public class OpenAIandOllama_KnowledgeTest {
 	}
 
 	@Test
-	public void simpleNonsenseInput_AllModels() {
+	public void simpleNonsenseInput_AllModels_XL() {
 
 		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
 		settings.sanityCheck();
 
 		if (settings.getOpenaikey().length() > 10) {
 			ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOpenAIAndOllamaModels(
-					Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_L,
+					Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL,
 					Globals.MODEL_NAMES_OPENAI_ALL,
 					settings,
 					"Is the capital city of OOikiOOA named Mo1rstiooooo? Reply with Yes or No.",
@@ -215,13 +215,13 @@ public class OpenAIandOllama_KnowledgeTest {
 	}
 
 	@Test
-	public void simpleStrawberryRCountv1_AllModels() {
+	public void simpleStrawberryRCountv1_AllModels_XL() {
 		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
 		settings.sanityCheck();
 
 		if (settings.getOpenaikey().length() > 10) {
 			ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOpenAIAndOllamaModels(
-					Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_L,
+					Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL,
 					Globals.MODEL_NAMES_OPENAI_ALL,
 					settings,
 					"Count the number of R in strawberry. Answer with number only", 
@@ -273,14 +273,14 @@ public class OpenAIandOllama_KnowledgeTest {
 	}
 
 	@Test
-	public void simpleStrawberryRCountv2_AllModels() {
+	public void simpleStrawberryRCountv2_AllModels_XL() {
 		
 		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
 		settings.sanityCheck();
 
 		if (settings.getOpenaikey().length() > 10) {
 			ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOpenAIAndOllamaModels(
-					Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_L,
+					Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL,
 					Globals.MODEL_NAMES_OPENAI_ALL,
 					settings,
 					"Count the number of 'r' characters in the string 's t r a w b e r r y', which contains 10 characters from the alphabet in total. "
@@ -304,6 +304,7 @@ public class OpenAIandOllama_KnowledgeTest {
 			gemma2:9b                                pos: 1   neg: 0  
 			qwen2.5:72b                              pos: 1   neg: 0  
 			olmo2:7b                                 pos: 1   neg: 0  
+			gemma2:27b                               pos: 1   neg: 0  
 			mistral:7b                               pos: 1   neg: 0  
 			llama3.3:70b                             pos: 1   neg: 0  
 			llama3.1:70b                             pos: 1   neg: 0  
@@ -318,7 +319,6 @@ public class OpenAIandOllama_KnowledgeTest {
 			tulu3:8b                                 pos: 0   neg: 1  
 			llama3.2:3b                              pos: 0   neg: 1  
 			gpt-4o-mini                              pos: 0   neg: 1  
-			gemma2:27b                               pos: 0   neg: 1  
 			gpt-4                                    pos: 0   neg: 1  
 			gpt-3.5-turbo                            pos: 0   neg: 1  
 			phi4:14b                                 pos: 0   neg: 1  
