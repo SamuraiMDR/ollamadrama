@@ -20,9 +20,9 @@ import org.slf4j.LoggerFactory;
 
 import ntt.security.ollamadrama.objects.OllamaEndpoint;
 
-public class NetUtils {
+public class NetUtilsLocal {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(NetUtils.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(NetUtilsLocal.class);
 	
 	public static boolean isValidIPV4(final String ipv4String) {
 		if (null == ipv4String) {
@@ -131,7 +131,7 @@ public class NetUtils {
 						if (lastOctet>1) continue;
 					}
 					String ip = cnet + "." + lastOctet;
-					if (!NetUtils.isValidIPV4(ip)) {
+					if (!NetUtilsLocal.isValidIPV4(ip)) {
 						LOGGER.error("Invalid ip generated from input parameters: " + ip);
 						SystemUtils.halt();
 					}

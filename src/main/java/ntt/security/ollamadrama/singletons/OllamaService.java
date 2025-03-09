@@ -39,7 +39,7 @@ public class OllamaService {
 	}
 
 	public synchronized void rescan(boolean blockUntilReady) {
-		ArrayList<String> serviceips = NetUtils.determineLocalIPv4s();
+		ArrayList<String> serviceips = NetUtilsLocal.determineLocalIPv4s();
 		if (serviceips.isEmpty()) {
 			LOGGER.error("Unable to find any connected networks using NetUtils.determineLocalIPv4s()");
 			SystemUtils.halt();
@@ -48,7 +48,7 @@ public class OllamaService {
 
 		ArrayList<String> service_cnets_temp = new ArrayList<>();
 		for (String ip : serviceips) {
-			String cnet = NetUtils.grabCnetworkSlice(ip);
+			String cnet = NetUtilsLocal.grabCnetworkSlice(ip);
 			service_cnets_temp.add(cnet);
 		}
 		synchronized (OllamaService.class) {
@@ -70,7 +70,7 @@ public class OllamaService {
 
 			if (settings.isOllama_scan()) {
 				if (blockUntilReady) LOGGER.info("Looking for ollama servers .. " + service_cnets);
-				ollamas = NetUtils.performTCPPortSweep(settings.getOllama_port(), service_cnets, 1, 255, settings.getOllama_timeout(), threadPoolCount, settings.getOllama_username(), settings.getOllama_password());
+				ollamas = NetUtilsLocal.performTCPPortSweep(settings.getOllama_port(), service_cnets, 1, 255, settings.getOllama_timeout(), threadPoolCount, settings.getOllama_username(), settings.getOllama_password());
 			} 
 
 			if (ollamas.isEmpty() && (null == settings.getSatellites())) {

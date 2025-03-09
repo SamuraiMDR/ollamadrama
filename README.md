@@ -218,7 +218,7 @@ Maven:
  <dependency>
    <groupId>ntt.security</groupId>
    <artifactId>ollamadrama</artifactId>
-   <version>0.0.<latest-version></version>
+   <version>0.<latest-version-here></version>
  </dependency>
    ```
 

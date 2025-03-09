@@ -2,11 +2,11 @@ package ntt.security.ollamadrama.objects.response;
 
 public class SingleStringQuestionResponse {
 
-	private String response;
-	private Integer probability;
+	private String response = "";
+	private Integer probability = 0;
 	private boolean empty = true;
-	private String motivation;
-	private String assumptions_made;
+	private String motivation = "";
+	private String assumptions_made = "";
 
 	public SingleStringQuestionResponse() {
 		super();

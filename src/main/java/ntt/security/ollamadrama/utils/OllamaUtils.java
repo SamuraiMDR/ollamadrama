@@ -385,6 +385,28 @@ public class OllamaUtils {
 		SingleStringEnsembleResponse ssr1 = e1.askChatQuestion(_query, _hide_llm_reply_if_uncertain);
 		return ssr1;
 	}
+	
+	public static SingleStringQuestionResponse strictEnsembleRunEarlyExitOnFirstConfident(String _query, String _models, OllamaDramaSettings _settings, boolean _hide_llm_reply_if_uncertain) {
+
+		// Launch singleton 
+		OllamaService.getInstance(_models, _settings);
+
+		// Populate an ensemble of agents
+		for (String model_name: _models.split(",")) {
+
+			// Launch strict agent per included model type
+			OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, _hide_llm_reply_if_uncertain);
+			LOGGER.info("Using " + a1.getEndpoint().getOllama_url() + " with model " + model_name);
+			SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(_query, _hide_llm_reply_if_uncertain);
+			Integer probaThreshold = Globals.MODEL_PROBABILITY_THRESHOLDS.get(model_name);
+			if (null == probaThreshold) probaThreshold = 55;
+			if (ssr1.getProbability()>probaThreshold) return ssr1;
+			
+			System.out.println("\n" + model_name);
+			ssr1.print();
+		}
+		return new SingleStringQuestionResponse();
+	}
 
 	public static SingleStringEnsembleResponse strictEnsembleRun(String _query, boolean _hide_llm_reply_if_uncertain) {
 		OllamaDramaSettings ollama_settings = OllamaUtils.parseOllamaDramaConfigENV();
