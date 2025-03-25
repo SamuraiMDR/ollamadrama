@@ -81,6 +81,7 @@ public class OllamaUtils {
 		while (retryCounter < 10) {
 			try {
 				_ollamaAPI.pullModel(_modelname);
+				LOGGER.info("Seems we did a successful pull of " + _modelname);
 				return true;
 			} catch (Exception e) {
 				if ((null != e) && "closed".equals(e.getMessage())) {
@@ -92,6 +93,8 @@ public class OllamaUtils {
 					SystemUtils.sleepInSeconds(10);
 				}
 				retryCounter++;
+				LOGGER.info("pullModel retryCounter: " + retryCounter);
+				SystemUtils.sleepInSeconds(3);
 			}
 		}
 		return false;
@@ -109,7 +112,7 @@ public class OllamaUtils {
 				}
 				return req_model_available;
 			} catch (Exception e) {
-				LOGGER.warn("Exception: " + e.getMessage());
+				LOGGER.warn("verifyModelAvailable() Exception: " + e.getMessage());
 				LOGGER.warn("Catch all error handler while verifying existance of " + _modelname);
 				retryCounter++;
 			}
@@ -142,18 +145,19 @@ public class OllamaUtils {
 				return sanity_pass;
 			} catch (Exception e) {
 				if (false ||
+						e.getMessage().contains("null") || // 500 from ollama endpoint
 						e.getMessage().contains("try pulling it first") ||
 						e.getMessage().contains("not found") ||
 						false) {
 					if (null != Globals.MODEL_SKIP_AUTOPULL.get(_modelname)) {
-						LOGGER.info("The model " + _modelname + " is L, will not try to pull it automatically since unsure if the endpoint has enough VRAM. Pull manually if thats the case. ");
+						LOGGER.info("The model " + _modelname + " is L+, will not try to pull it automatically since unsure if the endpoint has enough VRAM. Pull manually if thats the case. ");
 						return false;
 					} else {
 						LOGGER.info("Trying to autoheal and pull model " + _modelname);
 						pullModel(_ollamaAPI, _modelname);
 					}
 				} else {
-					LOGGER.warn("Exception: '" + e.getMessage() + "' while interacting with " + _ollamaurl);
+					LOGGER.warn("verifyModelSanityUsingSingleWordResponse() Exception #1: '" + e.getMessage() + "' while interacting with " + _ollamaurl);
 					LOGGER.warn("Catch all error handler while verifying sanity of " + _modelname + 	", retryCounter=" + retryCounter);
 				}
 				SystemUtils.sleepInSeconds(10);
@@ -176,11 +180,11 @@ public class OllamaUtils {
 				return chatResult;
 			} catch (Exception e) {
 				if (e.getMessage() != null) {
-					LOGGER.warn("Exception: " + e.getMessage());
+					LOGGER.warn("setChatSystemProfile() Exception: " + e.getMessage());
 					LOGGER.warn("Catch all error handler while setting system profile for " + _modelname + ", retryCounter=" + retryCounter);
 					if (e.getMessage().contains("try pulling it first")) {
 						if (null != Globals.MODEL_SKIP_AUTOPULL.get(_modelname)) {
-							LOGGER.info("The model " + _modelname + " is L, will not try to pull it automatically since unsure if the endpoint has enough VRAM. Pull manually if thats the case. ");
+							LOGGER.info("The model " + _modelname + " is L+, will not try to pull it automatically since unsure if the endpoint has enough VRAM. Pull manually if thats the case. ");
 							return null;
 						} else {
 							LOGGER.info("Trying to autoheal and pull model " + _modelname);
@@ -214,7 +218,7 @@ public class OllamaUtils {
 					retryCounter++;
 				}
 			} catch (Exception e) {
-				LOGGER.warn("Exception: " + e.getMessage());
+				LOGGER.warn("askGenericSingleWordQuestion() Exception: " + e.getMessage());
 				LOGGER.warn("Catch all error handler while attempting to interact with " + _modelname);
 				SystemUtils.sleepInSeconds(10);
 				retryCounter++;
@@ -249,7 +253,7 @@ public class OllamaUtils {
 					}
 				}
 			} catch (Exception e) {
-				LOGGER.warn("Exception: " + e.getMessage());
+				LOGGER.warn("askRawChatQuestion() Exception: " + e.getMessage());
 				LOGGER.warn("Catch all error handler while making chat session request towards " + _modelname + ", retryCounter=" + retryCounter);
 				SystemUtils.sleepInSeconds(5);
 				retryCounter++;
@@ -290,7 +294,7 @@ public class OllamaUtils {
 					SystemUtils.sleepInSeconds(1); // throttle
 				}
 			} catch (Exception e) {
-				LOGGER.warn("Exception: " + e.getMessage());
+				LOGGER.warn("askChatQuestion() Exception: " + e.getMessage());
 				LOGGER.warn("retryCounter(): Catch all error handler while making chat session request towards " + _modelname + ", retryCounter=" + retryCounter);
 				SystemUtils.sleepInSeconds(10);
 				retryCounter++;
@@ -351,7 +355,7 @@ public class OllamaUtils {
 					SystemUtils.sleepInSeconds(1); // throttle
 				}
 			} catch (Exception e) {
-				LOGGER.warn("Exception: " + e.getMessage());
+				LOGGER.warn("addStatementToExistingChat() Exception: " + e.getMessage());
 				LOGGER.warn("addStatementToExistingChat(): Catch all error handler while making chat session request towards " + _modelname + ", retryCounter=" + retryCounter);
 				SystemUtils.sleepInSeconds(5);
 				retryCounter++;
@@ -386,6 +390,23 @@ public class OllamaUtils {
 		return ssr1;
 	}
 	
+	public static String creativeEnsembleRunEarlyExitOnFirst(String _query, String _models, OllamaDramaSettings _settings) {
+
+		// Launch singleton 
+		OllamaService.getInstance(_models, _settings);
+
+		// Populate an ensemble of agents
+		for (String model_name: _models.split(",")) {
+
+			// Launch strict agent per included model type
+			OllamaSession a1 = OllamaService.getCreativeSession(model_name);
+			LOGGER.info("Using " + a1.getEndpoint().getOllama_url() + " with model " + model_name);
+			String reply = a1.askRawChatQuestion(_query);
+			return reply;
+		}
+		return "";
+	}
+
 	public static SingleStringQuestionResponse strictEnsembleRunEarlyExitOnFirstConfident(String _query, String _models, OllamaDramaSettings _settings, boolean _hide_llm_reply_if_uncertain) {
 
 		// Launch singleton 
@@ -407,7 +428,28 @@ public class OllamaUtils {
 		}
 		return new SingleStringQuestionResponse();
 	}
+	
+	public static SingleStringQuestionResponse strictEnsembleRunEarlyExitOnFirstConfident(String _query, String _models, OllamaDramaSettings _settings, boolean _hide_llm_reply_if_uncertain, Integer probaThreshold) {
 
+		// Launch singleton 
+		OllamaService.getInstance(_models, _settings);
+
+		// Populate an ensemble of agents
+		for (String model_name: _models.split(",")) {
+
+			// Launch strict agent per included model type
+			OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, _hide_llm_reply_if_uncertain);
+			LOGGER.info("Using " + a1.getEndpoint().getOllama_url() + " with model " + model_name);
+			SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(_query, _hide_llm_reply_if_uncertain);
+			if (ssr1.getProbability()>probaThreshold) return ssr1;
+			
+			System.out.println("\n" + model_name);
+			ssr1.print();
+			System.out.println("\n");
+		}
+		return new SingleStringQuestionResponse();
+	}
+	
 	public static SingleStringEnsembleResponse strictEnsembleRun(String _query, boolean _hide_llm_reply_if_uncertain) {
 		OllamaDramaSettings ollama_settings = OllamaUtils.parseOllamaDramaConfigENV();
 		ollama_settings.sanityCheck();

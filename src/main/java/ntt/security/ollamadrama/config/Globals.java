@@ -96,13 +96,14 @@ public class Globals {
 			+ "llama3.3:70b," 	// 43 GB
 			+ "nemotron:70b,"	// 43 GB
 			+ "qwen2.5:72b,"	// 47 GB
+			+ "gemma3:27b,"		// 16 GB
 			+ "gemma2:27b"		// 16 GB
 			+ "";
-
+	
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_MINIDIVERSE_XL = ""
 			+ "llama3.1:70b,"	// 43 GB
 			+ "qwen2.5:72b,"	// 47 GB
-			+ "gemma2:27b"		// 16 GB
+			+ "gemma3:27b"		// 16 GB
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_XL = ""
@@ -115,6 +116,13 @@ public class Globals {
 			+ "aya-expanse:32b"	// 20 GB
 			+ "";
 
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_DIVERSE_XL = ""
+			+ "llama3.3:70b," 	// 43 GB
+			+ "qwen2.5:72b,"	// 47 GB
+			+ "tulu3:70b,"		// 43 GB
+			+ "gemma3:27b"		// 16 GB
+			+ "";
+	
 	// task specific
 	
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_CODE_XL = ""
@@ -139,7 +147,8 @@ public class Globals {
 	 */
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L = ""
-			+ "sailor2:20b"	// 12 GB
+			+ "sailor2:20b,"	// 12 GB
+			+ "gemma3:12b"		// 8.1 GB
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_L = ""
@@ -350,6 +359,7 @@ public class Globals {
 		this.put("sailor2:20b", 14);
 		this.put("qwen2.5:72b", 14);
 		this.put("gemma2:27b", 14);
+		this.put("gemma3:27b", 14);
 
 		// ollama llms - balanced
 		this.put("wizard-vicuna-uncensored:30b", 44);
@@ -368,6 +378,7 @@ public class Globals {
 		this.put("dolphin3:8b", 49);
 		this.put("openchat:7b", 49);
 		this.put("gemma2:9b", 49);
+		this.put("gemma3:12b", 49);
 		this.put("mistral:7b", 49);
 		this.put("dolphin-mistral:7b", 49);
 		this.put("granite3.1-dense:8b", 49);
@@ -396,7 +407,16 @@ public class Globals {
 		for (String model: ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL.split(",")) {
 			this.put(model, true);
 		}
+		for (String model: ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_XL.split(",")) {
+			this.put(model, true);
+		}
+		for (String model: ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_XL.split(",")) {
+			this.put(model, true);
+		}
 		for (String model: ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L.split(",")) {
+			this.put(model, true);
+		}
+		for (String model: ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_L.split(",")) {
 			this.put(model, true);
 		}
 	}};

@@ -87,7 +87,7 @@ public class SingleStringEnsembleResponse {
 		System.out.println("");
 	}
 
-	public String getBestResponse(int _confident_threshold) {
+	public String getBestResponseWithFallback(int _confident_threshold) {
 		String confident_response = "";
 		int max_confident_reply_size = 0;
 		if (this.getUniq_confident_replies().size() >= 1) {
@@ -119,8 +119,26 @@ public class SingleStringEnsembleResponse {
 
 		return confident_response;
 	}
+	
+	public String getBestResponse(int _confident_threshold) {
+		String confident_response = "";
+		int max_confident_reply_size = 0;
+		if (this.getUniq_confident_replies().size() >= 1) {
+			for (String resp: this.getUniq_confident_replies().keySet()) {
+				HashMap<String, Boolean> llms = this.getUniq_confident_replies().get(resp);
+				if (llms.keySet().size() >= _confident_threshold) {
+					if (llms.keySet().size() > max_confident_reply_size) {
+						confident_response = resp;
+						max_confident_reply_size = llms.keySet().size();
+					}
+				}
+			}
+		}
 
-	public String getBestResponse() {
+		return confident_response;
+	}
+
+	public String getBestResponseWithFallback() {
 		String confident_response = "";
 		int max_confident_reply_size = 0;
 		if (this.getUniq_confident_replies().size() >= 1) {
@@ -151,7 +169,7 @@ public class SingleStringEnsembleResponse {
 		return confident_response;
 	}
 
-	public String getRandomBestMotivation(int _confident_threshold) {
+	public String getRandomBestConfidentMotivation() {
 		String confident_motivation = "";
 
 		// pick the motivation from the most certain LLM

@@ -12,6 +12,7 @@ import io.github.amithkoujalgi.ollama4j.core.utils.Options;
 import ntt.security.ollamadrama.config.OllamaDramaSettings;
 import ntt.security.ollamadrama.objects.ChatInteraction;
 import ntt.security.ollamadrama.objects.OllamaEndpoint;
+import ntt.security.ollamadrama.objects.SessionType;
 import ntt.security.ollamadrama.objects.response.SingleStringQuestionResponse;
 import ntt.security.ollamadrama.utils.JSONUtils;
 import ntt.security.ollamadrama.utils.OllamaUtils;
@@ -29,8 +30,9 @@ public class OllamaSession {
 	private OllamaDramaSettings settings;
 	private String uuid;
 	private boolean initialized = false;
+	private SessionType sessiontype;
 
-	public OllamaSession(String _model_name, OllamaEndpoint _endpoint, Options _options, OllamaDramaSettings _settings, String _profilestatement) {
+	public OllamaSession(String _model_name, OllamaEndpoint _endpoint, Options _options, OllamaDramaSettings _settings, String _profilestatement, SessionType _sessiontype) {
 		super();
 
 		this.model_name = _model_name;
@@ -39,6 +41,7 @@ public class OllamaSession {
 		this.options = _options;
 		this.settings = _settings;
 		this.uuid = UUID.randomUUID().toString();
+		this.sessiontype = _sessiontype;
 
 		this.initialized = setChatSystemProfileStatement(_profilestatement);		
 	}
@@ -115,64 +118,69 @@ public class OllamaSession {
 	}
 
 	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain) {
-		if (!_question.endsWith("?")) _question = _question + "?";
-		if (null == this.chatResult) {
-			LOGGER.warn("chatResult is null!");
-			SingleStringQuestionResponse swr = OllamaUtils.applyResponseSanity(null, this.model_name, _hide_llm_reply_if_uncertain);
-			return swr;
-		} else {
-			int retryCounter = 0;
-			while (true) {
-				ChatInteraction ci =  OllamaUtils.askChatQuestion(this.ollamaAPI, this.model_name, this.options, this.chatResult, _question);
-				if (null != ci) {
-					String json = "";
+		if (this.sessiontype == SessionType.STRICTPROTOCOL) {
+			if (!_question.endsWith("?")) _question = _question + "?";
+			if (null == this.chatResult) {
+				LOGGER.warn("chatResult is null!");
+				SingleStringQuestionResponse swr = OllamaUtils.applyResponseSanity(null, this.model_name, _hide_llm_reply_if_uncertain);
+				return swr;
+			} else {
+				int retryCounter = 0;
+				while (true) {
+					ChatInteraction ci =  OllamaUtils.askChatQuestion(this.ollamaAPI, this.model_name, this.options, this.chatResult, _question);
+					if (null != ci) {
+						String json = "";
 
-					// JSON markdown (LLM protocol helper hack)
-					if (ci.getResponse().contains("{") && ci.getResponse().contains("}")) {
-						json = "{" + ci.getResponse().split("\\{")[1];
-						json = json.split("\\}")[0] + "}";
-					} else {
-						json = ci.getResponse();
-					}
-					
-					// JSON reply check (LLM protocol helper hack)
-					if (json.contains("{") && json.contains("}") && json.contains("\"response\": FAILTOUNDERSTAND,")) {
-						json = json.replace("\"response\": FAILTOUNDERSTAND,","\"response\": \"FAILTOUNDERSTAND\",");
-					} else if (json.contains("{") && json.contains("}") && json.contains("\"response\": OKIDOKI,")) {
-						json = json.replace("\"response\": OKIDOKI,","\"response\": \"OKIDOKI\",");
-					}
-					
-					SingleStringQuestionResponse swr = JSONUtils.createPOJOFromJSONOpportunistic(json, SingleStringQuestionResponse.class);
-					if (null != swr) {
-
-						if (null != swr.getResponse()) {
-							// PROTOCOL hack
-							if (swr.getResponse().equals("FAILTOUNDERSTAND")) {
-								swr.setProbability(0);
-							}
-
-							this.chatResult = ci.getChatResult();
-							swr.setEmpty(false);
-							swr = OllamaUtils.applyResponseSanity(swr, model_name, _hide_llm_reply_if_uncertain);
-							return swr;
+						// JSON markdown (LLM protocol helper hack)
+						if (ci.getResponse().contains("{") && ci.getResponse().contains("}")) {
+							json = "{" + ci.getResponse().split("\\{")[1];
+							json = json.split("\\}")[0] + "}";
 						} else {
-							LOGGER.warn("swr response is null, giving up with model " + this.getModel_name());
+							json = ci.getResponse();
+						}
+
+						// JSON reply check (LLM protocol helper hack)
+						if (json.contains("{") && json.contains("}") && json.contains("\"response\": FAILTOUNDERSTAND,")) {
+							json = json.replace("\"response\": FAILTOUNDERSTAND,","\"response\": \"FAILTOUNDERSTAND\",");
+						} else if (json.contains("{") && json.contains("}") && json.contains("\"response\": OKIDOKI,")) {
+							json = json.replace("\"response\": OKIDOKI,","\"response\": \"OKIDOKI\",");
+						}
+
+						SingleStringQuestionResponse swr = JSONUtils.createPOJOFromJSONOpportunistic(json, SingleStringQuestionResponse.class);
+						if (null != swr) {
+
+							if (null != swr.getResponse()) {
+								// PROTOCOL hack
+								if (swr.getResponse().equals("FAILTOUNDERSTAND")) {
+									swr.setProbability(0);
+								}
+
+								this.chatResult = ci.getChatResult();
+								swr.setEmpty(false);
+								swr = OllamaUtils.applyResponseSanity(swr, model_name, _hide_llm_reply_if_uncertain);
+								return swr;
+							} else {
+								LOGGER.warn("swr response is null, giving up with model " + this.getModel_name());
+								LOGGER.warn("Received an invalid JSON reply: " + json);
+								swr = OllamaUtils.applyResponseSanity(null, model_name, _hide_llm_reply_if_uncertain);
+								return swr;
+							}
+						} else {
+							LOGGER.warn("swr is null, giving up with model " + this.getModel_name());
 							LOGGER.warn("Received an invalid JSON reply: " + json);
 							swr = OllamaUtils.applyResponseSanity(null, model_name, _hide_llm_reply_if_uncertain);
 							return swr;
 						}
-					} else {
-						LOGGER.warn("swr is null, giving up with model " + this.getModel_name());
-						LOGGER.warn("Received an invalid JSON reply: " + json);
-						swr = OllamaUtils.applyResponseSanity(null, model_name, _hide_llm_reply_if_uncertain);
-						return swr;
 					}
+					retryCounter++;
+					if (retryCounter > 5) LOGGER.warn("Having problems getting a valid reply using this question: " + _question);
+					SystemUtils.sleepInSeconds(1); // throttle
 				}
-				retryCounter++;
-				if (retryCounter > 5) LOGGER.warn("Having problems getting a valid reply using this question: " + _question);
-				SystemUtils.sleepInSeconds(1); // throttle
 			}
+		} else {
+			LOGGER.warn("You cannot ask STRICTPROTOCOL questions to a session of type " + this.getSessiontype());
 		}
+		return new SingleStringQuestionResponse();
 	}
 
 	public String askRawChatQuestion(String _question) {
@@ -243,21 +251,21 @@ public class OllamaSession {
 			return 0;
 		}
 	}
-	
+
 	public int getChatSizeWordCount() {
 		int tokenCount = 0;
 		try {
 			for (OllamaChatMessage cm: this.getChatResult().getChatHistory()) {
-		        // Split the input into tokens based on whitespace and basic punctuation.
-		        String[] tokens = cm.getContent().split("\\s+|(?=[.,!?;:])|(?<=[.,!?;:])");
-		        tokenCount = tokenCount + tokens.length;
+				// Split the input into tokens based on whitespace and basic punctuation.
+				String[] tokens = cm.getContent().split("\\s+|(?=[.,!?;:])|(?<=[.,!?;:])");
+				tokenCount = tokenCount + tokens.length;
 			}
 			return tokenCount;
 		} catch (Exception e) {
 			return 0;
 		}
 	}
-	
+
 	public String getChatHistory() {
 		StringBuffer sb = new StringBuffer();
 		try {
@@ -268,6 +276,14 @@ public class OllamaSession {
 		} catch (Exception e) {
 			return "";
 		}
+	}
+
+	public SessionType getSessiontype() {
+		return sessiontype;
+	}
+
+	public void setSessiontype(SessionType sessiontype) {
+		this.sessiontype = sessiontype;
 	}
 
 }

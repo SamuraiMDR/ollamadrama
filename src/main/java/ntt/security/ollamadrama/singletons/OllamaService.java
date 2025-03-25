@@ -10,6 +10,7 @@ import io.github.amithkoujalgi.ollama4j.core.OllamaAPI;
 import ntt.security.ollamadrama.config.Globals;
 import ntt.security.ollamadrama.config.OllamaDramaSettings;
 import ntt.security.ollamadrama.objects.OllamaEndpoint;
+import ntt.security.ollamadrama.objects.SessionType;
 import ntt.security.ollamadrama.objects.sessions.OllamaSession;
 import ntt.security.ollamadrama.utils.*;
 
@@ -256,7 +257,8 @@ public class OllamaService {
 				Globals.PROMPT_TEMPLATE_STRICT_SIMPLEOUTPUT + 
 				Globals.ENFORCE_SINGLE_KEY_JSON_RESPONSE_TO_STATEMENTS + 
 				Globals.ENFORCE_SINGLE_KEY_JSON_RESPONSE_TO_QUESTIONS + 
-				Globals.THREAT_TEMPLATE);
+				Globals.THREAT_TEMPLATE,
+				SessionType.STRICTPROTOCOL);
 	}
 
 	public static OllamaSession getStrictSession(String _model_name) {
@@ -269,7 +271,9 @@ public class OllamaService {
 			SystemUtils.halt();
 		}
 		return new OllamaSession(_model_name, OllamaService.getRandomActiveOllamaURL(),
-				Globals.createStrictOptionsBuilder(), OllamaService.getSettings(), Globals.PROMPT_TEMPLATE_STRICT_COMPLEXOUTPUT);
+				Globals.createStrictOptionsBuilder(), OllamaService.getSettings(),
+				Globals.PROMPT_TEMPLATE_STRICT_COMPLEXOUTPUT,
+				SessionType.STRICT);
 	}
 
 	public static OllamaSession getCreativeSession(String _model_name) {
@@ -282,7 +286,9 @@ public class OllamaService {
 			SystemUtils.halt();
 		}
 		return new OllamaSession(_model_name, OllamaService.getRandomActiveOllamaURL(),
-				Globals.createCreativeOptionsBuilder(), OllamaService.getSettings(), Globals.PROMPT_TEMPLATE_CREATIVE);
+				Globals.createCreativeOptionsBuilder(), OllamaService.getSettings(),
+				Globals.PROMPT_TEMPLATE_CREATIVE,
+				SessionType.CREATIVE);
 	}
 
 	public static OllamaSession getDefaultSession(String _model_name) {
@@ -295,7 +301,8 @@ public class OllamaService {
 			SystemUtils.halt();
 		}
 		return new OllamaSession(_model_name, OllamaService.getRandomActiveOllamaURL(),
-				Globals.createDefaultOptionsBuilder(), OllamaService.getSettings(), "");
+				Globals.createDefaultOptionsBuilder(), OllamaService.getSettings(), "",
+				SessionType.DEFAULT);
 	}
 
 }

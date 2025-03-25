@@ -151,8 +151,8 @@ public class OllamaGeneralKnowledgeTest {
 		qwen2.5:7b                               pos: 2   neg: 0  
 		llama3.1:8b                              pos: 2   neg: 0  
 		qwen2:7b                                 pos: 2   neg: 0  
-		granite3.1-dense:8b                      pos: 2   neg: 0  
 		llama3.2:3b                              pos: 2   neg: 0  
+		gemma3:27b                               pos: 2   neg: 0  
 		sailor2:20b                              pos: 2   neg: 0  
 		llava:34b                                pos: 2   neg: 0  
 		exaone3.5:32b                            pos: 2   neg: 0  
@@ -165,17 +165,19 @@ public class OllamaGeneralKnowledgeTest {
 		llama3.3:70b                             pos: 2   neg: 0  
 		olmo2:13b                                pos: 2   neg: 0  
 		llama3.1:70b                             pos: 2   neg: 0  
-		marco-o1:7b                              pos: 2   neg: 0  
+		gemma3:12b                               pos: 2   neg: 0  
 		phi4:14b                                 pos: 2   neg: 0  
 		dolphin-mistral:7b                       pos: 2   neg: 0  
+		openhermes:7b-mistral-v2.5-q4_0          pos: 2   neg: 0  
 		athene-v2:72b                            pos: 2   neg: 0  
 		openchat:7b                              pos: 2   neg: 0  
 		-----
 		dolphin3:8b                              pos: 1   neg: 0  
 		wizard-vicuna-uncensored:30b             pos: 1   neg: 0  
+		granite3.1-dense:8b                      pos: 1   neg: 0  
 		tulu3:8b                                 pos: 1   neg: 0  
-		aya-expanse:32b                          pos: 1   neg: 0  
-		openhermes:7b-mistral-v2.5-q4_0          pos: 1   neg: 0  
+		marco-o1:7b                              pos: 1   neg: 0  
+		aya-expanse:32b                          pos: 1   neg: 0   
 		-----
 		 */
 
