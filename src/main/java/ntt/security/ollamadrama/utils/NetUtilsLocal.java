@@ -142,7 +142,7 @@ public class NetUtilsLocal {
 			for (final Future<String> f : futures) {
 				if (!"".equals(f.get())) {
 					String endpoint = f.get();
-					activeEndpoints.put(endpoint, new OllamaEndpoint("http://" + endpoint + ":" + port , _username, _password));
+					activeEndpoints.put("http://" + endpoint + ":" + port, new OllamaEndpoint("http://" + endpoint + ":" + port , _username, _password));
 				}
 			}
 		} catch (Exception ex) {

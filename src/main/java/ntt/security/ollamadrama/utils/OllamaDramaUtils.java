@@ -167,10 +167,9 @@ public class OllamaDramaUtils {
 		return scorecard;
 	}
 
-
-
 	@SuppressWarnings({"serial"})
 	public static ModelsScoreCard performMemoryTestUsingRandomWords(String _models, int _nrErrorsToAllow) {
+		boolean apply_earlyexit_after_errorthreshold = true;
 		int len_random_word = 3; // o1 - one token typically corresponds to around 3–4 characters of text on average
 		ModelsScoreCard scorecard = new ModelsScoreCard();
 		OllamaService.getInstance(_models);
@@ -181,9 +180,12 @@ public class OllamaDramaUtils {
 			int maxCharsCounted = 0;
 			int errorcounter = 0;
 			String bagOfWords = "";
-			for (int x=20; x<=3500; x+=20) {
-				if (errorcounter <= 50) {
-					OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, true);
+			for (int x=19000; x<=40000; x+=1000) {
+				if (false ||
+						(apply_earlyexit_after_errorthreshold && (errorcounter <= _nrErrorsToAllow)) ||
+						!apply_earlyexit_after_errorthreshold ||
+						false) {
+					OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, false);
 					if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama agent [" + model_name + "] is operational\n");
 					String firstWord = generateRandomWord(len_random_word);
 					bagOfWords = firstWord;
@@ -197,7 +199,7 @@ public class OllamaDramaUtils {
 							+ ". As you can see each word consists of " + len_random_word + " uppercase letters. What is the first word? Make sure to walk through and "
 							+ "evaluate each candidate word and make sure answer consists of " + len_random_word + " uppercase letters.";
 					System.out.println("Question: " + StringsUtils.cutAndPadStringToN(qx, len_random_word) + " ... " + StringsUtils.getLastNCharacters(qx, 400));
-					SingleStringQuestionResponse rx = a1.askStrictChatQuestion(qx, true);
+					SingleStringQuestionResponse rx = a1.askStrictChatQuestion(qx, false, 0); // dont retry
 					if (rx != null) {
 						System.out.println("Current bagsize: " + x);
 						System.out.println("Current firstWord: " + firstWord);
@@ -205,22 +207,30 @@ public class OllamaDramaUtils {
 						System.out.println("Response motivation: " + rx.getMotivation());
 						System.out.println("Response assumptions: " + rx.getAssumptions_made());
 						System.out.println("Previous errorcount: " + errorcounter);
-						if (rx.getResponse().equals(firstWord)) {
-							if (errorcounter <= _nrErrorsToAllow) {
-								try {
-									if (x > maxCharsCounted) {
-										maxCharsCounted = x;
-									}
-								} catch (Exception e) {
-									// ignore
-								}
-							}
+						if (rx.getResponse().equals("JSONERROR")) {
+							// likely LLM restart due to mem starvation
+							errorcounter = Integer.MAX_VALUE;
 						} else {
-							errorcounter++;
+							if (rx.getResponse().equals(firstWord)) {
+								if (errorcounter <= _nrErrorsToAllow) {
+									try {
+										if (x > maxCharsCounted) {
+											maxCharsCounted = x;
+										}
+									} catch (Exception e) {
+										// ignore
+									}
+								}
+							} else {
+								errorcounter++;
+							}
 						}
 						int chatsize_charcount = a1.getChatSizeCharCount();
 						int chatsize_wordcount = a1.getChatSizeWordCount();
 						FilesUtils.appendToFileUNIXNoException(model_name + "," + x + "," + maxCharsCounted + "," + chatsize_wordcount + "," + chatsize_charcount + "," + errorcounter, maxcapFilePath);;
+					} else {
+						// likely LLM restart due to mem starvasion
+						errorcounter = Integer.MAX_VALUE;
 					}
 				}
 			}

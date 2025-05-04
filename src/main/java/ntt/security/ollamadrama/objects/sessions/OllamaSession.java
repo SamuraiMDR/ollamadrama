@@ -43,7 +43,7 @@ public class OllamaSession {
 		this.uuid = UUID.randomUUID().toString();
 		this.sessiontype = _sessiontype;
 
-		this.initialized = setChatSystemProfileStatement(_profilestatement);		
+		this.initialized = setChatSystemProfileStatement(_profilestatement, _settings.getAutopull_max_llm_size());		
 	}
 
 	public String getModel_name() {
@@ -83,11 +83,11 @@ public class OllamaSession {
 		return "";
 	}
 
-	public boolean setChatSystemProfileStatement(String _profile_statement) {
+	public boolean setChatSystemProfileStatement(String _profile_statement, String _autopull_max_llm_size) {
 		int errorCount = 0;
 		if (null == this.chatResult) {
 			while (null == this.chatResult) {
-				OllamaChatResult res = OllamaUtils.setChatSystemProfile(this.ollamaAPI, this.model_name, this.options, _profile_statement);
+				OllamaChatResult res = OllamaUtils.setChatSystemProfile(this.ollamaAPI, this.model_name, this.options, _profile_statement, _autopull_max_llm_size);
 				if (null != res) {
 					this.chatResult = res;
 					return true;
@@ -116,8 +116,12 @@ public class OllamaSession {
 			}
 		}
 	}
-
+	
 	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain) {
+			return askStrictChatQuestion(_question, _hide_llm_reply_if_uncertain, 10);
+	}
+
+	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, int _retryThreshold) {
 		if (this.sessiontype == SessionType.STRICTPROTOCOL) {
 			if (!_question.endsWith("?")) _question = _question + "?";
 			if (null == this.chatResult) {
@@ -127,17 +131,23 @@ public class OllamaSession {
 			} else {
 				int retryCounter = 0;
 				while (true) {
-					ChatInteraction ci =  OllamaUtils.askChatQuestion(this.ollamaAPI, this.model_name, this.options, this.chatResult, _question);
+					ChatInteraction ci =  OllamaUtils.askChatQuestion(this.ollamaAPI, this.model_name, this.options, this.chatResult, _question, _retryThreshold);
 					if (null != ci) {
 						String json = "";
 
+						boolean debug = false;
+						if (debug) System.out.println(ci.getResponse());
+						
 						// JSON markdown (LLM protocol helper hack)
-						if (ci.getResponse().contains("{") && ci.getResponse().contains("}")) {
+						if (ci.getResponse().contains("{") && ci.getResponse().contains("}") && (json.split("\\}").length == 1) && (json.split("\\{").length == 1)) {
 							json = "{" + ci.getResponse().split("\\{")[1];
 							json = json.split("\\}")[0] + "}";
 						} else {
 							json = ci.getResponse();
 						}
+						
+						// JSON newline fix
+						json = json.replace("\n", " ").replace("\r", " ");
 
 						// JSON reply check (LLM protocol helper hack)
 						if (json.contains("{") && json.contains("}") && json.contains("\"response\": FAILTOUNDERSTAND,")) {

@@ -11,10 +11,14 @@ Ollamadrama makes it easy to
 
 * obtain insights into an LLM’s level of certainty in its response, along with the underlying reasoning
 * compare model performance on a specific topic using 'scorecards'
-* perform ensamble voting, ie require '5 out of 9 LLMs needs to give the same answer'
-* recover and handle ollama endpoint connectivity failures
+* perform ensamble voting, ie require '5 out of 9 LLMs to give the same answer'
+* recover from ollama endpoint connectivity failures
 
-### How to use it
+### How to use it (LOCALLY)
+
+Clone this repo into your IDE of choice, then run simpleStrawberryRCount_OllamaModels_M() (src/test/java/ntt/security/ollamadrama/modelscorecards) as a unit test. This will automatically find your local Ollama instance, download all medium sized LLMs and produce a 'Strawberry scorecard' for each each model. This assumes you have 8GB GPU VRAM and disk storage available locally. 
+
+### How to use it (NETWORK)
 
 Launch multiple Ollama instances on your local C-network to make them available. Expose TCP port 11434 beyond localhost by using
 
@@ -35,7 +39,7 @@ The most commonly used local models at 7-9b requires a 8 GB GPU card, which allo
 
 Note that the tier list does not reflect the true capabilities of the model, but rather the ability to follow instructions and perform well in our selected set of generic 'model scorecards'.
 
-The phi:14b model needs just beyond 8GB, which places is in the '_L' tiered group. A cost-effective way to run '_L' models is using a single 'Nvidia 4060 Ti 16 GB' card. The '_XL' models are suited for setups with 48 GB VRAM (such as 2x4090 cards), and then this style of grouping continues with '_XXL', 'XXXL' etc.
+The phi:14b model needs just beyond 8GB, which places is in the '_L' tiered group. A cost-effective way to run '_L' models is using a single 'Nvidia 4060/5060 Ti 16 GB' card. The '_XL' models are suited for setups with 48 GB VRAM (such as 2x4090 cards), and then this style of grouping continues with '_XXL', '_S' etc.
 
 To use 'openchat:7b':
 
@@ -196,6 +200,11 @@ The winning (most common) 'NTT' result can be retrieved by simply calling
    sser1.getBestResponse();
    ```
 
+### Voice support
+
+Ollamadrama includes optional voice support from ElevenLabs using the net.andrewcpu package. For a simple test, add the elevenlabs API key (elevenlabs_apikey) and define two voices (elevenlabs_voice1, elevenlabs_voice2). Then run the unit tests which matches your LLM size support in src/main/java/ntt/security/ollamadrama/llmdebate. This will give you a narrated contest on the selected topic (by default set to 'France'). 
+
+
 ### Requirements
 
 * Java 17+
@@ -272,21 +281,7 @@ If you define an OpenAI API key ('openaikey') and set the 'use_openai' configura
 
 ### Increasing the context window
 
-Although Ollama supports setting num_ctx over the API, the setting does not override the default (2048) since it needs to be applied to the model before being loaded. Further details and discussions can be found here:
-<https://www.reddit.com/r/ollama/comments/1e4hklk/how_does_num_predict_and_num_ctx_work/>
-
-To create 8192 versions of the Ollama models which support this larger context window, go to the scripts/maxctx folder and run
-
-   ```
-create_maxctx_model_versions.sh
-   ```
-
-If you run 'ollama list' after this  command you will find the '-maxctx' versions listed:
-
-* llama3.1.70b-maxctx
-* nemotron-maxctx
-* llama3.3-maxctx
-* gemma2-maxctx
+Ollamadrama keeps an index of the known 'n_ctx_train' for each supported model and specifies this context window size when a model instance is created. This makes it easy to compare model performance using the various memory loss tests available at /src/test/java/ntt/security/ollamadrama/memoryloss. With 128 GB RAM and 2 4090 GPUS the test checkMemoryLengthForAllEnsembleModels_RandomWords_CSV() resulted in a 20k 3-gram memory for the model cogito:14b, while memory limitations kicked in for llama3.1:70b, nemotron:70b, cogito:70b, tulu3:70b and gemma3:12b at 16k (lower for rest of the models). 
 
 ### Credits
 

@@ -25,7 +25,13 @@ public class OllamaDramaSettings {
 	private String openaikey = "";
 	private boolean use_openai = false;
 	
+	private String elevenlabs_apikey = "";
+	private String elevenlabs_voice1 = "";
+	private String elevenlabs_voice2 = "";
+	
 	private ArrayList<OllamaEndpoint> satellites;
+	
+	private String autopull_max_llm_size = "L"; // S, M, XL, XXL
 	
 	public OllamaDramaSettings() {
 		super();
@@ -125,6 +131,38 @@ public class OllamaDramaSettings {
 
 	public void setUse_openai(boolean use_openai) {
 		this.use_openai = use_openai;
+	}
+
+	public String getElevenlabs_apikey() {
+		return elevenlabs_apikey;
+	}
+
+	public void setElevenlabs_apikey(String elevenlabs_apikey) {
+		this.elevenlabs_apikey = elevenlabs_apikey;
+	}
+
+	public String getElevenlabs_voice1() {
+		return elevenlabs_voice1;
+	}
+
+	public void setElevenlabs_voice1(String elevenlabs_voice1) {
+		this.elevenlabs_voice1 = elevenlabs_voice1;
+	}
+
+	public String getElevenlabs_voice2() {
+		return elevenlabs_voice2;
+	}
+
+	public void setElevenlabs_voice2(String elevenlabs_voice2) {
+		this.elevenlabs_voice2 = elevenlabs_voice2;
+	}
+
+	public String getAutopull_max_llm_size() {
+		return autopull_max_llm_size;
+	}
+
+	public void setAutopull_max_llm_size(String autopull_max_llm_size) {
+		this.autopull_max_llm_size = autopull_max_llm_size;
 	}
 
 }

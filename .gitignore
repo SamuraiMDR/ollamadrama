@@ -1,6 +1,7 @@
 .idea
 /bin/
 /target/
-*.sh
 *.csv
 *.dxp
+scripts
+[rund]*.sh

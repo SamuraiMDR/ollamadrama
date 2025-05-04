@@ -1,11 +1,17 @@
 package ntt.security.ollamadrama.config;
 
 import java.util.HashMap;
+import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.github.amithkoujalgi.ollama4j.core.utils.Options;
 import io.github.amithkoujalgi.ollama4j.core.utils.OptionsBuilder;
 
 public class Globals {
+	
+	private static final Logger LOGGER = LoggerFactory.getLogger(Globals.class);
 
 	public static String ENSEMBLE_LOOP_STATEMENT = "Here are some replies from other experts:";
 
@@ -44,32 +50,91 @@ public class Globals {
 
 	public static String PROMPT_TEMPLATE_CREATIVE = "You are a free thinking creative bot and always give descriptive and long winded answers. You NEVER reply to a question with just one word and always justify your answer with an explaination.";
 
-	public static Options createStrictOptionsBuilder() {
+	public static final Map<String, Integer> n_ctx_train = Map.ofEntries(
+	        Map.entry("wizard-vicuna-uncensored:30b", 2048),
+	        Map.entry("llava:34b", 4096),
+	        Map.entry("llama3.1:70b", 131072),
+	        Map.entry("llama3.3:70b", 131072),
+	        Map.entry("nemotron:70b", 131072),
+	        Map.entry("qwen3:32b", 40960),
+	        Map.entry("qwen2.5:72b", 32768),
+	        Map.entry("gemma3:27b", 64*1024), // claims 126976 but wont load
+	        Map.entry("cogito:70b", 131072),
+	        Map.entry("athene-v2:72b", 32768),
+	        Map.entry("r1-1776:70b", 131072),
+	        Map.entry("tulu3:70b", 131072),
+	        Map.entry("exaone3.5:32b", 32768),
+	        Map.entry("gemma2:27b", 8192),
+	        Map.entry("aya-expanse:32b", 8192),
+	        Map.entry("sailor2:20b", 32768),
+	        Map.entry("qwen3:14b", 40960),
+	        Map.entry("olmo2:13b", 4096),
+	        Map.entry("cogito:14b", 131072),
+	        Map.entry("gemma3:12b", 64*1024), //// claims 126976 but wont load
+	        Map.entry("phi4:14b", 16384),
+	        Map.entry("marco-o1:7b", 32768),
+	        Map.entry("qwen3:8b", 40960),
+	        Map.entry("qwen2.5:7b", 32768),
+	        Map.entry("olmo2:7b", 4096),
+	        Map.entry("gemma2:9b", 8192),
+	        Map.entry("openchat:7b", 8192),
+	        Map.entry("dolphin-mistral:7b", 32768),
+	        Map.entry("cogito:8b", 131072),
+	        Map.entry("aya-expanse:8b", 8192),
+	        Map.entry("llama3.1:8b", 131072),
+	        Map.entry("qwen2:7b", 32768),
+	        Map.entry("dolphin3:8b", 131072),
+	        Map.entry("mistral:7b", 32768),
+	        Map.entry("exaone-deep:7.8b", 32768),
+	        Map.entry("openhermes:7b-mistral-v2.5-q4_0", 32768),
+	        Map.entry("command-r7b:7b", 8192),
+	        Map.entry("tulu3:8b", 131072),
+	        Map.entry("granite3.3:8b", 131072),
+	        Map.entry("granite3.1-dense:8b", 131072),
+	        Map.entry("llama3.2:3b", 131072),
+	        Map.entry("qwen3:4b", 40960)
+	    );
+	
+	public static Options createStrictOptionsBuilder(String _modelname) {
+		Integer n_ctx_train_size = n_ctx_train.get(_modelname);
+		if (null == n_ctx_train_size) {
+			LOGGER.warn("Unknown n_ctx_train for " + _modelname + ", falling back to 2048 for safety reasons");
+			n_ctx_train_size = 2048;
+		}
+		
 		return new OptionsBuilder()
-				.setMirostat(2) 		// allows perplexity/uncertainty control
-				.setMirostatEta(0.5f) 	// learning rate (default 0.1)
-				.setMirostatTau(1.0f) 	// lower = more focused and coherent text (default 5.0)
-				.setTemperature(0.0f) 	// higher = more creative (default 0.8)
-				.setTopK(0) 			// 0-100, higher = more creative (default 40)
-				.setTopP(0.0f)			// 0.0-1.0, higher = more creative (default 0.9)
-				.setSeed(42)			// Just make it fixed
-				.setNumCtx(8*1024) 		// Size of the context window (default 2048), https://github.com/ollama/ollama/blob/main/docs/faq.md#how-can-i-specify-the-context-window-size
+				.setMirostat(2) 				// allows perplexity/uncertainty control
+				.setMirostatEta(0.5f) 			// learning rate (default 0.1)
+				.setMirostatTau(1.0f) 			// lower = more focused and coherent text (default 5.0)
+				.setTemperature(0.0f) 			// higher = more creative (default 0.8)
+				.setTopK(0) 					// 0-100, higher = more creative (default 40)
+				.setTopP(0.0f)					// 0.0-1.0, higher = more creative (default 0.9)
+				.setSeed(42)					// Just make it fixed
+				.setNumCtx(n_ctx_train_size) 	// Size of the context window (default 2048), https://github.com/ollama/ollama/blob/main/docs/faq.md#how-can-i-specify-the-context-window-size
 				// num_ctx does not seem to work over api, use https://www.reddit.com/r/ollama/comments/1e4hklk/how_does_num_predict_and_num_ctx_work/
 				.build();
 	}
+	
+	// llama_context: n_ctx_pre_seq (32768) > n_ctx_train (2048) -- possible training context overflow
+	// llama_context: n_ctx_per_seq (32768) < n_ctx_train (131072) -- the full capacity of the model will not be utilized
 
 	public static Options createDefaultOptionsBuilder() {
 		return new OptionsBuilder().build();
 	}
 
-	public static Options createCreativeOptionsBuilder() {
+	public static Options createCreativeOptionsBuilder(String _modelname) {
+		Integer n_ctx_train_size = n_ctx_train.get(_modelname);
+		if (null == n_ctx_train_size) {
+			LOGGER.warn("Unknown n_ctx_train for " + _modelname + ", falling back to 2048 for safety reasons");
+			n_ctx_train_size = 2048;
+		}
 		return new OptionsBuilder()
 				.setMirostatEta(Float.MAX_VALUE) 	// learning rate (default 0.1)
 				.setMirostatTau(Float.MAX_VALUE) 	// lower = more focused and coherent text (default 5.0)
 				.setTemperature(1.0f) 				// higher = more creative (default 0.8)
 				.setTopK(100) 						// 0-100, higher = more creative (default 40)
 				.setTopP(1.0f)						// 0.0-1.0, higher = more creative (default 0.9)
-				.setNumCtx(8*1024) 					// Size of the context window (default 2048), https://github.com/ollama/ollama/blob/main/docs/faq.md#how-can-i-specify-the-context-window-size
+				.setNumCtx(n_ctx_train_size) 		// Size of the context window (default 2048), https://github.com/ollama/ollama/blob/main/docs/faq.md#how-can-i-specify-the-context-window-size
 				// num_ctx does not seem to work over api, use https://www.reddit.com/r/ollama/comments/1e4hklk/how_does_num_predict_and_num_ctx_work/
 				.build();
 	}
@@ -95,9 +160,9 @@ public class Globals {
 			+ "llama3.1:70b," 	// 43 GB
 			+ "llama3.3:70b," 	// 43 GB
 			+ "nemotron:70b,"	// 43 GB
+			+ "qwen3:32b,"		// 20 GB
 			+ "qwen2.5:72b,"	// 47 GB
-			+ "gemma3:27b,"		// 16 GB
-			+ "gemma2:27b"		// 16 GB
+			+ "gemma3:27b"		// 16 GB
 			+ "";
 	
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_MINIDIVERSE_XL = ""
@@ -107,9 +172,12 @@ public class Globals {
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_XL = ""
-			+ "athene-v2:72b,"	// 47 GB
-			+ "tulu3:70b,"		// 43 GB
-			+ "exaone3.5:32b"	// 19 GB
+			+ "cogito:70b,"			// 43 GB
+			+ "athene-v2:72b,"		// 47 GB
+			+ "r1-1776:70b,"		// 43 GB
+			+ "tulu3:70b,"			// 43 GB
+			+ "exaone3.5:32b,"		// 19 GB
+			+ "gemma2:27b"			// 16 GB
 			+ "";
 	
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_XL = ""
@@ -134,10 +202,6 @@ public class Globals {
 			+ "llava:34b"		// 20 GB
 			+ "";
 
-	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_UNCENSORED_XL = ""
-			+ "wizard-vicuna-uncensored:30b"	// 18 GB
-			+ "";
-
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_GUARDED_XL = ""
 			+ "shieldgemma:27b"		// 17 GB, 'Yes'/'No' if safe replies only
 			+ "";
@@ -148,18 +212,21 @@ public class Globals {
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L = ""
 			+ "sailor2:20b,"	// 12 GB
-			+ "gemma3:12b"		// 8.1 GB
+			+ "qwen3:14b"		// 9.3 GB
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_L = ""
-			+ "olmo2:13b,"		// 8.4 GB
-			+ "phi4:14b"		// 9 GB
+			+ "olmo2:13b,"			// 8.4 GB
+			+ "cogito:14b,"			// 9 GB
+			+ "gemma3:12b,"			// 8.1 GB
+			+ "phi4:14b"			// 9 GB
 			+ "";
 
 	// task specific
 	
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_CODE_L = ""
-			+ "starcoder2:15b"		// 9.1 GB
+			+ "starcoder2:15b,"		// 9.1 GB
+			+ "deepcoder:14b"		// 9.1 GB
 			+ "";
 	
 	/**
@@ -167,11 +234,11 @@ public class Globals {
 	 */
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M = ""
-			+ "marco-o1:7b,"	// 4.1 GB
-			+ "mistral:7b," 	// 4.1 GB
-			+ "qwen2.5:7b," 	// 4.1 GB
-			+ "olmo2:7b,"		// 4.1 GB
-			+ "gemma2:9b"		// 5.4 GB
+			+ "marco-o1:7b,"		// 4.1 GB
+			+ "qwen3:8b,"			// 5.2 GB
+			+ "qwen2.5:7b," 		// 4.1 GB
+			+ "olmo2:7b,"			// 4.1 GB
+			+ "gemma2:9b"			// 5.4 GB
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_MINIDIVERSE_M = ""
@@ -182,7 +249,8 @@ public class Globals {
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_M = ""
 			+ "openchat:7b,"			// 4.1 GB
-			+ "dolphin-mistral:7b"		// 4.1 GB
+			+ "dolphin-mistral:7b,"		// 4.1 GB
+			+ "cogito:8b"				// 4.1 GB
 			+"";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_M = ""
@@ -190,11 +258,15 @@ public class Globals {
 			+ "llama3.1:8b,"						// 4.9 GB
 			+ "qwen2:7b," 							// 4.4 GB
 			+ "dolphin3:8b,"						// 4.9 GB
-			+ "openhermes:7b-mistral-v2.5-q4_0" 	// 4.1 GB
+			+ "mistral:7b," 						// 4.1 GB
+			+ "exaone-deep:7.8b,"					// 4.8 GB
+			+ "openhermes:7b-mistral-v2.5-q4_0," 	// 4.1 GB
+			+ "command-r7b:7b"						// 5.1 GB
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER4_M = ""
 			+ "tulu3:8b,"				// 4.9 GB
+			+ "granite3.3:8b,"			// 4.9 GB
 			+ "granite3.1-dense:8b"		// 5.0 GB
 			+"";
 
@@ -215,7 +287,8 @@ public class Globals {
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_S = ""
 			// tier1
-			+ "llama3.2:3b"		// 2 GB
+			+ "llama3.2:3b,"		// 2 GB
+			+ "qwen3:4b"			// 2.6 GB
 			+ "";
 
 	/*
@@ -269,7 +342,6 @@ public class Globals {
 			+"";
 	
 	public static String MODEL_NAMES_OLLAMA_ALL_UP_TO_XL = ""
-			+ ENSEMBLE_MODEL_NAMES_OLLAMA_UNCENSORED_XL + ","
 			+ ENSEMBLE_MODEL_NAMES_OLLAMA_VISION_XL + ","
 			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL + ","
 			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_XL + ","
@@ -277,6 +349,7 @@ public class Globals {
 			+ MODEL_NAMES_OLLAMA_ALL_UP_TO_L
 
 			// broken uncensored
+			// + "wizard-vicuna-uncensored:30b"		// Fails
 			// + "wizard-vicuna-uncensored:7b,"		// Fails to produce valid JSON
 			// + "llama2-uncensored:7b,"			// fails with empty replies
 			// + "wizardlm-uncensored:13b,"			// fails to follow protocol
@@ -285,12 +358,6 @@ public class Globals {
 			// broken/unsupported in ollama
 			//+ "zephyr:7b," 						// zephyr gives errors over time with multiple ollama reloads, may be related to https://github.com/ollama/ollama/issues/1691
 			//+ "opencoder:8b"						// fails on setting system profile
-			//+ "command-r7b:7b,"					// 500 internal, this model is not supported by your version of Ollama ..
-
-			// broken
-			//+ "r1-1776:70b"						// fails to follow protocol, does its <think> thing
-			//+ "deepseek-r1:7b"					// fails to follow protocol, does its <think> thing
-			//+ "deepseek-r1:70b,"					// fails to follow protocol, does its <think> thing
 			//+ "llama2:7b,"						// fails to reply with FAILTOUNDERSTAND on gibberish input
 			//+ "llama2:70b,"						// often fails to provide valid JSON (missing quotes etc)
 			//+ "solar-pro:22b"						// fails to follow protocol
@@ -306,6 +373,11 @@ public class Globals {
 			//+ "glm4:9b," 							// fails to follow protocol
 			//+ "codegemma:7b,"						// fails to follow protocol
 			//+ "vicuna:7b,"						// fails to follow protocol
+			//+ "deepseek-r1:70b,"					// fails to follow protocol
+			//+ "deepseek-r1:14b,"					// fails to follow protocol
+			//+ "deepseek-r1:8b,"					// fails to follow protocol
+			//+ "deepseek-r1:7b,"					// fails to follow protocol
+			//+ "phi4-reasoning:14b," 				// gives empty replies
 
 			+ "";
 	
@@ -356,11 +428,19 @@ public class Globals {
 		this.put("nemotron:70b", 14);
 		this.put("qwen2.5:70b", 14);
 		this.put("qwen2.5:7b", 14);
+		this.put("qwen3:32b", 14);
+		this.put("qwen3:14b", 14);
+		this.put("qwen3:8b", 14);
+		this.put("qwen3:4b", 14);
 		this.put("sailor2:20b", 14);
 		this.put("qwen2.5:72b", 14);
 		this.put("gemma2:27b", 14);
 		this.put("gemma3:27b", 14);
+		this.put("granite3.3:8b", 14);
+		this.put("cogito:8b", 14);
 
+		this.put("tulu3:70b", 25);
+		
 		// ollama llms - balanced
 		this.put("wizard-vicuna-uncensored:30b", 44);
 		this.put("llava:34b", 44);
@@ -368,7 +448,6 @@ public class Globals {
 		this.put("olmo2:13b", 44);
 		this.put("marco-o1:7b", 44);
 		this.put("athene-v2:72b", 44);
-		this.put("tulu3:70b", 44);
 		this.put("exaone3.5:32b", 44);
 		this.put("phi4:14b", 44);
 		this.put("openhermes:7b-mistral-v2.5-q4_0", 44);
@@ -382,6 +461,7 @@ public class Globals {
 		this.put("mistral:7b", 49);
 		this.put("dolphin-mistral:7b", 49);
 		this.put("granite3.1-dense:8b", 49);
+		this.put("granite3.3:8b", 49);
 
 		// ollama llms - too optimistic
 		this.put("tulu3:8b", 64);
@@ -398,26 +478,4 @@ public class Globals {
 		this.put("gpt-4", 65);
 	}};
 
-	// models listed here will not be pulled automatically due to GPU requirements
-	@SuppressWarnings("serial")
-	public static HashMap<String, Boolean> MODEL_SKIP_AUTOPULL = new HashMap<String, Boolean>() {{
-		for (String model: ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XXL.split(",")) {
-			this.put(model, true);
-		}
-		for (String model: ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL.split(",")) {
-			this.put(model, true);
-		}
-		for (String model: ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_XL.split(",")) {
-			this.put(model, true);
-		}
-		for (String model: ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_XL.split(",")) {
-			this.put(model, true);
-		}
-		for (String model: ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L.split(",")) {
-			this.put(model, true);
-		}
-		for (String model: ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_L.split(",")) {
-			this.put(model, true);
-		}
-	}};
 }

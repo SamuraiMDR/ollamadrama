@@ -1,3 +1,0 @@
-FROM llama3.1:70b
-
-PARAMETER num_ctx 8192

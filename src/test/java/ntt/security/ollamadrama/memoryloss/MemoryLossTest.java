@@ -14,10 +14,12 @@ public class MemoryLossTest {
 	@SuppressWarnings("unused")
 	private static final Logger LOGGER = LoggerFactory.getLogger(MemoryLossTest.class);
 
-	@Ignore
+	// Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL
+	
+	//@Ignore
 	@Test
 	public void checkMemoryLengthForAllEnsembleModels_RandomWords_CSV() {
-		ModelsScoreCard scorecard = OllamaDramaUtils.performMemoryTestUsingRandomWords(Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL, 5);
+		ModelsScoreCard scorecard = OllamaDramaUtils.performMemoryTestUsingRandomWords("cogito:14b", 3);
 		System.out.println("SCORECARD:");
 		scorecard.evaluate();
 		scorecard.print();

@@ -28,7 +28,7 @@ public class OllamaService {
 
 	private OllamaService(OllamaDramaSettings _settings) {
 		super();
-		
+
 		if (null == _settings) {
 			// fallback to env variables
 			_settings = ConfigUtils.parseConfigENV();
@@ -65,8 +65,9 @@ public class OllamaService {
 		boolean found_ollamas = false;
 		int ollama_attempt_counter = 0;
 		boolean ollama_abort = false;
+		TreeMap<String, OllamaEndpoint> verified_ollamas = new TreeMap<>();
+		TreeMap<String, OllamaEndpoint> abandoned_ollamas = new TreeMap<>();
 		while (!found_ollamas && !ollama_abort) {
-
 			TreeMap<String, OllamaEndpoint> ollamas = new TreeMap<String, OllamaEndpoint>();
 
 			if (settings.isOllama_scan()) {
@@ -79,8 +80,6 @@ public class OllamaService {
 				SystemUtils.sleepInSeconds(5);
 			} else {
 				if (blockUntilReady) LOGGER.info("activeHosts for ollama port " + settings.getOllama_port() + ": " + ollamas.keySet());
-				TreeMap<String, OllamaEndpoint> verified_ollamas = new TreeMap<>();
-				TreeMap<String, OllamaEndpoint> abandoned_ollamas = new TreeMap<>();
 
 				if (null != settings.getSatellites() && !settings.getSatellites().isEmpty()) {
 					LOGGER.info("We have defined satellite ollama endpoints, first entry is " + settings.getSatellites().get(0).getOllama_url() + "..");
@@ -98,66 +97,80 @@ public class OllamaService {
 					}
 				}
 
+				boolean ollama_ping_reply = false;
 				for (String ollama_url: ollamas.keySet())  {
 					OllamaEndpoint oep = ollamas.get(ollama_url);
-					LOGGER.info("Connecting to to ollama URL " + oep.getOllama_url() + "..");
 
-					OllamaAPI ollamaAPI = OllamaUtils.createConnection(oep, settings.getOllama_timeout());
+					if (null != abandoned_ollamas.get(oep.getOllama_url())) {
+						LOGGER.info("Skipping ollama endpoint " + oep.getOllama_url() + ", it is active but has been abandoned");
+					} else {
+						LOGGER.debug("Connecting to to ollama URL " + oep.getOllama_url() + " .. which is not in the abandoned list: " + abandoned_ollamas.keySet());
 
-					try {
-						if (ollamaAPI.ping()) {
-							LOGGER.info("The ollama URL " + oep.getOllama_url() + " replied with a proper ping");
-							LOGGER.info("Models available on " + oep.getOllama_url() + ": " + OllamaUtils.getModelsAvailable(ollamaAPI).toString());
-							LOGGER.info("Making sure we have the models we need on " + oep.getOllama_url() + " ..");
-							boolean model_exists = false;
+						OllamaAPI ollamaAPI = OllamaUtils.createConnection(oep, settings.getOllama_timeout());
 
-							for (String modelname: settings.getOllama_models().split(",")) {
-								if (modelname.length()>3) {
-									if (null == abandoned_ollamas.get(oep.getOllama_url())) {
-										if (!OllamaUtils.verifyModelAvailable(ollamaAPI, modelname)) {
-											if (null != Globals.MODEL_SKIP_AUTOPULL.get(modelname)) {
-												LOGGER.warn("The model " + modelname + " is marked as L so wont be pulled automatically. Pull manually to qualify this Ollama endpoint.");
-												LOGGER.warn("Skipping the ollama endpoint " + ollama_url);
-												abandoned_ollamas.put(oep.getOllama_url(), oep);
-											} else {
-												LOGGER.warn("Unable to find required model " + modelname + " on " + oep.getOllama_url() + ", will try to pull. This may take some time ..");
-												boolean success_pull = OllamaUtils.pullModel(ollamaAPI, modelname);
-												if (success_pull) {
-													if (OllamaUtils.verifyModelAvailable(ollamaAPI, modelname)) model_exists = true;
+						try {
+							if (ollamaAPI.ping()) {
+								ollama_ping_reply = true;
+								LOGGER.info("The ollama URL " + oep.getOllama_url() + " replied with a proper ping");
+								LOGGER.info("Models available on " + oep.getOllama_url() + ": " + OllamaUtils.getModelsAvailable(ollamaAPI).toString());
+								LOGGER.info("Making sure we have the models we need on " + oep.getOllama_url() + " ..");
+								boolean model_exists = false;
+
+								for (String modelname: settings.getOllama_models().split(",")) {
+									if (modelname.length()>3) {
+										if (null == abandoned_ollamas.get(oep.getOllama_url())) {
+											if (!OllamaUtils.verifyModelAvailable(ollamaAPI, modelname)) {
+												if (OllamaUtils.is_skip_model_autopull(settings.getAutopull_max_llm_size(), modelname)) {
+													LOGGER.info("Ollamadrama is configured to skip autopull of the model " + modelname + ", try to pull it manually once you have ensured your endpoint has enough VRAM. Or change the ollamadrama 'autopull_max_llm_size' configuration. ");
+													SystemUtils.sleepInSeconds(10);
+													LOGGER.warn("Skipping the ollama endpoint " + ollama_url);
+													abandoned_ollamas.put(oep.getOllama_url(), oep);
+												} else {
+													LOGGER.warn("Unable to find required model " + modelname + " on " + oep.getOllama_url() + ", will try to pull. This may take some time ..");
+													boolean success_pull = OllamaUtils.pullModel(ollamaAPI, modelname);
+													if (success_pull) {
+														if (OllamaUtils.verifyModelAvailable(ollamaAPI, modelname)) model_exists = true;
+													}
 												}
+											} else {
+												model_exists = true;
+											}
+											if (model_exists) {
+												LOGGER.info("Performing simple sanity check on Ollama model " + modelname + " on " + oep.getOllama_url());
+												if (!OllamaUtils.verifyModelSanityUsingSingleWordResponse(oep.getOllama_url(), ollamaAPI, modelname, 
+														Globals.createStrictOptionsBuilder(modelname), "Is the capital city of France named Paris? You must reply with only a single word of Yes or No." + Globals.THREAT_TEMPLATE, 
+														"Yes", 1, settings.getAutopull_max_llm_size())) {
+													LOGGER.warn("Unable to pass simple sanity check for " + modelname + " on " + oep.getOllama_url() + ". Abandoning the node for now.");	
+													abandoned_ollamas.put(oep.getOllama_url(), oep);
+													verified_ollamas.remove(oep.getOllama_url(), oep);
+												} else {
+													if (null == abandoned_ollamas.get(oep.getOllama_url())) {
+														LOGGER.info("Verified ollama URL (with a functional instance of our preferred model " + modelname + ") found on: " + oep.getOllama_url());
+														verified_ollamas.put(oep.getOllama_url(), oep);
+													} else {
+														LOGGER.info("ollama host (with a functional instance of our preferred model " + modelname + ") found on: " + oep.getOllama_url() + " but its ABANDONED");
+													}
+												}
+	
 											}
 										} else {
-											model_exists = true;
+											LOGGER.info("Skipping model check for " + modelname + " since Ollama node has been abandoned.");
 										}
-										if (model_exists) {
-											LOGGER.info("Performing simple sanity check on Ollama model " + modelname + " on " + oep.getOllama_url());
-											if (!OllamaUtils.verifyModelSanityUsingSingleWordResponse(oep.getOllama_url(), ollamaAPI, modelname, Globals.createStrictOptionsBuilder(), "Is the capital city of France named Paris? You must reply with only a single word of Yes or No." + Globals.THREAT_TEMPLATE, "Yes", 1)) {
-												LOGGER.warn("Unable to pass simple sanity check for " + modelname + " on " + oep.getOllama_url() + ". Abandoning the node for now.");	
-												abandoned_ollamas.put(oep.getOllama_url(), oep);
-												verified_ollamas.remove(oep.getOllama_url(), oep);
-											} else {
-												if (null == abandoned_ollamas.get(oep.getOllama_url())) {
-													LOGGER.info("Verified ollama URL (with a functional instance of our preferred model " + modelname + ") found on: " + oep.getOllama_url());
-													verified_ollamas.put(oep.getOllama_url(), oep);
-												} else {
-													LOGGER.info("ollama host (with a functional instance of our preferred model " + modelname + ") found on: " + oep.getOllama_url() + " but its ABANDONED");
-												}
-											}
-										}
-									} else {
-										LOGGER.info("Skipping model check for " + modelname + " since Ollama node has been abandoned.");
 									}
 								}
 							}
+						} catch (Exception e) {
+							LOGGER.warn("Caught exception while attempting ping() against " + oep.getOllama_url() + ", exception: " + e.getMessage());
 						}
-					} catch (Exception e) {
-						LOGGER.warn("Caught exception while attempting ping() against " + oep.getOllama_url() + ", exception: " + e.getMessage());
 					}
 				}
 
-				if (verified_ollamas.isEmpty()) {
+				if (ollama_ping_reply && verified_ollamas.isEmpty()) {
 					LOGGER.warn("Found hosts listening on ollama port " + settings.getOllama_port() + ", but none of them seem to be running well behaving versions of our required models");
 					SystemUtils.sleepInSeconds(5);
+				} else if (!ollama_ping_reply && verified_ollamas.isEmpty()) {
+						LOGGER.warn("Found no hosts listening on ollama port " + settings.getOllama_port() + ", we will need to keep looking");
+						SystemUtils.sleepInSeconds(30);
 				} else {
 					if (blockUntilReady) LOGGER.info("Verified ollama service endpoints (all models): " + verified_ollamas.keySet());
 					ollama_endpoints = verified_ollamas;
@@ -219,8 +232,8 @@ public class OllamaService {
 		while (true) {
 			int size = ollama_endpoints.size();
 			while (ollama_endpoints.size() == 0) {
-				LOGGER.warn("No Ollama hosts available ... blocking and rescanning in 5 seconds");
-				SystemUtils.sleepInSeconds(5);
+				LOGGER.warn("No Ollama hosts currently available ... blocking and will rescan every 30 seconds");
+				SystemUtils.sleepInSeconds(30);
 			}
 			int selection = NumUtils.randomNumWithinRangeAsInt(1, size);
 			int index = 1;
@@ -230,8 +243,8 @@ public class OllamaService {
 				index++;
 			}
 
-			LOGGER.warn("No Ollama hosts available ... blocking and rescanning in 5 seconds");
-			SystemUtils.sleepInSeconds(5);
+			LOGGER.warn("No Ollama hosts available ... blocking and rescanning in 30 seconds");
+			SystemUtils.sleepInSeconds(30);
 		}
 	}
 
@@ -242,7 +255,7 @@ public class OllamaService {
 			SystemUtils.halt();
 		}
 		if (_model_name.length() <= 3) {
-			LOGGER.error("Specified modename is invalid: " + _model_name);
+			LOGGER.error("Specified model name is invalid: " + _model_name);
 			SystemUtils.halt();
 		}
 		for (String existing_model: settings.getOllama_models().split(",")) {
@@ -253,7 +266,7 @@ public class OllamaService {
 			SystemUtils.halt();
 		}
 		return new OllamaSession(_model_name, OllamaService.getRandomActiveOllamaURL(),
-				Globals.createStrictOptionsBuilder(), OllamaService.getSettings(), 
+				Globals.createStrictOptionsBuilder(_model_name), OllamaService.getSettings(), 
 				Globals.PROMPT_TEMPLATE_STRICT_SIMPLEOUTPUT + 
 				Globals.ENFORCE_SINGLE_KEY_JSON_RESPONSE_TO_STATEMENTS + 
 				Globals.ENFORCE_SINGLE_KEY_JSON_RESPONSE_TO_QUESTIONS + 
@@ -271,7 +284,7 @@ public class OllamaService {
 			SystemUtils.halt();
 		}
 		return new OllamaSession(_model_name, OllamaService.getRandomActiveOllamaURL(),
-				Globals.createStrictOptionsBuilder(), OllamaService.getSettings(),
+				Globals.createStrictOptionsBuilder(_model_name), OllamaService.getSettings(),
 				Globals.PROMPT_TEMPLATE_STRICT_COMPLEXOUTPUT,
 				SessionType.STRICT);
 	}
@@ -286,7 +299,7 @@ public class OllamaService {
 			SystemUtils.halt();
 		}
 		return new OllamaSession(_model_name, OllamaService.getRandomActiveOllamaURL(),
-				Globals.createCreativeOptionsBuilder(), OllamaService.getSettings(),
+				Globals.createCreativeOptionsBuilder(_model_name), OllamaService.getSettings(),
 				Globals.PROMPT_TEMPLATE_CREATIVE,
 				SessionType.CREATIVE);
 	}
