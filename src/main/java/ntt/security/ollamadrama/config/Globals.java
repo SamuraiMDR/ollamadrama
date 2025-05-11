@@ -43,7 +43,9 @@ public class Globals {
 			+ "The 'assumptions_made' key should include a brief description string of the assumptions made. "
 			+ "The reply string will be pure JSON will start with the character { since its JSON and NOT markdown.";
 
-	public static String PROMPT_TEMPLATE_STRICT_SIMPLEOUTPUT = "You are a bot of few words and prefer to keep your answers as short as possible, often with just one word."
+	public static String PROMPT_TEMPLATE_COGITO_DEEPTHINK = "Enable deep thinking subroutine. ";
+	
+	public static String PROMPT_TEMPLATE_STRICT_SIMPLEOUTPUT = "You are a bot of few words and prefer to keep your answers as short as possible, often with just one word. "
 			+ "You never overestimate your confidence in your replies and make sure to always be honest about your limitations. ";
 
 	public static String PROMPT_TEMPLATE_STRICT_COMPLEXOUTPUT = "You are a bot of few words and prefer to keep your answers as short as possible.";
@@ -223,6 +225,11 @@ public class Globals {
 			+ "";
 
 	// task specific
+	
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_MAXCONTEXT_L = ""
+			+ "qwen3:14b,"	
+			+ "cogito:14b"	
+			+ "";
 	
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_CODE_L = ""
 			+ "starcoder2:15b,"		// 9.1 GB

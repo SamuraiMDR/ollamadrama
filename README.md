@@ -76,8 +76,8 @@ Feed the sessions with facts/statements:
 Then ask questions where the replies will be structured with 'probability', 'motivation' and 'assumptions_made'.
 
    ```
-   SingleStringResponse ssr1 = s1.askStrictChatQuestion("What is my name?");
-   ssr1.print();
+   SingleStringQuestionResponse ssqr1 = s1.askStrictChatQuestion("What is my name?");
+   ssqr1.print();
    ```
 
    ```

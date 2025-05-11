@@ -1,6 +1,9 @@
 package ntt.security.ollamadrama.utils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import org.slf4j.Logger;
@@ -166,6 +169,94 @@ public class OllamaDramaUtils {
 		}
 		return scorecard;
 	}
+	
+	@SuppressWarnings({"serial"})
+	public static ModelsScoreCard performMemoryTestUsingRandomWordNeedleTest(String _models, int _nrErrorsToAllow) {
+		String needle_word = "needle";
+		boolean apply_earlyexit_after_errorthreshold = true;
+		int len_random_word = 3; // o1 - one token typically corresponds to around 3–4 characters of text on average
+		ModelsScoreCard scorecard = new ModelsScoreCard();
+		OllamaService.getInstance(_models);
+		String maxcapFilePath = "model_maxcap.csv";
+		FilesUtils.writeToFileUNIXNoException("model,expected,actual,context_wordcount,context_charcount,errorcount", maxcapFilePath);
+		// Populate an ensemble of agents
+		for (String model_name: _models.split(",")) {
+			int maxCharsCounted = 0;
+			int errorcounter = 0;
+			String bagOfWords = "";
+			for (int x=18000; x<=50000; x+=1000) {
+				if (false ||
+						(apply_earlyexit_after_errorthreshold && (errorcounter <= _nrErrorsToAllow)) ||
+						!apply_earlyexit_after_errorthreshold ||
+						false) {
+					OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, false);
+					if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama agent [" + model_name + "] is operational\n");
+					
+					int needle_pos = NumUtils.randomNumWithinRangeAsInt(20, x-20);
+			        
+			        String firstWord =  generateRandomWord(len_random_word);
+					bagOfWords = firstWord;
+					String lastWord = "";
+					for (int i=2; i<=(x+2); i++) {
+						String newWord = generateRandomWord(len_random_word);
+						if (i == needle_pos) {
+							bagOfWords = bagOfWords + " " + needle_word;
+						} else {
+							bagOfWords = bagOfWords + " " + newWord;
+						}
+						lastWord = newWord;
+					}
+					
+			        System.out.println("** Will test the LLM by placing the needle at word #" + needle_pos + " (bagsize: " + x + ")");
+					String qx = bagOfWords + "\n" + "Above is a list of individual words separated by space and ordered from left to right. The first word is " + firstWord + " and the last word is " + lastWord 
+							+ ". Your task is to find a lowercase English word from this list with length " + needle_word.length() + " characters. Make sure to walk through and "
+							+ "evaluate each candidate word and make sure your answer only consists of the single word. You will be punished if you answer with a word which is not " + needle_word.length() + " characters long and exists in the list."
+									+ " The list is complete and contains no typos so do not make any excuses about the list being too long to process manually. "
+									+ "I promise that you will find one of the following words in the list if you really put your mind to it: 'breeze', '" + needle_word + "', 'puzzle', 'glance' and 'borrow'";
+					System.out.println("Question: " + StringsUtils.cutAndPadStringToN(qx, len_random_word*16) + "..." + StringsUtils.getLastNCharacters(qx, 400));
+					SingleStringQuestionResponse rx = a1.askStrictChatQuestion(qx, false, 3); // retry x times on bad replies
+					if (rx != null) {
+						System.out.println("Current bagsize: " + x);
+						System.out.println("Current needle word location: " + needle_pos);
+						System.out.println("Response: " + rx.getResponse());
+						System.out.println("Response proba: " + rx.getProbability() + "%");
+						System.out.println("Response motivation: " + rx.getMotivation());
+						System.out.println("Response assumptions: " + rx.getAssumptions_made());
+						System.out.println("Previous errorcount: " + errorcounter);
+						if (rx.getResponse().equals("JSONERROR")) {
+							// likely LLM restart due to mem starvation
+							errorcounter = Integer.MAX_VALUE;
+						} else {
+							if (rx.getResponse().equals("" + needle_word)) {
+								if (errorcounter <= _nrErrorsToAllow) {
+									try {
+										if (x > maxCharsCounted) maxCharsCounted = x;
+									} catch (Exception e) {
+										// ignore
+									}
+								}
+							} else {
+								errorcounter++;
+							}
+						}
+						int chatsize_charcount = a1.getChatSizeCharCount();
+						int chatsize_wordcount = a1.getChatSizeWordCount();
+						FilesUtils.appendToFileUNIXNoException(model_name + "," + x + "," + maxCharsCounted + "," + chatsize_wordcount + "," + chatsize_charcount + "," + errorcounter, maxcapFilePath);;
+					} else {
+						// likely LLM restart due to mem starvasion
+						errorcounter = Integer.MAX_VALUE;
+					}
+				}
+			}
+			String maxCharsCountedSTR = maxCharsCounted + "";
+			HashMap<String, Integer> acceptable_answers = new HashMap<String, Integer>() {{
+				this.put(maxCharsCountedSTR, 1);
+			}};
+			SingleStringQuestionResponse rf = new SingleStringQuestionResponse(String.valueOf(maxCharsCounted), 100, "", "");
+			scorecard = OllamaUtils.updateScoreCard(scorecard, model_name, "q1", "Max chars counted?", acceptable_answers, rf);
+		}
+		return scorecard;
+	}
 
 	@SuppressWarnings({"serial"})
 	public static ModelsScoreCard performMemoryTestUsingRandomWords(String _models, int _nrErrorsToAllow) {
@@ -180,7 +271,7 @@ public class OllamaDramaUtils {
 			int maxCharsCounted = 0;
 			int errorcounter = 0;
 			String bagOfWords = "";
-			for (int x=19000; x<=40000; x+=1000) {
+			for (int x=1000; x<=40000; x+=1000) {
 				if (false ||
 						(apply_earlyexit_after_errorthreshold && (errorcounter <= _nrErrorsToAllow)) ||
 						!apply_earlyexit_after_errorthreshold ||
@@ -199,7 +290,7 @@ public class OllamaDramaUtils {
 							+ ". As you can see each word consists of " + len_random_word + " uppercase letters. What is the first word? Make sure to walk through and "
 							+ "evaluate each candidate word and make sure answer consists of " + len_random_word + " uppercase letters.";
 					System.out.println("Question: " + StringsUtils.cutAndPadStringToN(qx, len_random_word) + " ... " + StringsUtils.getLastNCharacters(qx, 400));
-					SingleStringQuestionResponse rx = a1.askStrictChatQuestion(qx, false, 0); // dont retry
+					SingleStringQuestionResponse rx = a1.askStrictChatQuestion(qx, false, 5); // dont retry
 					if (rx != null) {
 						System.out.println("Current bagsize: " + x);
 						System.out.println("Current firstWord: " + firstWord);

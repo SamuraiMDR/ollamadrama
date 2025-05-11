@@ -265,12 +265,18 @@ public class OllamaService {
 			LOGGER.error("Attempt to create session with model not listed in settings (" + _model_name + "), halting. Models listed in settings: " + settings.getOllama_models());
 			SystemUtils.halt();
 		}
-		return new OllamaSession(_model_name, OllamaService.getRandomActiveOllamaURL(),
-				Globals.createStrictOptionsBuilder(_model_name), OllamaService.getSettings(), 
+		
+		String system_prompt = "";
+		if (_model_name.startsWith("cogito")) system_prompt = Globals.PROMPT_TEMPLATE_COGITO_DEEPTHINK;
+		system_prompt = system_prompt + 
 				Globals.PROMPT_TEMPLATE_STRICT_SIMPLEOUTPUT + 
 				Globals.ENFORCE_SINGLE_KEY_JSON_RESPONSE_TO_STATEMENTS + 
 				Globals.ENFORCE_SINGLE_KEY_JSON_RESPONSE_TO_QUESTIONS + 
-				Globals.THREAT_TEMPLATE,
+				Globals.THREAT_TEMPLATE;
+		
+		return new OllamaSession(_model_name, OllamaService.getRandomActiveOllamaURL(),
+				Globals.createStrictOptionsBuilder(_model_name), OllamaService.getSettings(), 
+				system_prompt,
 				SessionType.STRICTPROTOCOL);
 	}
 

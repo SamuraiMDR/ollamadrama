@@ -16,10 +16,19 @@ public class MemoryLossTest {
 
 	// Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL
 	
-	//@Ignore
+	
+	@Test
+	public void checkMemoryLengthForAllEnsembleModels_FindTheNeedleTest_CSV() {
+		ModelsScoreCard scorecard = OllamaDramaUtils.performMemoryTestUsingRandomWordNeedleTest(Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_MAXCONTEXT_L, 3);
+		System.out.println("SCORECARD:");
+		scorecard.evaluate();
+		scorecard.print();
+	}
+	
+	@Ignore
 	@Test
 	public void checkMemoryLengthForAllEnsembleModels_RandomWords_CSV() {
-		ModelsScoreCard scorecard = OllamaDramaUtils.performMemoryTestUsingRandomWords("cogito:14b", 3);
+		ModelsScoreCard scorecard = OllamaDramaUtils.performMemoryTestUsingRandomWords(Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, 3);
 		System.out.println("SCORECARD:");
 		scorecard.evaluate();
 		scorecard.print();

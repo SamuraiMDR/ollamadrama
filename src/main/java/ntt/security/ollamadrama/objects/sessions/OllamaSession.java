@@ -117,6 +117,10 @@ public class OllamaSession {
 		}
 	}
 	
+	public SingleStringQuestionResponse askStrictChatQuestion(String _question) {
+		return askStrictChatQuestion(_question, false, 10);
+}
+	
 	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain) {
 			return askStrictChatQuestion(_question, _hide_llm_reply_if_uncertain, 10);
 	}
