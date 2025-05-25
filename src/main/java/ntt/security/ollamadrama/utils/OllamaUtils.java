@@ -2,6 +2,7 @@ package ntt.security.ollamadrama.utils;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -125,6 +126,7 @@ public class OllamaUtils {
 	}
 
 	public static boolean verifyModelSanityUsingSingleWordResponse(String _ollamaurl, OllamaAPI _ollamaAPI, String _modelname, Options _options, String _question, String _answer, int _maxRetries, String autopull_max_llm_size) {
+		boolean debug = false;
 		boolean sanity_pass = false;
 		int retryCounter = 0;
 		while (retryCounter <= _maxRetries) {
@@ -136,11 +138,13 @@ public class OllamaUtils {
 						if (!result.getResponse().isEmpty()) {
 							raw_result = result.getResponse();
 							raw_result = preprocessLLMresponse(raw_result);
-							
+
 							// tolerate chatter
-							String res = raw_result.split("\n")[0].split(",")[0].replace(".", "");
+							String res = raw_result.trim().split("\n")[0].split(",")[0].replace(".", "");
 							if (_answer.equals(res)) {
 								sanity_pass = true;
+							} else {
+								if (debug) LOGGER.info(_answer + " is not " + res);
 							}
 						}
 					}
@@ -177,7 +181,7 @@ public class OllamaUtils {
 	private static String preprocessLLMresponse(String raw_result) {
 		boolean debug = false;
 		if (debug) System.out.println("raw_result: " + raw_result);
-		
+
 		// deepseek style
 		if (raw_result.startsWith("<think>") && raw_result.contains("</think>")) {
 			raw_result = raw_result.split("</think>")[1];
@@ -185,7 +189,7 @@ public class OllamaUtils {
 				raw_result = raw_result.replaceFirst("\n", "");
 			}
 		}
-		
+
 		// exaone-deep being different
 		if (raw_result.startsWith("<thought>") && raw_result.contains("</thought>")) {
 			raw_result = raw_result.split("</thought>")[1];
@@ -193,7 +197,7 @@ public class OllamaUtils {
 				raw_result = raw_result.replaceFirst("\n", "");
 			}
 		}
-		
+
 		// --- show the characters one by one ----------------------------------
 		if (debug) {
 			System.out.println("-------- character dump --------");
@@ -216,7 +220,7 @@ public class OllamaUtils {
 			}
 			System.out.println("length = " + raw_result.length());
 		}
-		
+
 		return raw_result;
 	}
 
@@ -280,8 +284,8 @@ public class OllamaUtils {
 		}
 		return "";
 	}
-
-	public static ChatInteraction askRawChatQuestion(OllamaAPI _ollamaAPI, String _modelname, Options _options, OllamaChatResult _chatResult, String _question) {
+	
+	public static ChatInteraction askRawChatQuestionWithCustomChatHistory(OllamaAPI _ollamaAPI, String _modelname, Options _options, OllamaChatResult _chatResult, String _question, List<OllamaChatMessage> _customChatHistory) {
 		if (!_question.endsWith(".")) _question = _question + "."; // quick patch
 		int retryCounter = 0;
 		while (retryCounter < 10) {
@@ -291,8 +295,14 @@ public class OllamaUtils {
 				while (true) {
 					if (null != _chatResult) {
 						OllamaChatRequestBuilder builder = OllamaChatRequestBuilder.getInstance(_modelname).withOptions(_options);
-						OllamaChatRequestModel requestModel = builder.withMessages(_chatResult.getChatHistory()).withMessage(OllamaChatMessageRole.USER,
+						OllamaChatRequestModel requestModel = null;
+						if (null == _customChatHistory) {
+						requestModel = builder.withMessages(_chatResult.getChatHistory()).withMessage(OllamaChatMessageRole.USER,
 								_question + Globals.LOGIC_TEMPLATE + addon).build();
+						} else {
+							requestModel = builder.withMessages(_customChatHistory).withMessage(OllamaChatMessageRole.USER,
+									_question + Globals.LOGIC_TEMPLATE + addon).build();
+						}
 						_ollamaAPI.setRequestTimeoutSeconds(600);
 						_chatResult = _ollamaAPI.chat(requestModel);
 						if (null !=_chatResult) {						
@@ -315,6 +325,10 @@ public class OllamaUtils {
 			}
 		}
 		return new ChatInteraction(_chatResult, "", false);
+	}
+
+	public static ChatInteraction askRawChatQuestion(OllamaAPI _ollamaAPI, String _modelname, Options _options, OllamaChatResult _chatResult, String _question) {
+		return askRawChatQuestionWithCustomChatHistory(_ollamaAPI, _modelname, _options, _chatResult, _question, null);
 	}
 
 	public static ChatInteraction askChatQuestion(OllamaAPI _ollamaAPI, String _modelname, Options _options, OllamaChatResult _chatResult, String _question, Integer _retryThreshold) {
@@ -358,12 +372,46 @@ public class OllamaUtils {
 		}
 		return new ChatInteraction(_chatResult, "", false);
 	}
-	
+
 	public static ChatInteraction askChatQuestion(OllamaAPI _ollamaAPI, String _modelname, Options _options, OllamaChatResult _chatResult, String _question) {
 		return askChatQuestion(_ollamaAPI, _modelname, _options, _chatResult, _question, 10);
 	}
 
-	public static ChatInteraction addStatementToExistingChat(OllamaAPI _ollamaAPI, String _modelname, Options _options, OllamaChatResult _chatResult, String _statement) {
+	public static ChatInteraction addCreativeStatementToExistingChat(OllamaAPI _ollamaAPI, String _modelname, Options _options, OllamaChatResult _chatResult, String _statement) {
+		if (!_statement.endsWith(".")) _statement = _statement + "."; // quick patch
+		int retryCounter = 0;
+		while (retryCounter < 10) {
+			try {
+				int counter = 0;
+				String addon = "";
+				while (true) {
+					OllamaChatRequestBuilder builder = OllamaChatRequestBuilder.getInstance(_modelname).withOptions(_options);
+					OllamaChatRequestModel requestModel = builder.withMessages(_chatResult.getChatHistory()).withMessage(OllamaChatMessageRole.USER,
+							_statement + addon).build();
+					_ollamaAPI.setRequestTimeoutSeconds(600);
+					_chatResult = _ollamaAPI.chat(requestModel);
+
+					if (null !=_chatResult) {
+						return new ChatInteraction(_chatResult, _chatResult.getResponse(), true);
+					}
+					counter++;
+					if (counter > 10) {
+						LOGGER.error("Giving up");
+						return null;
+					}
+					SystemUtils.sleepInSeconds(1); // throttle
+				}
+			} catch (Exception e) {
+				LOGGER.warn("addStatementToExistingChat() Exception: " + e.getMessage());
+				LOGGER.warn("addStatementToExistingChat(): Catch all error handler while making chat session request towards " + _modelname + ", retryCounter=" + retryCounter);
+				SystemUtils.sleepInSeconds(5);
+				retryCounter++;
+			}
+		}
+		return new ChatInteraction(_chatResult, "", false);
+	}
+
+	public static ChatInteraction addStrictStatementToExistingChat(OllamaAPI _ollamaAPI, String _modelname, Options _options, OllamaChatResult _chatResult, String _statement) {
 		if (!_statement.endsWith(".")) _statement = _statement + "."; // quick patch
 		int retryCounter = 0;
 		while (retryCounter < 10) {
@@ -752,11 +800,11 @@ public class OllamaUtils {
 
 		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
 		settings.sanityCheck();
-		
+
 		String elevenlabsapikey = settings.getElevenlabs_apikey();
 		String voice1 = settings.getElevenlabs_voice1();
 		String voice2 = settings.getElevenlabs_voice2();
-		
+
 		// Launch LLM singletons if needed
 		if (model_name1.equals(model_name2)) {
 			settings.setOllama_models(model_name1);
@@ -764,7 +812,7 @@ public class OllamaUtils {
 			settings.setOllama_models(model_name1 + "," + model_name2);
 		}
 		OllamaService.getInstance(settings);
-		
+
 		// Launch strict session
 		OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name1, false);
 		if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + model_name1 + "] is operational\n");
@@ -1003,77 +1051,77 @@ public class OllamaUtils {
 		return sb.toString();
 	}
 
-    /** Ordered bucket of model sizes (smallest → largest). */
-    public enum ModelSize { S, M, L, XL, XXL }
+	/** Ordered bucket of model sizes (smallest → largest). */
+	public enum ModelSize { S, M, L, XL, XXL }
 
-    /* ------------------------------------------------------------ *
-     *   Pre-computed look-up tables                                *
-     * ------------------------------------------------------------ */
+	/* ------------------------------------------------------------ *
+	 *   Pre-computed look-up tables                                *
+	 * ------------------------------------------------------------ */
 
-    private static final Set<String> SIZE_S = parse(Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_S);
+	private static final Set<String> SIZE_S = parse(Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_S);
 
-    private static final Set<String> SIZE_M = Stream.of(
-            Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M,
-            Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_M,
-            Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_M)
-        .flatMap(s -> parse(s).stream())
-        .collect(Collectors.toUnmodifiableSet());
+	private static final Set<String> SIZE_M = Stream.of(
+			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M,
+			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_M,
+			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_M)
+			.flatMap(s -> parse(s).stream())
+			.collect(Collectors.toUnmodifiableSet());
 
-    private static final Set<String> SIZE_L = Stream.of(
-            Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L,
-            Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_L)
-        .flatMap(s -> parse(s).stream())
-        .collect(Collectors.toUnmodifiableSet());
+	private static final Set<String> SIZE_L = Stream.of(
+			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L,
+			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_L)
+			.flatMap(s -> parse(s).stream())
+			.collect(Collectors.toUnmodifiableSet());
 
-    private static final Set<String> SIZE_XL = Stream.of(
-            Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL,
-            Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_XL,
-            Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_XL)
-        .flatMap(s -> parse(s).stream())
-        .collect(Collectors.toUnmodifiableSet());
+	private static final Set<String> SIZE_XL = Stream.of(
+			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL,
+			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_XL,
+			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_XL)
+			.flatMap(s -> parse(s).stream())
+			.collect(Collectors.toUnmodifiableSet());
 
-    private static Set<String> parse(String csv) {
-        return Stream.of(csv.split(","))
-                     .map(String::trim)
-                     .filter(s -> !s.isEmpty())
-                     .collect(Collectors.toUnmodifiableSet());
-    }
+	private static Set<String> parse(String csv) {
+		return Stream.of(csv.split(","))
+				.map(String::trim)
+				.filter(s -> !s.isEmpty())
+				.collect(Collectors.toUnmodifiableSet());
+	}
 
-    /* ------------------------------------------------------------ *
-     *   Public API                                                 *
-     * ------------------------------------------------------------ */
+	/* ------------------------------------------------------------ *
+	 *   Public API                                                 *
+	 * ------------------------------------------------------------ */
 
-    /**
-     * @return {@code true} when {@code modelName} exceeds {@code maxSizeStr}
-     *         and should therefore be skipped.
-     *
-     * @throws IllegalArgumentException if {@code maxSizeStr} is not S, M, L, XL, or XXL
-     */
-    public static boolean is_skip_model_autopull(String maxSizeStr, String modelName) {
-        ModelSize maxSize  = toSize(maxSizeStr);
-        ModelSize thisSize = resolveSize(modelName);
+	/**
+	 * @return {@code true} when {@code modelName} exceeds {@code maxSizeStr}
+	 *         and should therefore be skipped.
+	 *
+	 * @throws IllegalArgumentException if {@code maxSizeStr} is not S, M, L, XL, or XXL
+	 */
+	public static boolean is_skip_model_autopull(String maxSizeStr, String modelName) {
+		ModelSize maxSize  = toSize(maxSizeStr);
+		ModelSize thisSize = resolveSize(modelName);
 
-        // Skip when model is larger than the allowed maximum
-        return thisSize.ordinal() > maxSize.ordinal();
-    }
+		// Skip when model is larger than the allowed maximum
+		return thisSize.ordinal() > maxSize.ordinal();
+	}
 
-    /* ------------------------------------------------------------ *
-     *   Internals                                                  *
-     * ------------------------------------------------------------ */
+	/* ------------------------------------------------------------ *
+	 *   Internals                                                  *
+	 * ------------------------------------------------------------ */
 
-    private static ModelSize resolveSize(String modelName) {
-        if (SIZE_S.contains(modelName))  return ModelSize.S;
-        if (SIZE_M.contains(modelName))  return ModelSize.M;
-        if (SIZE_L.contains(modelName))  return ModelSize.L;
-        if (SIZE_XL.contains(modelName)) return ModelSize.XL;
-        return ModelSize.XXL;  // default / largest
-    }
+	private static ModelSize resolveSize(String modelName) {
+		if (SIZE_S.contains(modelName))  return ModelSize.S;
+		if (SIZE_M.contains(modelName))  return ModelSize.M;
+		if (SIZE_L.contains(modelName))  return ModelSize.L;
+		if (SIZE_XL.contains(modelName)) return ModelSize.XL;
+		return ModelSize.XXL;  // default / largest
+	}
 
-    private static ModelSize toSize(String str) {
-        try {
-            return ModelSize.valueOf(str);
-        } catch (IllegalArgumentException ex) {
-            throw new IllegalArgumentException("Unknown model size: " + str, ex);
-        }
-    }
+	private static ModelSize toSize(String str) {
+		try {
+			return ModelSize.valueOf(str);
+		} catch (IllegalArgumentException ex) {
+			throw new IllegalArgumentException("Unknown model size: " + str, ex);
+		}
+	}
 }

@@ -208,18 +208,30 @@ public class Globals {
 			+ "shieldgemma:27b"		// 17 GB, 'Yes'/'No' if safe replies only
 			+ "";
 
+	
+	/**
+	 * L/XL MIX
+	 */
+	
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_DIVERSE_MAXCONTEXT_L_XL = ""
+			+ "llama3.3:70b," 		// 43 GB
+			+ "qwen3:14b,"			// 9.3 GB
+			+ "cogito:14b,"			// 9 GB
+			+ "";
+	
+	
 	/**
 	 * L (<16GB)
 	 */
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L = ""
 			+ "sailor2:20b,"	// 12 GB
+			+ "cogito:14b,"		// 9 GB
 			+ "qwen3:14b"		// 9.3 GB
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_L = ""
 			+ "olmo2:13b,"			// 8.4 GB
-			+ "cogito:14b,"			// 9 GB
 			+ "gemma3:12b,"			// 8.1 GB
 			+ "phi4:14b"			// 9 GB
 			+ "";
@@ -227,8 +239,8 @@ public class Globals {
 	// task specific
 	
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_MAXCONTEXT_L = ""
-			+ "qwen3:14b,"	
-			+ "cogito:14b"	
+			+ "qwen3:14b,"			// 9.3 GB
+			+ "cogito:14b,"			// 9 GB
 			+ "";
 	
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_CODE_L = ""
@@ -273,8 +285,7 @@ public class Globals {
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER4_M = ""
 			+ "tulu3:8b,"				// 4.9 GB
-			+ "granite3.3:8b,"			// 4.9 GB
-			+ "granite3.1-dense:8b"		// 5.0 GB
+			+ "granite3.3:8b"			// 4.9 GB
 			+"";
 
 	// task specific
@@ -363,6 +374,8 @@ public class Globals {
 			// + "wizard-vicuna-uncensored:13b,"	// always 0% prob
 
 			// broken/unsupported in ollama
+			//+ "granite3.1-dense:8b"				// unstable	
+			//huihui_ai/foundation-sec-abliterated:latest
 			//+ "zephyr:7b," 						// zephyr gives errors over time with multiple ollama reloads, may be related to https://github.com/ollama/ollama/issues/1691
 			//+ "opencoder:8b"						// fails on setting system profile
 			//+ "llama2:7b,"						// fails to reply with FAILTOUNDERSTAND on gibberish input
@@ -433,6 +446,7 @@ public class Globals {
 		this.put("llama3.2:3b", 14);
 		this.put("llama3.3:70b", 14);
 		this.put("nemotron:70b", 14);
+		this.put("cogito:14b", 14);
 		this.put("qwen2.5:70b", 14);
 		this.put("qwen2.5:7b", 14);
 		this.put("qwen3:32b", 14);
@@ -445,7 +459,11 @@ public class Globals {
 		this.put("gemma3:27b", 14);
 		this.put("granite3.3:8b", 14);
 		this.put("cogito:8b", 14);
-
+		this.put("cogito:70b", 14);
+		this.put("aya-expanse:8b", 14);
+		this.put("command-r7b:7b", 14);
+		
+		this.put("r1-1776:70b", 25);
 		this.put("tulu3:70b", 25);
 		
 		// ollama llms - balanced
@@ -456,6 +474,7 @@ public class Globals {
 		this.put("marco-o1:7b", 44);
 		this.put("athene-v2:72b", 44);
 		this.put("exaone3.5:32b", 44);
+		this.put("exaone-deep:7.8b", 44);
 		this.put("phi4:14b", 44);
 		this.put("openhermes:7b-mistral-v2.5-q4_0", 44);
 		this.put("falcon3:10b", 44);

@@ -179,12 +179,11 @@ public class OllamaDramaUtils {
 		OllamaService.getInstance(_models);
 		String maxcapFilePath = "model_maxcap.csv";
 		FilesUtils.writeToFileUNIXNoException("model,expected,actual,context_wordcount,context_charcount,errorcount", maxcapFilePath);
-		// Populate an ensemble of agents
 		for (String model_name: _models.split(",")) {
 			int maxCharsCounted = 0;
 			int errorcounter = 0;
 			String bagOfWords = "";
-			for (int x=18000; x<=50000; x+=1000) {
+			for (int x=1000; x<=50000; x+=1000) {
 				if (false ||
 						(apply_earlyexit_after_errorthreshold && (errorcounter <= _nrErrorsToAllow)) ||
 						!apply_earlyexit_after_errorthreshold ||

@@ -109,20 +109,28 @@ public class OllamaSession {
 		if (null == this.chatResult) {
 			LOGGER.warn("You need to initialize a chat session with a profile statement first");
 		} else {
-			ChatInteraction ci = OllamaUtils.addStatementToExistingChat(this.ollamaAPI, this.model_name, this.options, this.chatResult, _statement);
-			if (null != ci) {
-				LOGGER.debug("Successfully extended chat session with results from STATEMENT interaction");
-				this.chatResult = ci.getChatResult();
+			if (this.getSessiontype() == SessionType.CREATIVE) {
+				ChatInteraction ci = OllamaUtils.addCreativeStatementToExistingChat(this.ollamaAPI, this.model_name, this.options, this.chatResult, _statement);
+				if (null != ci) {
+					LOGGER.debug("Successfully extended chat session with results from STATEMENT interaction");
+					this.chatResult = ci.getChatResult();
+				}
+			} else {
+				ChatInteraction ci = OllamaUtils.addStrictStatementToExistingChat(this.ollamaAPI, this.model_name, this.options, this.chatResult, _statement);
+				if (null != ci) {
+					LOGGER.debug("Successfully extended chat session with results from STATEMENT interaction");
+					this.chatResult = ci.getChatResult();
+				}
 			}
 		}
 	}
-	
+
 	public SingleStringQuestionResponse askStrictChatQuestion(String _question) {
 		return askStrictChatQuestion(_question, false, 10);
-}
-	
+	}
+
 	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain) {
-			return askStrictChatQuestion(_question, _hide_llm_reply_if_uncertain, 10);
+		return askStrictChatQuestion(_question, _hide_llm_reply_if_uncertain, 10);
 	}
 
 	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, int _retryThreshold) {
@@ -141,7 +149,7 @@ public class OllamaSession {
 
 						boolean debug = false;
 						if (debug) System.out.println(ci.getResponse());
-						
+
 						// JSON markdown (LLM protocol helper hack)
 						if (ci.getResponse().contains("{") && ci.getResponse().contains("}") && (json.split("\\}").length == 1) && (json.split("\\{").length == 1)) {
 							json = "{" + ci.getResponse().split("\\{")[1];
@@ -149,7 +157,7 @@ public class OllamaSession {
 						} else {
 							json = ci.getResponse();
 						}
-						
+
 						// JSON newline fix
 						json = json.replace("\n", " ").replace("\r", " ");
 
@@ -214,6 +222,23 @@ public class OllamaSession {
 		}
 	}
 
+	public String askRawChatQuestionWithCustomChatHistory(String _question, List<OllamaChatMessage> _customChatHistory) {
+		if (!_question.endsWith("?")) _question = _question + "?";
+		if (null == this.chatResult) {
+			LOGGER.warn("chatResult is null!");
+			return "";
+		} else {
+			int retryCounter = 0;
+			while (true) {
+				ChatInteraction ci =  OllamaUtils.askRawChatQuestionWithCustomChatHistory(this.ollamaAPI, this.model_name, this.options, this.chatResult, _question, _customChatHistory);
+				if (null != ci) return ci.getResponse();
+				retryCounter++;
+				if (retryCounter > 5) LOGGER.warn("Having problems getting a valid reply using this question: " + _question);
+				SystemUtils.sleepInSeconds(1); // throttle
+			}
+		}
+	}
+	
 	public Options getOptions() {
 		return options;
 	}
