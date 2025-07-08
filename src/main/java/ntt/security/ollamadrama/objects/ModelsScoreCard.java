@@ -1,14 +1,18 @@
 package ntt.security.ollamadrama.objects;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
+import ntt.security.ollamadrama.objects.response.SingleStringQuestionResponse;
+import ntt.security.ollamadrama.utils.FilesUtils;
+import ntt.security.ollamadrama.utils.NumUtils;
 import ntt.security.ollamadrama.utils.StringsUtils;
 
 public class ModelsScoreCard {
 
 	// modelname, query_index, acceptable_answers+scores, actual_answer
-	private HashMap<String, HashMap<String, HashMap<HashMap<String,Integer>, String>>> scorecard = new HashMap<>();
+	private HashMap<String, HashMap<String, HashMap<HashMap<String,Integer>, SingleStringQuestionResponse>>> scorecard = new HashMap<>();
 	private HashMap<String, Integer> pos_scores = new HashMap<>();
 	private HashMap<String, Integer> neg_scores = new HashMap<>();
 
@@ -16,15 +20,15 @@ public class ModelsScoreCard {
 		super();
 	}
 
-	public ModelsScoreCard(HashMap<String, HashMap<String, HashMap<HashMap<String,Integer>, String>>> scorecard) {
+	public ModelsScoreCard(HashMap<String, HashMap<String, HashMap<HashMap<String,Integer>, SingleStringQuestionResponse>>> scorecard) {
 		super();
 		this.scorecard = scorecard;
 	}
 
-	public HashMap<String, HashMap<String, HashMap<HashMap<String,Integer>, String>>> getScorecard() {
+	public HashMap<String, HashMap<String, HashMap<HashMap<String,Integer>, SingleStringQuestionResponse>>> getScorecard() {
 		return scorecard;
 	}
-	public void setScorecard(HashMap<String, HashMap<String, HashMap<HashMap<String,Integer>, String>>> scorecard) {
+	public void setScorecard(HashMap<String, HashMap<String, HashMap<HashMap<String,Integer>, SingleStringQuestionResponse>>> scorecard) {
 		this.scorecard = scorecard;
 	}
 	public HashMap<String, Integer> getPos_scores() {
@@ -43,32 +47,30 @@ public class ModelsScoreCard {
 	public void evaluate() {
 		for (String modelName : getScorecard().keySet()) {
 			System.out.println(modelName + ":");
-			HashMap<String, HashMap<HashMap<String,Integer>, String>> modelScorecard = getScorecard().get(modelName);
+			HashMap<String, HashMap<HashMap<String,Integer>, SingleStringQuestionResponse>> modelScorecard = getScorecard().get(modelName);
 			evaluateModel(modelName, modelScorecard);
 		}
 	}
 
-	private void evaluateModel(String modelName, HashMap<String, HashMap<HashMap<String,Integer>, String>> modelScorecard) {
+	private void evaluateModel(String modelName, HashMap<String, HashMap<HashMap<String,Integer>, SingleStringQuestionResponse>> modelScorecard) {
 		for (int qIndex = 1; qIndex <= modelScorecard.size(); qIndex++) {
-			HashMap<HashMap<String, Integer>, String> expectedVsActual = modelScorecard.get("q" + qIndex);
+			HashMap<HashMap<String, Integer>, SingleStringQuestionResponse> expectedVsActual = modelScorecard.get("q" + qIndex);
 			evaluateQuestions(modelName, qIndex, expectedVsActual);
 		}
 	}
 
-	private void evaluateQuestions(String modelName, int qIndex, HashMap<HashMap<String, Integer>, String> expectedVsActual) {
+	private void evaluateQuestions(String modelName, int qIndex, HashMap<HashMap<String, Integer>, SingleStringQuestionResponse> expectedVsActual) {
 		System.out.println(" * " + StringsUtils.cutAndPadStringToN("q" + qIndex, 2));
-		for (Entry<HashMap<String, Integer>, String> entry : expectedVsActual.entrySet()) {
-			String actual = entry.getValue();
+		for (Entry<HashMap<String, Integer>, SingleStringQuestionResponse> entry : expectedVsActual.entrySet()) {
+			SingleStringQuestionResponse actual_response = entry.getValue();
 			HashMap<String, Integer> acceptable = entry.getKey();
-			updateScores(modelName, acceptable, actual);
-
-			System.out.println(StringsUtils.cutAndPadStringToN("  - actual_reply ", 28) + ": " + actual);
+			updateScores(modelName, acceptable, actual_response.getResponse());
+			System.out.println(StringsUtils.cutAndPadStringToN("  - actual_reply ", 28) + ": " + actual_response.getResponse());
 			for (String expected_val: acceptable.keySet()) {
 				Integer rec_score = acceptable.get(expected_val);
 				System.out.println(StringsUtils.cutAndPadStringToN("  - acceptable_reply [" + rec_score + "] ", 28) + ": " + expected_val);
 			}
 		}
-
 	}
 
 	private void updateScores(String modelName, HashMap<String, Integer> acceptable, String actual) {
@@ -90,6 +92,26 @@ public class ModelsScoreCard {
 
 		pos_scores.put(modelName, pos);
 		neg_scores.put(modelName, neg);
+	}
+
+	public void flushProbas(String _question, String _outfile) {
+		for (String model_name : this.getScorecard().keySet()) {
+			HashMap<String, HashMap<HashMap<String, Integer>, SingleStringQuestionResponse>> c1 = this.getScorecard().get(model_name);
+			for (String question_index: c1.keySet()) {
+				HashMap<HashMap<String, Integer>, SingleStringQuestionResponse> c2 = c1.get(question_index);
+				if (null != c2) {
+					for (HashMap<String, Integer> k2: c2.keySet()) {
+						SingleStringQuestionResponse ssqr = c2.get(k2);
+						File f = new File(_outfile);
+						if (!f.exists()) FilesUtils.writeToFileUNIXNoException("model_name,question,probability", _outfile);
+						int proba_with_jitter = ssqr.getProbability() + NumUtils.randomNumWithinRangeAsInt(0, 3);
+						if (proba_with_jitter > 100) proba_with_jitter = 100;
+						if (proba_with_jitter < 0) proba_with_jitter = 0;
+						FilesUtils.appendToFileUNIXNoException(model_name + "," + _question + "," + proba_with_jitter, _outfile);
+					}
+				}
+			}
+		}
 	}
 
 	public void print() {

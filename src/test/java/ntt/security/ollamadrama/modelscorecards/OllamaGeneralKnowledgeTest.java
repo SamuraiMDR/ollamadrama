@@ -34,7 +34,7 @@ public class OllamaGeneralKnowledgeTest {
 				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, 
 				"What company or organization is associated with google.com? Reply with only the name",
 				acceptable_answers,
-				true);
+				true, false);
 
 		// Print the scorecard
 		System.out.println("SCORECARD:");
@@ -92,13 +92,28 @@ public class OllamaGeneralKnowledgeTest {
 	}
 
 	@Test
+	public void simpleParis_OllamaModels_NEW() {
+		
+		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
+				"llama3.1:70b,cogito:14b", // cogito:14b 
+				"Is the capital city of France named Paris? Reply with Yes or No.", 
+				"Yes",
+				true, false);
+
+		// Print the scorecard
+		System.out.println("SCORECARD:");
+		scorecard.evaluate();
+		scorecard.print();
+	}
+	
+	@Test
 	public void simpleParis_OllamaModels_XL() {
 		
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
 				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, 
 				"Is the capital city of France named Paris? Reply with Yes or No.", 
 				"Yes",
-				true);
+				true, false);
 
 		// Print the scorecard
 		System.out.println("SCORECARD:");
@@ -107,7 +122,6 @@ public class OllamaGeneralKnowledgeTest {
 
 		/*
 		dolphin3:8b                              pos: 1   neg: 0  
-		wizard-vicuna-uncensored:30b             pos: 1   neg: 0  
 		tulu3:70b                                pos: 1   neg: 0  
 		cogito:8b                                pos: 1   neg: 0  
 		nemotron:70b                             pos: 1   neg: 0  
@@ -115,7 +129,6 @@ public class OllamaGeneralKnowledgeTest {
 		qwen2.5:7b                               pos: 1   neg: 0  
 		llama3.1:8b                              pos: 1   neg: 0  
 		qwen2:7b                                 pos: 1   neg: 0  
-		granite3.1-dense:8b                      pos: 1   neg: 0  
 		qwen3:4b                                 pos: 1   neg: 0  
 		tulu3:8b                                 pos: 1   neg: 0  
 		granite3.3:8b                            pos: 1   neg: 0  
@@ -164,7 +177,7 @@ public class OllamaGeneralKnowledgeTest {
 			this.put("No", 1);		 			// OK based on its knowledge, but LOWPROBA preferred
 		}};
 
-		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, "Is the capital city of OOikiOOA named Mo1rstiooooo? Reply with Yes or No.", acceptable_answers, true);
+		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, "Is the capital city of OOikiOOA named Mo1rstiooooo? Reply with Yes or No.", acceptable_answers, true, false);
 
 		// Print the scorecard
 		System.out.println("SCORECARD:");
@@ -223,7 +236,7 @@ public class OllamaGeneralKnowledgeTest {
 			this.put("LOWPROBA", 1); 			// OK to set LOWPROBA since the provided prompt is pure jibberish
 		}};
 		
-		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, "bmn,alkwjhuwihjkl7777oodottodooo?", acceptable_answers, true);
+		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, "bmn,alkwjhuwihjkl7777oodottodooo?", acceptable_answers, true, false);
 
 		// Print the scorecard
 		System.out.println("SCORECARD:");
@@ -285,7 +298,7 @@ public class OllamaGeneralKnowledgeTest {
 		
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
 				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, 
-				"Count the number of R in strawberry. Answer with number only", "3", true);
+				"Count the number of R in strawberry. Answer with number only", "3", true, false);
 
 		// Print the scorecard
 		System.out.println("SCORECARD:");
@@ -348,7 +361,7 @@ public class OllamaGeneralKnowledgeTest {
 				"Count the number of 'r' characters in the string 's t r a w b e r r y', which contains 10 characters from the alphabet in total. "
 				+ "Walk through each character in the word while counting and make note of the string index they occur at. "
 				+ "Include the string index records in your motivation. Answer with number only", 
-				"3", true);
+				"3", true, false);
 
 		// Print the scorecard
 		System.out.println("SCORECARD:");
@@ -406,6 +419,54 @@ public class OllamaGeneralKnowledgeTest {
 	}
 	
 	@Test
+	public void simpleStrawberryRCount_OllamaModels_L() {
+		
+		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
+				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_L, 
+				"Count the number of 'r' characters in the string 's t r a w b e r r y', which contains 10 characters from the alphabet in total. "
+				+ "Walk through each character in the word while counting and make note of the string index they occur at. "
+				+ "Include the string index records in your motivation. Answer with number only", 
+				"3", true, false);
+
+		// Print the scorecard
+		System.out.println("SCORECARD:");
+		scorecard.evaluate();
+		scorecard.print();
+
+		/*
+		dolphin3:8b                              pos: 1   neg: 0  
+		cogito:8b                                pos: 1   neg: 0  
+		qwen2.5:7b                               pos: 1   neg: 0  
+		llama3.1:8b                              pos: 1   neg: 0  
+		qwen3:4b                                 pos: 1   neg: 0  
+		sailor2:20b                              pos: 1   neg: 0  
+		command-r7b:7b                           pos: 1   neg: 0  
+		gemma2:9b                                pos: 1   neg: 0  
+		olmo2:7b                                 pos: 1   neg: 0  
+		mistral:7b                               pos: 1   neg: 0  
+		aya-expanse:8b                           pos: 1   neg: 0  
+		cogito:14b                               pos: 1   neg: 0  
+		marco-o1:7b                              pos: 1   neg: 0  
+		gemma3:12b                               pos: 1   neg: 0  
+		openchat:7b                              pos: 1   neg: 0  
+		qwen3:14b                                pos: 1   neg: 0  
+		-----
+		qwen2:7b                                 pos: 0   neg: 1  
+		tulu3:8b                                 pos: 0   neg: 1  
+		granite3.3:8b                            pos: 0   neg: 1  
+		llama3.2:3b                              pos: 0   neg: 1  
+		exaone-deep:7.8b                         pos: 0   neg: 1  
+		olmo2:13b                                pos: 0   neg: 1  
+		phi4:14b                                 pos: 0   neg: 1  
+		dolphin-mistral:7b                       pos: 0   neg: 1  
+		openhermes:7b-mistral-v2.5-q4_0          pos: 0   neg: 1  
+		 */
+
+		// Assert
+		assertTrue("Make sure we have a clean sheet for all tier1 M models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OLLAMA_ALL_TIER1_M_L_XL));
+	}
+	
+	@Test
 	public void simpleStrawberryRCount_OllamaModels_M() {
 		
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
@@ -413,7 +474,7 @@ public class OllamaGeneralKnowledgeTest {
 				"Count the number of 'r' characters in the string 's t r a w b e r r y', which contains 10 characters from the alphabet in total. "
 				+ "Walk through each character in the word while counting and make note of the string index they occur at. "
 				+ "Include the string index records in your motivation. Answer with number only", 
-				"3", true);
+				"3", true, false);
 
 		// Print the scorecard
 		System.out.println("SCORECARD:");

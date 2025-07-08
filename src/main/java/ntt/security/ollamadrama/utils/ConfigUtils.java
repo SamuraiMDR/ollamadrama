@@ -24,7 +24,7 @@ public class ConfigUtils {
 				if (null != settings.getOllama_username()) LOGGER.info("Ollama username: " + settings.getOllama_username());
 				if (null != settings.getOllama_password()) LOGGER.info("Ollama password:" + StringUtils.repeat('_', settings.getOllama_password().length()));
 				if (null != settings.getOllama_models()) LOGGER.info("Ollama models:" + settings.getOllama_models());
-				if (null != settings.getOllama_timeout()) LOGGER.info("Ollama timeout:" + settings.getOllama_timeout());
+				LOGGER.info("Ollama timeout:" + settings.getOllama_timeout());
 				if (null != settings.getThreadPoolCount()) LOGGER.info("ThreadPoolCount:" + settings.getThreadPoolCount());
 			}
 		}

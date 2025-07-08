@@ -72,7 +72,7 @@ public class OllamaService {
 
 			if (settings.isOllama_scan()) {
 				if (blockUntilReady) LOGGER.info("Looking for ollama servers .. " + service_cnets);
-				ollamas = NetUtilsLocal.performTCPPortSweep(settings.getOllama_port(), service_cnets, 1, 255, settings.getOllama_timeout(), threadPoolCount, settings.getOllama_username(), settings.getOllama_password());
+				ollamas = NetUtilsLocal.performTCPPortSweep(settings.getOllama_port(), service_cnets, 1, 255, 10, threadPoolCount, settings.getOllama_username(), settings.getOllama_password());
 			} 
 
 			if (ollamas.isEmpty() && (null == settings.getSatellites())) {
@@ -85,7 +85,7 @@ public class OllamaService {
 					LOGGER.info("We have defined satellite ollama endpoints, first entry is " + settings.getSatellites().get(0).getOllama_url() + "..");
 					for (OllamaEndpoint oep: settings.getSatellites()) {
 						if (null != abandoned_ollamas.get(oep.getOllama_url())) {
-							LOGGER.info("We have defined satellite ollama endpoints, but its been abandoned .. " + oep.getOllama_url());
+							LOGGER.info("We have defined satellite ollama endpoints, but its been temporarily abandoned .. " + oep.getOllama_url() + " (will reset after 10 loops)");
 						} else {
 							if (null == ollamas.get(oep.getOllama_url())) {
 								LOGGER.info("Adding ollama endpoint " + oep.getOllama_url());
@@ -102,7 +102,7 @@ public class OllamaService {
 					OllamaEndpoint oep = ollamas.get(ollama_url);
 
 					if (null != abandoned_ollamas.get(oep.getOllama_url())) {
-						LOGGER.info("Skipping ollama endpoint " + oep.getOllama_url() + ", it is active but has been abandoned");
+						LOGGER.info("Skipping ollama endpoint " + oep.getOllama_url() + ", it is active but has been temporarily abandone (will reset after 10 loops)");
 					} else {
 						LOGGER.debug("Connecting to to ollama URL " + oep.getOllama_url() + " .. which is not in the abandoned list: " + abandoned_ollamas.keySet());
 
@@ -138,7 +138,7 @@ public class OllamaService {
 											if (model_exists) {
 												LOGGER.info("Performing simple sanity check on Ollama model " + modelname + " on " + oep.getOllama_url());
 												if (!OllamaUtils.verifyModelSanityUsingSingleWordResponse(oep.getOllama_url(), ollamaAPI, modelname, 
-														Globals.createStrictOptionsBuilder(modelname), "Is the capital city of France named Paris? You must reply with only a single word of Yes or No." + Globals.THREAT_TEMPLATE, 
+														Globals.createStrictOptionsBuilder(modelname, true), "Is the capital city of France named Paris? You must reply with only a single word of Yes or No." + Globals.THREAT_TEMPLATE, 
 														"Yes", 1, settings.getAutopull_max_llm_size())) {
 													LOGGER.warn("Unable to pass simple sanity check for " + modelname + " on " + oep.getOllama_url() + ". Abandoning the node for now.");	
 													abandoned_ollamas.put(oep.getOllama_url(), oep);
@@ -169,7 +169,7 @@ public class OllamaService {
 					LOGGER.warn("Found hosts listening on ollama port " + settings.getOllama_port() + ", but none of them seem to be running well behaving versions of our required models");
 					SystemUtils.sleepInSeconds(5);
 				} else if (!ollama_ping_reply && verified_ollamas.isEmpty()) {
-						LOGGER.warn("Found no hosts listening on ollama port " + settings.getOllama_port() + ", we will need to keep looking");
+						LOGGER.warn("Found no hosts listening on ollama port " + settings.getOllama_port() + ", we will need to keep looking (ollama_attempt_counter: " + ollama_attempt_counter + ")");
 						SystemUtils.sleepInSeconds(30);
 				} else {
 					if (blockUntilReady) LOGGER.info("Verified ollama service endpoints (all models): " + verified_ollamas.keySet());
@@ -179,6 +179,12 @@ public class OllamaService {
 			}
 
 			ollama_attempt_counter++;
+			
+			// always give endpoints another chance
+			if (ollama_attempt_counter>10) {
+				LOGGER.info("OK time to clear and retry with the abandoned Ollama endpoints");
+				abandoned_ollamas = new TreeMap<>();
+			}
 
 			if (!blockUntilReady && (ollama_attempt_counter>10)) {
 				LOGGER.warn("Was attempting to update the list of ollama servers but found none");
@@ -193,7 +199,7 @@ public class OllamaService {
 		if (single_instance == null) { // First check (no locking)
 			synchronized (OllamaService.class) {
 				if (single_instance == null) { // Second check (with locking)
-					_settings.setOllama_timeout(300); // increased timeout for large context models
+					_settings.setOllama_timeout(_settings.getOllama_timeout());
 					single_instance = new OllamaService(_settings);
 				}
 			}
@@ -248,7 +254,7 @@ public class OllamaService {
 		}
 	}
 
-	public static OllamaSession getStrictProtocolSession(String _model_name, boolean hide_llm_reply_if_uncertain) {
+	public static OllamaSession getStrictProtocolSession(String _model_name, boolean hide_llm_reply_if_uncertain, boolean _use_random_seed) {
 		boolean model_exists = false;
 		if (settings == null) {
 			LOGGER.error("Is OllamaDrama initialized properly");
@@ -275,12 +281,12 @@ public class OllamaService {
 				Globals.THREAT_TEMPLATE;
 		
 		return new OllamaSession(_model_name, OllamaService.getRandomActiveOllamaURL(),
-				Globals.createStrictOptionsBuilder(_model_name), OllamaService.getSettings(), 
+				Globals.createStrictOptionsBuilder(_model_name, _use_random_seed), OllamaService.getSettings(), 
 				system_prompt,
 				SessionType.STRICTPROTOCOL);
 	}
 
-	public static OllamaSession getStrictSession(String _model_name) {
+	public static OllamaSession getStrictSession(String _model_name, Boolean _use_random_seed) {
 		boolean model_exists = false;
 		for (String existing_model: settings.getOllama_models().split(",")) {
 			if (existing_model.equals(_model_name)) model_exists = true;
@@ -290,7 +296,7 @@ public class OllamaService {
 			SystemUtils.halt();
 		}
 		return new OllamaSession(_model_name, OllamaService.getRandomActiveOllamaURL(),
-				Globals.createStrictOptionsBuilder(_model_name), OllamaService.getSettings(),
+				Globals.createStrictOptionsBuilder(_model_name, _use_random_seed), OllamaService.getSettings(),
 				Globals.PROMPT_TEMPLATE_STRICT_COMPLEXOUTPUT,
 				SessionType.STRICT);
 	}

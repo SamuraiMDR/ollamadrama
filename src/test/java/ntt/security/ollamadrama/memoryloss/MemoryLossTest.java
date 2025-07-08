@@ -19,7 +19,7 @@ public class MemoryLossTest {
 	
 	@Test
 	public void checkMemoryLengthForAllEnsembleModels_FindTheNeedleTest_CSV() {
-		ModelsScoreCard scorecard = OllamaDramaUtils.performMemoryTestUsingRandomWordNeedleTest(Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_MAXCONTEXT_L, 3);
+		ModelsScoreCard scorecard = OllamaDramaUtils.performMemoryTestUsingRandomWordNeedleTest(Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_MAXCONTEXT_L, 3, true);
 		System.out.println("SCORECARD:");
 		scorecard.evaluate();
 		scorecard.print();
@@ -28,7 +28,7 @@ public class MemoryLossTest {
 	@Ignore
 	@Test
 	public void checkMemoryLengthForAllEnsembleModels_RandomWords_CSV() {
-		ModelsScoreCard scorecard = OllamaDramaUtils.performMemoryTestUsingRandomWords(Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, 3);
+		ModelsScoreCard scorecard = OllamaDramaUtils.performMemoryTestUsingRandomWords(Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, 3, true);
 		System.out.println("SCORECARD:");
 		scorecard.evaluate();
 		scorecard.print();
@@ -37,7 +37,7 @@ public class MemoryLossTest {
 	@Ignore
 	@Test
 	public void checkMemoryLengthForAllEnsembleModels_SequenceOfNumbers_CSV() {
-		ModelsScoreCard scorecard = OllamaDramaUtils.performMemoryTestUsingSequenceOfNumbers(Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, 3);
+		ModelsScoreCard scorecard = OllamaDramaUtils.performMemoryTestUsingSequenceOfNumbers(Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, 3, true, 900L);
 		System.out.println("SCORECARD:");
 		scorecard.evaluate();
 		scorecard.print();

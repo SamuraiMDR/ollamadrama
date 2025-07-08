@@ -24,31 +24,31 @@ public class OllamaDramaUtils {
 	private static final Logger LOGGER = LoggerFactory.getLogger(OllamaDramaUtils.class);
 	private static final Random RANDOM = new Random();
 
-	public static SingleStringEnsembleResponse strictCollectiveEnsembleRun(String _query, String _models, boolean _printFirstrun, boolean _hide_llm_reply_if_uncertain) {
+	public static SingleStringEnsembleResponse strictCollectiveEnsembleRun(String _query, String _models, boolean _printFirstrun, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
 		OllamaDramaSettings ollama_settings = OllamaUtils.parseOllamaDramaConfigENV();
 		ollama_settings.sanityCheck();
-		return collectIterativeEnsembleVotes(_query, _models, ollama_settings, _printFirstrun, _hide_llm_reply_if_uncertain);
+		return collectIterativeEnsembleVotes(_query, _models, ollama_settings, _printFirstrun, _hide_llm_reply_if_uncertain, _use_random_seed);
 	}
 
 
-	public static SingleStringEnsembleResponse collectEnsembleVotes(String _query, String _ollama_model_names, String _openai_model_names, OllamaDramaSettings _ollama_settings, boolean _hide_llm_reply_if_uncertain) {
+	public static SingleStringEnsembleResponse collectEnsembleVotes(String _query, String _ollama_model_names, String _openai_model_names, OllamaDramaSettings _ollama_settings, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
 		if (_ollama_settings.getOpenaikey().length() < 10) {
 			LOGGER.error("To use OpenAI you need do define a valid API key");
 			return new SingleStringEnsembleResponse();
 		}
-		SingleStringEnsembleResponse sser1 = OllamaUtils.strictEnsembleRun(_query, _ollama_model_names, _hide_llm_reply_if_uncertain);
+		SingleStringEnsembleResponse sser1 = OllamaUtils.strictEnsembleRun(_query, _ollama_model_names, _hide_llm_reply_if_uncertain, _use_random_seed);
 		SingleStringEnsembleResponse sser2 = OpenAIUtils.strictEnsembleRun(_query, _openai_model_names, _ollama_settings, _hide_llm_reply_if_uncertain);
 		SingleStringEnsembleResponse sser = OllamaUtils.merge(sser1, sser2);
 		return sser;
 	}
 
-	public static SingleStringEnsembleResponse collectIterativeEnsembleVotes(String _query, String _models, OllamaDramaSettings _settings, boolean _printFirstrun, boolean _hide_llm_reply_if_uncertain) {
+	public static SingleStringEnsembleResponse collectIterativeEnsembleVotes(String _query, String _models, OllamaDramaSettings _settings, boolean _printFirstrun, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
 		OllamaService.getInstance(_models, _settings);
 		OpenAIService.getInstance(_settings);
 		SingleStringEnsembleResponse sser1 = OllamaUtils.strictEnsembleRun(
 				_query, 
 				_models,
-				_hide_llm_reply_if_uncertain);
+				_hide_llm_reply_if_uncertain, _use_random_seed);
 		if (_printFirstrun) sser1.printEnsembleSummary();
 		if (sser1.getUniq_confident_replies().size() > 0) {
 			if (sser1.getUniq_confident_replies().size() == 1) {
@@ -66,7 +66,7 @@ public class OllamaDramaUtils {
 					+ Globals.ENSEMBLE_LOOP_STATEMENT + "\n"
 					+ sb.toString(),
 					_models,
-					_hide_llm_reply_if_uncertain);
+					_hide_llm_reply_if_uncertain, _use_random_seed);
 			return sser2;
 		} else {
 			return sser1;
@@ -74,7 +74,7 @@ public class OllamaDramaUtils {
 
 	}
 
-	public static ModelsScoreCard populateScorecardsForOllamaModels(String _models, String _question, HashMap<String, Integer> _acceptable_answers, boolean _hide_llm_reply_if_uncertain) {
+	public static ModelsScoreCard populateScorecardsForOllamaModels(String _models, String _question, HashMap<String, Integer> _acceptable_answers, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
 		ModelsScoreCard scorecard = new ModelsScoreCard();
 		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
 		settings.setOllama_models(_models);
@@ -85,13 +85,38 @@ public class OllamaDramaUtils {
 				int queryindex = 1;
 
 				// Launch strict session
-				OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, _hide_llm_reply_if_uncertain);
+				OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, _hide_llm_reply_if_uncertain, _use_random_seed);
 				if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
 
 				// Make query
 				String q1 = _question;
 				System.out.println("Question: " + q1);
-				SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(q1, _hide_llm_reply_if_uncertain);
+				SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(q1, _hide_llm_reply_if_uncertain, settings.getOllama_timeout());
+				ssr1 = OllamaUtils.applyResponseSanity(ssr1, model_name, _hide_llm_reply_if_uncertain);
+				scorecard = OllamaUtils.updateScoreCard(scorecard, model_name, "q" + queryindex, q1, _acceptable_answers, ssr1);
+			}
+		}
+		return scorecard;
+	}
+	
+	public static ModelsScoreCard populateProbabilityForOllamaModels(String _models, String _question, HashMap<String, Integer> _acceptable_answers, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed, long _timeout) {
+		ModelsScoreCard scorecard = new ModelsScoreCard();
+		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
+		settings.setOllama_models(_models);
+		settings.sanityCheck();
+		OllamaService.getInstance(settings);
+		for (String model_name: _models.split(",")) {
+			if (model_name.length()>=3) {
+				int queryindex = 1;
+
+				// Launch strict session
+				OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, _hide_llm_reply_if_uncertain, _use_random_seed);
+				if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
+
+				// Make query
+				String q1 = _question;
+				System.out.println("Question: " + q1);
+				SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(q1, _hide_llm_reply_if_uncertain, _timeout);
 				ssr1 = OllamaUtils.applyResponseSanity(ssr1, model_name, _hide_llm_reply_if_uncertain);
 				scorecard = OllamaUtils.updateScoreCard(scorecard, model_name, "q" + queryindex, q1, _acceptable_answers, ssr1);
 			}
@@ -119,8 +144,8 @@ public class OllamaDramaUtils {
 		return scorecard;
 	}
 
-	public static ModelsScoreCard populateScorecardsForOllamaModels(String _models, String _question, String _expectedresponse, boolean _hide_llm_reply_if_uncertain) {
-		return populateScorecardsForOllamaModels(_models, _question, OllamaUtils.singleValScore(_expectedresponse, 1), _hide_llm_reply_if_uncertain);
+	public static ModelsScoreCard populateScorecardsForOllamaModels(String _models, String _question, String _expectedresponse, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
+		return populateScorecardsForOllamaModels(_models, _question, OllamaUtils.singleValScore(_expectedresponse, 1), _hide_llm_reply_if_uncertain, _use_random_seed);
 	}
 
 
@@ -128,20 +153,20 @@ public class OllamaDramaUtils {
 		return populateScorecardsForOpenAIModels(_models, _settings, _question, OllamaUtils.singleValScore(_expectedresponse, 1), _hide_llm_reply_if_uncertain);
 	}
 
-	public static ModelsScoreCard populateScorecardsForOpenAIAndOllamaModels(String _models, String _openaimodels, OllamaDramaSettings _settings, String _question, String _expectedresponse, boolean _hide_llm_reply_if_uncertain) {
-		return populateScorecardsForOpenAIAndOllamaModels(_models, _openaimodels, _settings, _question, OllamaUtils.singleValScore(_expectedresponse, 1), _hide_llm_reply_if_uncertain);
+	public static ModelsScoreCard populateScorecardsForOpenAIAndOllamaModels(String _models, String _openaimodels, OllamaDramaSettings _settings, String _question, String _expectedresponse, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
+		return populateScorecardsForOpenAIAndOllamaModels(_models, _openaimodels, _settings, _question, OllamaUtils.singleValScore(_expectedresponse, 1), _hide_llm_reply_if_uncertain, _use_random_seed);
 	}
 
-	public static ModelsScoreCard populateScorecardsForOpenAIAndOllamaModels(String _models, String _openaimodels, OllamaDramaSettings _settings, String _question, HashMap<String, Integer> _acceptable_answers, boolean _hide_llm_reply_if_uncertain ) {
+	public static ModelsScoreCard populateScorecardsForOpenAIAndOllamaModels(String _models, String _openaimodels, OllamaDramaSettings _settings, String _question, HashMap<String, Integer> _acceptable_answers, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
 		ModelsScoreCard scorecard = new ModelsScoreCard();
 		OllamaService.getInstance(_models);
 		for (String model_name: _models.split(",")) {
 			int queryindex = 1;
-			OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, _hide_llm_reply_if_uncertain);
+			OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, _hide_llm_reply_if_uncertain, _use_random_seed);
 			if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
 			String q1 = _question;
 			System.out.println("Question: " + q1);
-			SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(q1, _hide_llm_reply_if_uncertain);
+			SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(q1, _hide_llm_reply_if_uncertain, _settings.getOllama_timeout());
 			ssr1 = OllamaUtils.applyResponseSanity(ssr1, model_name, _hide_llm_reply_if_uncertain);
 			scorecard = OllamaUtils.updateScoreCard(scorecard, model_name, "q" + queryindex, q1, _acceptable_answers, ssr1);
 		}
@@ -171,7 +196,7 @@ public class OllamaDramaUtils {
 	}
 	
 	@SuppressWarnings({"serial"})
-	public static ModelsScoreCard performMemoryTestUsingRandomWordNeedleTest(String _models, int _nrErrorsToAllow) {
+	public static ModelsScoreCard performMemoryTestUsingRandomWordNeedleTest(String _models, int _nrErrorsToAllow, boolean _use_random_seed) {
 		String needle_word = "needle";
 		boolean apply_earlyexit_after_errorthreshold = true;
 		int len_random_word = 3; // o1 - one token typically corresponds to around 3–4 characters of text on average
@@ -188,7 +213,7 @@ public class OllamaDramaUtils {
 						(apply_earlyexit_after_errorthreshold && (errorcounter <= _nrErrorsToAllow)) ||
 						!apply_earlyexit_after_errorthreshold ||
 						false) {
-					OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, false);
+					OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, false, _use_random_seed);
 					if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama agent [" + model_name + "] is operational\n");
 					
 					int needle_pos = NumUtils.randomNumWithinRangeAsInt(20, x-20);
@@ -258,7 +283,7 @@ public class OllamaDramaUtils {
 	}
 
 	@SuppressWarnings({"serial"})
-	public static ModelsScoreCard performMemoryTestUsingRandomWords(String _models, int _nrErrorsToAllow) {
+	public static ModelsScoreCard performMemoryTestUsingRandomWords(String _models, int _nrErrorsToAllow, boolean _use_random_seed) {
 		boolean apply_earlyexit_after_errorthreshold = true;
 		int len_random_word = 3; // o1 - one token typically corresponds to around 3–4 characters of text on average
 		ModelsScoreCard scorecard = new ModelsScoreCard();
@@ -275,7 +300,7 @@ public class OllamaDramaUtils {
 						(apply_earlyexit_after_errorthreshold && (errorcounter <= _nrErrorsToAllow)) ||
 						!apply_earlyexit_after_errorthreshold ||
 						false) {
-					OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, false);
+					OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, false, _use_random_seed);
 					if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama agent [" + model_name + "] is operational\n");
 					String firstWord = generateRandomWord(len_random_word);
 					bagOfWords = firstWord;
@@ -346,7 +371,7 @@ public class OllamaDramaUtils {
 	}
 
 	@SuppressWarnings({"serial"})
-	public static ModelsScoreCard performMemoryTestUsingSequenceOfNumbers(String _models, int _nrErrorsToAllow) {
+	public static ModelsScoreCard performMemoryTestUsingSequenceOfNumbers(String _models, int _nrErrorsToAllow, boolean _use_random_seed, long _timeout) {
 
 		ModelsScoreCard scorecard = new ModelsScoreCard();
 		OllamaService.getInstance(_models);
@@ -365,7 +390,7 @@ public class OllamaDramaUtils {
 			for (int x=20; x<=30000; x+=20) {
 
 				// Launch strict agent per test
-				OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, true);
+				OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, true, _use_random_seed);
 				if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama agent [" + model_name + "] is operational\n");
 
 				bagOfCharacters = "";
@@ -377,7 +402,7 @@ public class OllamaDramaUtils {
 				String qx = bagOfCharacters + "\n" + "What is the smallest number you can find in the numbers provided above?";
 				//String qx = bagOfCharacters + "\n" + "How many repetitions of the word 'cat' can you find in my input?";
 				System.out.println("Question: " + qx);
-				SingleStringQuestionResponse rx = a1.askStrictChatQuestion(qx, true);
+				SingleStringQuestionResponse rx = a1.askStrictChatQuestion(qx, true, _timeout);
 
 				if (rx != null) {
 					System.out.println("Current x: " + x);

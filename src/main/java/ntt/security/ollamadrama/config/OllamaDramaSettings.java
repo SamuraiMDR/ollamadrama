@@ -1,6 +1,9 @@
 package ntt.security.ollamadrama.config;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +22,7 @@ public class OllamaDramaSettings {
 	private String ollama_models = Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_MINIDIVERSE_M;
 	private Integer ollama_port = 11434;
 	private Integer threadPoolCount = 20;
-	private Integer ollama_timeout = 120;
+	private long ollama_timeout = 1200L; // 20 min
 	private boolean ollama_scan = true;
 	
 	private String openaikey = "";
@@ -72,14 +75,6 @@ public class OllamaDramaSettings {
 	public void sanityCheck() {
 	}
 
-	public Integer getOllama_timeout() {
-		return ollama_timeout;
-	}
-
-	public void setOllama_timeout(Integer ollama_timeout) {
-		this.ollama_timeout = ollama_timeout;
-	}
-
 	public Integer getThreadPoolCount() {
 		return threadPoolCount;
 	}
@@ -93,8 +88,21 @@ public class OllamaDramaSettings {
 	}
 
 	public void setOllama_models(String ollama_models) {
-		this.ollama_models = ollama_models;
+		if (ollama_models != null && !ollama_models.isEmpty()) {
+			String[] parts = ollama_models.split(",");
+			Set<String> uniqueModels = new LinkedHashSet<>();
+			for (String part : parts) {
+				String trimmed = part.trim();
+				if (!trimmed.isEmpty()) {
+					uniqueModels.add(trimmed);
+				}
+			}
+			this.ollama_models = String.join(",", uniqueModels);
+		} else {
+			this.ollama_models = "";
+		}
 	}
+
 
 	public ArrayList<OllamaEndpoint> getSatellites() {
 		return satellites;
@@ -163,6 +171,14 @@ public class OllamaDramaSettings {
 
 	public void setAutopull_max_llm_size(String autopull_max_llm_size) {
 		this.autopull_max_llm_size = autopull_max_llm_size;
+	}
+
+	public long getOllama_timeout() {
+		return ollama_timeout;
+	}
+
+	public void setOllama_timeout(long ollama_timeout) {
+		this.ollama_timeout = ollama_timeout;
 	}
 
 }

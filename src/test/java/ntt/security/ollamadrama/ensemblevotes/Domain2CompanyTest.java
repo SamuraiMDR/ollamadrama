@@ -1,8 +1,6 @@
 package ntt.security.ollamadrama.ensemblevotes;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +29,7 @@ public class Domain2CompanyTest {
 				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL,
 				Globals.MODEL_NAMES_OPENAI_ALL,
 				ollama_settings,
-				true);
+				true, false);
 		sser.printEnsemble();
 		
 		/*
@@ -83,41 +81,45 @@ public class Domain2CompanyTest {
 	public void strict_ENSAMBLE_Ollama_Domain2CompanyKnowledge_Ollama() {
 		SingleStringEnsembleResponse sser1 = OllamaUtils.strictEnsembleRun(
 				"What company or organization is associated with the domain global.ntt? Reply with only the name in uppercase",
-				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, true);
+				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, true, false);
 		sser1.printEnsemble();
 		
 		/*
-		uniq confident responses: 7
-		response #1: NIPPON TELEGRAPH AND TELEPHONE
-		 - openhermes:7b-mistral-v2.5-q4_0::fc7cf6c0-00ec-4689-8b45-b9c7af0adb30
-		response #2: NTT LIMITED
-		 - exaone3.5:32b::60a586f9-09fb-42da-85d3-77c9c7d33da9
-		 - nemotron:70b::3d1a79d7-6f10-4bcf-b982-9e0e36622e37
-		response #3: NIPPON TELEGRAPH AND TELEPHONE CORPORATION
-		 - dolphin-mistral:7b::78e51268-8ce4-4cfe-b8c1-7805a2f4db50
-		response #4: NTT COMMUNICATIONS CORPORATION
-		 - aya-expanse:32b::b2c131f0-1305-402f-a474-a4e343b9ffc7
-		response #5: NIPPON TELEGRAPH AND TELEPHONE EXCHANGE
-		 - openchat:7b::415fd724-d3da-4685-8773-3794caff5a18
+		uniq confident responses: 6
+		response #1: NTT LIMITED
+		 - nemotron:70b::9154b0bf-9d34-4962-8f03-de8137c2889c
+		 - exaone3.5:32b::b991eccd-d637-4abb-bea2-13dc854421a9
+		response #2: NIPPON TELEGRAPH AND TELEPHONE CORPORATION
+		 - r1-1776:70b::2e5be080-82a1-45dc-8403-54760f547c01
+		response #3: NTT COMMUNICATIONS CORPORATION
+		 - aya-expanse:32b::6d84ea4d-bab8-4075-8af6-a4d1007cac72
+		response #4: NIPPON TELEGRAPH AND TELEPHONE EXCHANGE
+		 - openchat:7b::3c89cbfc-af0c-466d-b56a-55573389ce12
+		response #5: NTT DATA
+		 - gemma3n:e4b::48c4d5ae-5dee-4718-987d-59046e7c0a02
 		response #6: NTT
-		 - sailor2:20b::832af0c3-c788-4f2b-802f-2d962d766d05
-		 - qwen2.5:7b::7f9c894d-c8b4-4393-b763-952c878209fa
-		 - wizard-vicuna-uncensored:30b::0ea50ae3-4e3f-49c9-8308-0444e18c3d1e
-		 - marco-o1:7b::c9b4da02-90d2-4eb8-b738-a178dfb3f2b5
-		 - llama3.3:70b::719f0913-ec6c-4c82-a335-22007e033d16
-		 - tulu3:70b::eba4b325-c5e6-487a-b111-adc8baf53b4f
-		 - olmo2:7b::8ba14b5c-2a75-4e7b-9b7f-06248ca4dd63
-		 - mistral:7b::a9414601-0ead-4c23-8700-46ae9523a17d
-		 - tulu3:8b::3a5f1b11-e0de-404c-867f-f5b1a47a324c
-		 - qwen2.5:72b::ef21f248-c04f-4416-928e-4cbfc10ea32e
-		 - aya-expanse:8b::c35993c8-1478-43e6-a02b-a02ef7835e37
-		 - llama3.1:70b::c1d5970a-bb0f-4fe5-a78d-d34128064954
-		 - llama3.1:8b::8c615a6f-7217-4d4a-aade-0d197e38226c
-		 - gemma2:27b::b9e090a8-eec8-4c65-9ed3-c0fd1074858c
-		 - athene-v2:72b::fcb8d979-074f-4bcd-a81c-d350e9623a5f
-		 - gemma2:9b::866510d9-4cae-479b-9b5d-c8eac2665f50
-		response #7: NTT GLOBAL
-		 - granite3.1-dense:8b::9320abd9-5479-410c-a564-4841a9daf721
+		 - llama3.1:70b::fdfcae78-7308-4d36-8f1f-4677229f89cf
+		 - qwen2.5vl:72b::6e003c4e-8175-489f-b8c2-8903a13402d9
+		 - aya-expanse:8b::339338a8-b922-4172-8654-5abb0f070657
+		 - marco-o1:7b::32df8cc7-86ed-4aba-bf9d-1504a04b6c52
+		 - sailor2:20b::acb0ae91-6059-429f-8933-a2b3c8f85c5d
+		 - qwen2.5:72b::ecb7963c-ab2b-4bbc-83b9-dff459683a5b
+		 - llama3.3:70b::a301dbb6-02d5-4194-85e6-dd22ece0fc57
+		 - tulu3:70b::bd63d2e2-8d22-4d67-a1c7-52b9291d54e8
+		 - phi4:14b::e0f69049-8e2e-4d98-9346-3be420b24ea5
+		 - cogito:14b::36ecc773-c93e-4378-b32f-32be35bc1e6c
+		 - qwen3:4b::6cdadeca-59d8-4ad6-8953-815e9be7966f
+		 - cogito:70b::6a306ee5-65b4-4c1d-aa28-704196cbc814
+		 - athene-v2:72b::6180eae2-1c9c-47a6-afd4-6c7bac2ac240
+		 - olmo2:7b::5b1f5e16-4c88-42f3-8148-ef90fcafd859
+		 - gemma2:9b::f89ea9f1-6e72-44ae-aae3-03ea54178c09
+		 - granite3.3:8b::d00498fa-3927-47ab-b391-a1e1d294c9a0
+		 - llama3.1:8b::f7c74942-9105-4ffb-9535-d212a5c99546
+		 - tulu3:8b::520a78b2-a3fa-47b4-a35d-5ec5095eeb70
+		 - gemma3:27b::fecccabd-4c87-4778-b9cf-53548ed3a740
+		 - qwen2.5:7b::d33bc035-5c25-4770-962a-c5529ab2f22f
+		 - mistral:7b::c15fddd6-38df-41bb-a408-d9ebf6b06d7a
+		 - cogito:8b::4be75e4e-4a95-498a-869b-d6704fa33b8d
 		 */
 		
 		// Assert
@@ -134,7 +136,7 @@ public class Domain2CompanyTest {
 				"What company or organization is associated with the domain global.ntt? Reply with only the name in uppercase",
 				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL,
 				Globals.MODEL_NAMES_OPENAI_ALL,
-				ollama_settings, true, true);
+				ollama_settings, true, true, false);
 		sser.printEnsemble();
 		
 		/*

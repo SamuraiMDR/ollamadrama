@@ -58,12 +58,14 @@ public class SingleStringEnsembleResponse {
 			System.out.println("uniq responses: " + this.getUniq_replies().size());
 			int i = 1;
 			for (String r: this.getUniq_replies().keySet()) {
-				System.out.println("response #" + i + ": " + r);
-				HashMap<String, Boolean> models = this.getUniq_replies().get(r);
-				for (String model: models.keySet()) {
-					System.out.println(" - " + model);
+				if (!"".equals(r)) {
+					System.out.println("response #" + i + ": " + r);
+					HashMap<String, Boolean> models = this.getUniq_replies().get(r);
+					for (String model: models.keySet()) {
+						System.out.println(" - " + model);
+					}
+					i++;
 				}
-				i++;
 			}
 		}
 
@@ -75,12 +77,14 @@ public class SingleStringEnsembleResponse {
 			System.out.println("uniq confident responses: " + this.getUniq_confident_replies().size());
 			int i = 1;
 			for (String r: this.getUniq_confident_replies().keySet()) {
-				System.out.println("response #" + i + ": " + r);
-				HashMap<String, Boolean> models = this.getUniq_confident_replies().get(r);
-				for (String model: models.keySet()) {
-					System.out.println(" - " + model);
+				if (!"".equals(r)) {
+					System.out.println("response #" + i + ": " + r);
+					HashMap<String, Boolean> models = this.getUniq_confident_replies().get(r);
+					for (String model: models.keySet()) {
+						System.out.println(" - " + model);
+					}
+					i++;
 				}
-				i++;
 			}
 		}
 
@@ -119,22 +123,23 @@ public class SingleStringEnsembleResponse {
 
 		return confident_response;
 	}
-	
+
 	public String getBestResponse(int _confident_threshold) {
 		String confident_response = "";
 		int max_confident_reply_size = 0;
 		if (this.getUniq_confident_replies().size() >= 1) {
 			for (String resp: this.getUniq_confident_replies().keySet()) {
-				HashMap<String, Boolean> llms = this.getUniq_confident_replies().get(resp);
-				if (llms.keySet().size() >= _confident_threshold) {
-					if (llms.keySet().size() > max_confident_reply_size) {
-						confident_response = resp;
-						max_confident_reply_size = llms.keySet().size();
+				if (!"".equals(resp)) {
+					HashMap<String, Boolean> llms = this.getUniq_confident_replies().get(resp);
+					if (llms.keySet().size() >= _confident_threshold) {
+						if (llms.keySet().size() > max_confident_reply_size) {
+							confident_response = resp;
+							max_confident_reply_size = llms.keySet().size();
+						}
 					}
 				}
 			}
 		}
-
 		return confident_response;
 	}
 

@@ -43,7 +43,7 @@ public class OllamaSession {
 		this.uuid = UUID.randomUUID().toString();
 		this.sessiontype = _sessiontype;
 
-		this.initialized = setChatSystemProfileStatement(_profilestatement, _settings.getAutopull_max_llm_size());		
+		this.initialized = setChatSystemProfileStatement(_profilestatement, _settings.getAutopull_max_llm_size(), _settings.getOllama_timeout());		
 	}
 
 	public String getModel_name() {
@@ -83,11 +83,11 @@ public class OllamaSession {
 		return "";
 	}
 
-	public boolean setChatSystemProfileStatement(String _profile_statement, String _autopull_max_llm_size) {
+	public boolean setChatSystemProfileStatement(String _profile_statement, String _autopull_max_llm_size, long _timeout) {
 		int errorCount = 0;
 		if (null == this.chatResult) {
 			while (null == this.chatResult) {
-				OllamaChatResult res = OllamaUtils.setChatSystemProfile(this.ollamaAPI, this.model_name, this.options, _profile_statement, _autopull_max_llm_size);
+				OllamaChatResult res = OllamaUtils.setChatSystemProfile(this.ollamaAPI, this.model_name, this.options, _profile_statement, _autopull_max_llm_size, _timeout);
 				if (null != res) {
 					this.chatResult = res;
 					return true;
@@ -104,19 +104,19 @@ public class OllamaSession {
 		return false;
 	}
 
-	public void provideChatStatement(String _statement) {
+	public void provideChatStatement(String _statement, long _timeout) {
 		if (!_statement.endsWith(".")) _statement = _statement + ".";
 		if (null == this.chatResult) {
 			LOGGER.warn("You need to initialize a chat session with a profile statement first");
 		} else {
 			if (this.getSessiontype() == SessionType.CREATIVE) {
-				ChatInteraction ci = OllamaUtils.addCreativeStatementToExistingChat(this.ollamaAPI, this.model_name, this.options, this.chatResult, _statement);
+				ChatInteraction ci = OllamaUtils.addCreativeStatementToExistingChat(this.ollamaAPI, this.model_name, this.options, this.chatResult, _statement, _timeout);
 				if (null != ci) {
 					LOGGER.debug("Successfully extended chat session with results from STATEMENT interaction");
 					this.chatResult = ci.getChatResult();
 				}
 			} else {
-				ChatInteraction ci = OllamaUtils.addStrictStatementToExistingChat(this.ollamaAPI, this.model_name, this.options, this.chatResult, _statement);
+				ChatInteraction ci = OllamaUtils.addStrictStatementToExistingChat(this.ollamaAPI, this.model_name, this.options, this.chatResult, _statement, _timeout);
 				if (null != ci) {
 					LOGGER.debug("Successfully extended chat session with results from STATEMENT interaction");
 					this.chatResult = ci.getChatResult();
@@ -125,15 +125,15 @@ public class OllamaSession {
 		}
 	}
 
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question) {
-		return askStrictChatQuestion(_question, false, 10);
+	public SingleStringQuestionResponse askStrictChatQuestion(String _question, long _timeout) {
+		return askStrictChatQuestion(_question, false, _timeout);
 	}
 
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain) {
-		return askStrictChatQuestion(_question, _hide_llm_reply_if_uncertain, 10);
+	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, long _timeout) {
+		return askStrictChatQuestion(_question, _hide_llm_reply_if_uncertain, 10, _timeout);
 	}
 
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, int _retryThreshold) {
+	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, int _retryThreshold, long _timeout) {
 		if (this.sessiontype == SessionType.STRICTPROTOCOL) {
 			if (!_question.endsWith("?")) _question = _question + "?";
 			if (null == this.chatResult) {
@@ -143,7 +143,7 @@ public class OllamaSession {
 			} else {
 				int retryCounter = 0;
 				while (true) {
-					ChatInteraction ci =  OllamaUtils.askChatQuestion(this.ollamaAPI, this.model_name, this.options, this.chatResult, _question, _retryThreshold);
+					ChatInteraction ci =  OllamaUtils.askChatQuestion(this.ollamaAPI, this.model_name, this.options, this.chatResult, _question, _timeout);
 					if (null != ci) {
 						String json = "";
 
@@ -205,7 +205,7 @@ public class OllamaSession {
 		return new SingleStringQuestionResponse();
 	}
 
-	public String askRawChatQuestion(String _question) {
+	public String askRawChatQuestion(String _question, long _timeout) {
 		if (!_question.endsWith("?")) _question = _question + "?";
 		if (null == this.chatResult) {
 			LOGGER.warn("chatResult is null!");
@@ -213,7 +213,7 @@ public class OllamaSession {
 		} else {
 			int retryCounter = 0;
 			while (true) {
-				ChatInteraction ci =  OllamaUtils.askRawChatQuestion(this.ollamaAPI, this.model_name, this.options, this.chatResult, _question);
+				ChatInteraction ci =  OllamaUtils.askRawChatQuestion(this.ollamaAPI, this.model_name, this.options, this.chatResult, _question, _timeout);
 				if (null != ci) return ci.getResponse();
 				retryCounter++;
 				if (retryCounter > 5) LOGGER.warn("Having problems getting a valid reply using this question: " + _question);
@@ -222,7 +222,7 @@ public class OllamaSession {
 		}
 	}
 
-	public String askRawChatQuestionWithCustomChatHistory(String _question, List<OllamaChatMessage> _customChatHistory) {
+	public String askRawChatQuestionWithCustomChatHistory(String _question, List<OllamaChatMessage> _customChatHistory, long _timeout) {
 		if (!_question.endsWith("?")) _question = _question + "?";
 		if (null == this.chatResult) {
 			LOGGER.warn("chatResult is null!");
@@ -230,7 +230,7 @@ public class OllamaSession {
 		} else {
 			int retryCounter = 0;
 			while (true) {
-				ChatInteraction ci =  OllamaUtils.askRawChatQuestionWithCustomChatHistory(this.ollamaAPI, this.model_name, this.options, this.chatResult, _question, _customChatHistory);
+				ChatInteraction ci =  OllamaUtils.askRawChatQuestionWithCustomChatHistory(this.ollamaAPI, this.model_name, this.options, this.chatResult, _question, _customChatHistory, _timeout);
 				if (null != ci) return ci.getResponse();
 				retryCounter++;
 				if (retryCounter > 5) LOGGER.warn("Having problems getting a valid reply using this question: " + _question);

@@ -21,7 +21,7 @@ public class OllamaEnsemble {
 		}
 	}
 
-	public SingleStringEnsembleResponse askChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain) {
+	public SingleStringEnsembleResponse askChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, long _timeout) {
 
 		SingleStringEnsembleResponse ensemble_response = new SingleStringEnsembleResponse();
 
@@ -33,7 +33,7 @@ public class OllamaEnsemble {
 			OllamaSession a1 = wa1.getSession();
 			String model_name = a1.getModel_name();
 
-			SingleStringQuestionResponse a1_reply = a1.askStrictChatQuestion(_question, _hide_llm_reply_if_uncertain);
+			SingleStringQuestionResponse a1_reply = a1.askStrictChatQuestion(_question, _hide_llm_reply_if_uncertain, _timeout);
 			ensemble_response.addReply(model_name + "::" + uuid, a1_reply);
 
 			HashMap<String, Boolean> c1 = uniq_replies.get(a1_reply.getResponse());

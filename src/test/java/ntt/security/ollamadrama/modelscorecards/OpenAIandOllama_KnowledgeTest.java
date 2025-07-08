@@ -46,7 +46,7 @@ public class OpenAIandOllama_KnowledgeTest {
 					settings,
 					"What company or organization is associated with google.com? Reply with only the name",
 					acceptable_answers,
-					true);
+					true, false);
 
 			// Print the scorecard
 			System.out.println("SCORECARD:");
@@ -107,7 +107,7 @@ public class OpenAIandOllama_KnowledgeTest {
 					settings,
 					"Is the capital city of France named Paris? Reply with Yes or No.",
 					"Yes",
-					true);
+					true, false);
 
 			// Print the scorecard
 			System.out.println("SCORECARD:");
@@ -168,7 +168,7 @@ public class OpenAIandOllama_KnowledgeTest {
 					settings,
 					"Is the capital city of OOikiOOA named Mo1rstiooooo? Reply with Yes or No.",
 					"LOWPROBA",
-					true);
+					true, false);
 
 			// Print the scorecard
 			System.out.println("SCORECARD:");
@@ -226,7 +226,7 @@ public class OpenAIandOllama_KnowledgeTest {
 					settings,
 					"Count the number of R in strawberry. Answer with number only", 
 					"3",
-					true);
+					true, false);
 
 			// Print the scorecard
 			System.out.println("SCORECARD:");
@@ -286,7 +286,7 @@ public class OpenAIandOllama_KnowledgeTest {
 					"Count the number of 'r' characters in the string 's t r a w b e r r y', which contains 10 characters from the alphabet in total. "
 					+ "Walk through each character in the word while counting and make note of the string index they occur at. "
 					+ "Include the string index records in your motivation. Answer with number only", 
-					"3", true);
+					"3", true, false);
 
 			// Print the scorecard
 			System.out.println("SCORECARD:");

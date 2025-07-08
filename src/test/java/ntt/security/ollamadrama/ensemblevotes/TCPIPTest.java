@@ -24,7 +24,7 @@ public class TCPIPTest {
 	public void strict_ENSAMBLE_Ollama_POP3() {
 		SingleStringEnsembleResponse sser1 = OllamaUtils.strictEnsembleRun(
 				"What TCP port does the POP3 protocol typically use? Answer with only a number.",
-				Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_MINIDIVERSE_M, true);
+				Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_MINIDIVERSE_M, true, false);
 		sser1.printEnsemble();
 		
 		/*
