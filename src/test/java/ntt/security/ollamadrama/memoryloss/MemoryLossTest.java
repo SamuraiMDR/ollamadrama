@@ -19,7 +19,7 @@ public class MemoryLossTest {
 	
 	@Test
 	public void checkMemoryLengthForAllEnsembleModels_FindTheNeedleTest_CSV() {
-		ModelsScoreCard scorecard = OllamaDramaUtils.performMemoryTestUsingRandomWordNeedleTest(Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_MAXCONTEXT_L, 3, true);
+		ModelsScoreCard scorecard = OllamaDramaUtils.performMemoryTestUsingRandomWordNeedleTest(Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, 3, true);
 		System.out.println("SCORECARD:");
 		scorecard.evaluate();
 		scorecard.print();

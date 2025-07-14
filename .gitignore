@@ -3,5 +3,4 @@
 /target/
 *.csv
 *.dxp
-scripts
 [rund]*.sh

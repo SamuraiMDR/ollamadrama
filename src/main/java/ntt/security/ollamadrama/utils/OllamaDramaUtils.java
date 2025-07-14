@@ -208,7 +208,7 @@ public class OllamaDramaUtils {
 			int maxCharsCounted = 0;
 			int errorcounter = 0;
 			String bagOfWords = "";
-			for (int x=1000; x<=50000; x+=1000) {
+			for (int x=1000; x<=200000; x+=1000) {
 				if (false ||
 						(apply_earlyexit_after_errorthreshold && (errorcounter <= _nrErrorsToAllow)) ||
 						!apply_earlyexit_after_errorthreshold ||
@@ -238,7 +238,7 @@ public class OllamaDramaUtils {
 									+ " The list is complete and contains no typos so do not make any excuses about the list being too long to process manually. "
 									+ "I promise that you will find one of the following words in the list if you really put your mind to it: 'breeze', '" + needle_word + "', 'puzzle', 'glance' and 'borrow'";
 					System.out.println("Question: " + StringsUtils.cutAndPadStringToN(qx, len_random_word*16) + "..." + StringsUtils.getLastNCharacters(qx, 400));
-					SingleStringQuestionResponse rx = a1.askStrictChatQuestion(qx, false, 3); // retry x times on bad replies
+					SingleStringQuestionResponse rx = a1.askStrictChatQuestion(qx, false, 120); // 2 min timeout
 					if (rx != null) {
 						System.out.println("Current bagsize: " + x);
 						System.out.println("Current needle word location: " + needle_pos);
