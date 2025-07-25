@@ -1,8 +1,5 @@
 package ntt.security.ollamadrama.utils;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.math.RoundingMode;
 import java.util.Random;
 
 public class NumUtils {

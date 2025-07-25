@@ -13,8 +13,151 @@ Ollamadrama makes it easy to
 * compare model performance on a specific topic using 'scorecards'
 * perform ensamble voting, ie require '5 out of 9 LLMs to give the same answer'
 * recover from ollama endpoint connectivity failures
+* allow controlled tool calls using Model Context Protocol (MCP)
 
-### How to use it (LOCALLY)
+### End-to-end example using MCP tool calls
+
+Setup the MCP fetch() server:
+   
+   ```
+   mkdir mcp-server-fetch
+   cd mcp-server-fetch
+   ```
+
+   Create a Dockerfile with the following content:
+   ```
+   FROM python:3.11-slim
+   RUN apt-get update && apt-get install -y gcc g++ git curl && rm -rf /var/lib/apt/lists/*
+   RUN pip install --no-cache-dir mcp-server-fetch mcp-proxy
+   EXPOSE 8080
+   ENTRYPOINT ["mcp-proxy", "--host=0.0.0.0", "--port=8080", "--"]
+   CMD ["python", "-m", "mcp_server_fetch"]
+   ```
+   
+   ```
+   docker build -t mcp-server-fetch .
+   docker run --network=host -p 8080:8080 mcp-server-fetch
+   ```
+
+You now have an MCP endpoint exposed to the network which is able to retrieve website content as a tool call. Make sure that only trusted sources are able to access this MCP server as there is no authentication requirements to make a call. 
+
+Clone the ollamadrama repo into your IDE of choice, then run simple_HTTP_MCP_Tool_Test() (src/test/java/ntt/security/ollamadrama/mcp) as a unit test. With a 16GB GPU card this unit test works well with models such as qwen3:14b or cogito:14b. The first lines of code simply launches OllamaDrama, finds an ollama endpoint and makes sure that the selected model is available and working:
+
+   ```
+	OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
+	settings.setOllama_models("qwen3:14b");
+	settings.sanityCheck();
+	OllamaService.getInstance(settings);
+   ```
+
+Next we use OllamaDrama to ask if a website is available, and make sure to make any discovered MCP tools available to the LLM: 
+
+   ```
+   boolean make_tools_available = true;
+	SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion("Is the site https://www.ntt.com accessible?", make_tools_available);
+	ssr1.print();
+   ```
+
+When running this unit test you will see output similar to the following: 
+
+The local network is scanned for ollama ports, and 1 endpoint is found:
+  ```
+   ... log_level="INFO" wireOllamas()
+   ... log_level="INFO" Owned ips: [127.0.0.1, 192.168.100.12]
+   ... log_level="INFO" Looking for ollama servers .. [127.0.0, 192.168.100]
+   ... log_level="INFO" activeHosts for ollama port 11434: [http://127.0.0.1:11434]
+   ... log_level="INFO" The ollama URL http://127.0.0.1:11434 replied with a proper ping
+   ... log_level="INFO" Making sure we have the models we need on http://127.0.0.1:11434 ..
+   ... log_level="INFO" Performing simple sanity check on Ollama model qwen3:14b on http://127.0.0.1:11434
+   ... log_level="INFO" Verified ollama URL (with a functional instance of our preferred model (qwen3:14b) found on: http://127.0.0.1:11434
+  ```
+
+The local network is scanned for the defined MCP ports, and 3 tools are indexed by ollamadrama:
+  ```
+   log_level="INFO" wireMCPs()
+   ... log_level="INFO" activeHosts for MCP ports [8080, 9000]: [192.168.100.203::9000, 192.168.100.95::8080, 192.168.100.95::9000]
+   ... log_level="INFO" Found MCP tool fetch
+   ... log_level="INFO" Found MCP tool get_current_time
+   ... log_level="INFO" Found MCP tool convert_time
+  ```
+
+Next the ollama session towards qwen3 is launched, and all detected tools are listed automatically as part of the prompt since we set make_tools_available to true:
+  ```
+   - STRICT ollama session [qwen3:14b] is operational
+   Is the site https://www.ntt.com accessible?
+
+   MCP TOOLS AVAILABLE:
+
+   ---
+   Tool: fetch
+   Description: Fetches a URL from the internet and optionally extracts its contents as markdown
+   Inputs:
+   - url (string) [required]: URL to fetch
+   - max_length (integer): Maximum number of characters to return.
+   - start_index (integer): On return output starting at this character index, useful if a previous fetch was truncated and more context is required.
+   - raw (boolean): Get the actual HTML content of the requested page, without simplification.
+   Example usage: fetch(url="...", max_length=5000, start_index=0, raw=false)
+
+   ---
+   Tool: get_current_time
+   Description: Get current time in a specific timezones
+   Inputs:
+   - timezone (string) [required]: IANA timezone name (e.g., 'America/New_York', 'Europe/London'). Use 'Etc/UTC' as local timezone if no timezone provided by the user.
+   Example usage: get_current_time(timezone="...")
+
+   ---
+   Tool: convert_time
+   Description: Convert time between timezones
+   Inputs:
+   - source_timezone (string) [required]: Source IANA timezone name (e.g., 'America/New_York', 'Europe/London'). Use 'Etc/UTC' as local timezone if no source timezone provided by the user.
+   - time (string) [required]: Time to convert in 24-hour format (HH:MM)
+   - target_timezone (string) [required]: Target IANA timezone name (e.g., 'Asia/Tokyo', 'America/San_Francisco'). Use 'Etc/UTC' as local timezone if no target timezone provided by the user.
+   Example usage: convert_time(source_timezone="...", time="...", target_timezone="...")
+  ```
+
+The LLM replies with 'TOOLCALL' and suggests running the fetch() tool with the site url as argument. Since we have not allowed tools to be blindly trusted, we need to confirm that the tool call can take place:
+  ```
+   ... log_level="INFO" The agent is requesting to run the tool call fetch(url="https://www.ntt.com",max_length=1000,start_index=0,raw=false), press Y to allow and N to abort.
+   Proceed? [y/n]: y
+  ```
+
+The suggested tool call is then executed, the result appended to the prompt and then sent back to the LLM. 
+  ```
+   Response from running tool_call fetch(url="https://www.ntt.com",max_length=1000,start_index=0,raw=false):
+
+   * content type     : text
+   * content text     :
+   ----------------------------
+   Contents of https://www.ntt.com/:
+   NTTドコモビジネス(旧:NTTコミュニケーションズ) オフィシャルサイト
+
+   2025年7月より、NTTコミュニケーションズは NTTドコモビジネスに社名を変更しました
+
+   * オンラインショップ 別ウィンドウで開きます。
+   * + ご契約中のお客さま
+
+      - ×閉じる
+      - サービス別サポート情報 (サポートサイト)
+      - ご契約中サービスの一元管理 (NTTドコモビジネス ビジネスポータル)
+      - NTTドコモビジネス Web明細 (ビリングステーション)
+      - NTTドコモ(携帯回線) 料金分析 (ご利用料金管理サービス)
+      - NTTドコモ(携帯回線) Web明細 (My docomo)
+   + 個人のお客さま
+   ...
+  ```
+
+The final reply back from the LLM is a clear 'Yes' along with underlying reasoning:
+  ```
+   response         : Yes
+   probability      : 95%
+   motivation       : The fetch tool successfully retrieved partial content from the site, indicating it is accessible.
+   assumptions_made : The truncation error does not affect the accessibility status, only the completeness of the content retrieved.
+   tool_calls       : 
+  ```
+
+Note that MCP tool support has recently been added and may be unstable for a few releases. 
+
+### How to use OllamaDrama (LOCALLY)
 
 Clone this repo into your IDE of choice, then run simpleStrawberryRCount_OllamaModels_M() (src/test/java/ntt/security/ollamadrama/modelscorecards) as a unit test. This will automatically find your local Ollama instance, download all medium sized LLMs and produce a 'Strawberry scorecard' for each each model. This assumes you have 8GB GPU VRAM and disk storage available locally. 
 
@@ -285,6 +428,6 @@ Ollamadrama keeps an index of the known 'n_ctx_train' for each supported model a
 
 ### Credits
 
-- chatGPT4: <https://chatgpt.com/> (code)
+* chatGPT4: <https://chatgpt.com/> (code)
 * Ollama4j: <https://amithkoujalgi.github.io/ollama4j> (lib)
 * Ollama: <https://ollama.com> (models/service)

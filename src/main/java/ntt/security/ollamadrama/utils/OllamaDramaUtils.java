@@ -276,7 +276,7 @@ public class OllamaDramaUtils {
 			HashMap<String, Integer> acceptable_answers = new HashMap<String, Integer>() {{
 				this.put(maxCharsCountedSTR, 1);
 			}};
-			SingleStringQuestionResponse rf = new SingleStringQuestionResponse(String.valueOf(maxCharsCounted), 100, "", "");
+			SingleStringQuestionResponse rf = new SingleStringQuestionResponse(String.valueOf(maxCharsCounted), 100, "", "", "");
 			scorecard = OllamaUtils.updateScoreCard(scorecard, model_name, "q1", "Max chars counted?", acceptable_answers, rf);
 		}
 		return scorecard;
@@ -353,7 +353,7 @@ public class OllamaDramaUtils {
 			HashMap<String, Integer> acceptable_answers = new HashMap<String, Integer>() {{
 				this.put(maxCharsCountedSTR, 1);
 			}};
-			SingleStringQuestionResponse rf = new SingleStringQuestionResponse(String.valueOf(maxCharsCounted), 100, "", "");
+			SingleStringQuestionResponse rf = new SingleStringQuestionResponse(String.valueOf(maxCharsCounted), 100, "", "", "");
 			scorecard = OllamaUtils.updateScoreCard(scorecard, model_name, "q1", "Max chars counted?", acceptable_answers, rf);
 		}
 		return scorecard;
@@ -449,7 +449,7 @@ public class OllamaDramaUtils {
 				this.put(maxCharsCountedSTR, 1);
 			}};
 
-			SingleStringQuestionResponse rf = new SingleStringQuestionResponse(String.valueOf(maxCharsCounted), 100, "", "");
+			SingleStringQuestionResponse rf = new SingleStringQuestionResponse(String.valueOf(maxCharsCounted), 100, "", "", "");
 			scorecard = OllamaUtils.updateScoreCard(scorecard, model_name, "q1", "Max chars counted?", acceptable_answers, rf);
 
 		}

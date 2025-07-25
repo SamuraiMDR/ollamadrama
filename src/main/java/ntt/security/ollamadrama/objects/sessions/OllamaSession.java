@@ -9,12 +9,17 @@ import io.github.amithkoujalgi.ollama4j.core.OllamaAPI;
 import io.github.amithkoujalgi.ollama4j.core.models.chat.OllamaChatMessage;
 import io.github.amithkoujalgi.ollama4j.core.models.chat.OllamaChatResult;
 import io.github.amithkoujalgi.ollama4j.core.utils.Options;
+import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import ntt.security.ollamadrama.config.OllamaDramaSettings;
 import ntt.security.ollamadrama.objects.ChatInteraction;
+import ntt.security.ollamadrama.objects.MCPTool;
 import ntt.security.ollamadrama.objects.OllamaEndpoint;
 import ntt.security.ollamadrama.objects.SessionType;
 import ntt.security.ollamadrama.objects.response.SingleStringQuestionResponse;
+import ntt.security.ollamadrama.singletons.OllamaService;
+import ntt.security.ollamadrama.utils.InteractUtils;
 import ntt.security.ollamadrama.utils.JSONUtils;
+import ntt.security.ollamadrama.utils.MCPUtils;
 import ntt.security.ollamadrama.utils.OllamaUtils;
 import ntt.security.ollamadrama.utils.SystemUtils;
 
@@ -125,17 +130,37 @@ public class OllamaSession {
 		}
 	}
 
+	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _make_tools_available) {
+		return askStrictChatQuestion(_question, false, 3000L, _make_tools_available);
+	}
+
 	public SingleStringQuestionResponse askStrictChatQuestion(String _question, long _timeout) {
-		return askStrictChatQuestion(_question, false, _timeout);
+		return askStrictChatQuestion(_question, false, _timeout, false);
 	}
 
 	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, long _timeout) {
-		return askStrictChatQuestion(_question, _hide_llm_reply_if_uncertain, 10, _timeout);
+		return askStrictChatQuestion(_question, _hide_llm_reply_if_uncertain, _timeout, false);
 	}
 
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, int _retryThreshold, long _timeout) {
+	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, long _timeout, boolean _make_tools_available) {
+		return askStrictChatQuestion(_question, _hide_llm_reply_if_uncertain, 30, _timeout, _make_tools_available);
+	}
+
+	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, int _retryThreshold, long _timeout, boolean _make_tools_available) {
+
+		if (!_question.endsWith("?")) _question = _question + "?";
+
+		if (_make_tools_available) {
+			String available_tool_summary = OllamaService.getAllAvailableMCPTools();
+			_question = _question + "\n\n" + available_tool_summary;
+		}
+
 		if (this.sessiontype == SessionType.STRICTPROTOCOL) {
-			if (!_question.endsWith("?")) _question = _question + "?";
+
+			if (!_question.contains("MCP TOOLS AVAILABLE")) _question = _question + "\n\nNO MCP TOOLS AVAILABLE."; 
+
+			System.out.println(_question + "\n");
+
 			if (null == this.chatResult) {
 				LOGGER.warn("chatResult is null!");
 				SingleStringQuestionResponse swr = OllamaUtils.applyResponseSanity(null, this.model_name, _hide_llm_reply_if_uncertain);
@@ -180,6 +205,57 @@ public class OllamaSession {
 								this.chatResult = ci.getChatResult();
 								swr.setEmpty(false);
 								swr = OllamaUtils.applyResponseSanity(swr, model_name, _hide_llm_reply_if_uncertain);
+
+								if (_make_tools_available && "TOOLCALL".equals(swr.getResponse())) {
+									StringBuffer sb = new StringBuffer();
+									ArrayList<String> tool_calls = parseToolCalls(swr.getTool_calls());
+									for (String tool_call: tool_calls) {
+										System.out.println(" - tool_call: " + tool_call);
+
+										String toolname = MCPUtils.parseTool(tool_call);
+
+										// Extract arguments from suggested tool call
+										HashMap<String, Object> arguments = MCPUtils.parseArguments(tool_call);
+
+										// Find the MCP URL to call the tool
+										MCPTool mcpTool = OllamaService.getMCPURLForTool(toolname);
+										if (null == mcpTool) {
+											LOGGER.error("Agent requested a tool_call which does not exist\n");
+											SystemUtils.halt();
+										}
+										String mcpURL = mcpTool.getEndpoint().getSchema() + "://" + mcpTool.getEndpoint().getHost() + ":" + mcpTool.getEndpoint().getPort();
+										String mcpPATH = mcpTool.getEndpoint().getPath();
+
+										if ( (toolname.length()>0) && (mcpURL.startsWith("http") && mcpPATH.startsWith("/"))) {
+
+											boolean make_call = false;
+											if (settings.isMcp_blind_trust()) {
+												make_call = true;
+												LOGGER.info("Blindly allowing agent to run the tool call " + tool_call);
+											} else {
+												make_call = InteractUtils.getYNResponse("The agent is requesting to run the tool call " + tool_call + ", press Y to allow and N to abort.", settings);
+											}
+
+											// Call tool
+											if (make_call) {
+												CallToolResult result = MCPUtils.callToolUsingMCPEndpoint(mcpURL, mcpPATH, toolname, arguments, 30L);
+												String tool_response = "\nResponse from running tool_call " + tool_call + ":\n\n" + MCPUtils.prettyPrint(result);
+												System.out.println(tool_response);
+												sb.append(tool_response + "\n");
+											} else {
+												LOGGER.info("Not making MCP call ..");
+											}
+
+										} else {
+											LOGGER.error("Unable to call tool " + toolname + " with MCP URL " + mcpURL);
+											SystemUtils.halt();
+										}
+									}
+									
+									System.out.println("new query:\n\n" + _question + sb.toString());
+									return askStrictChatQuestion( _question + sb.toString(), _hide_llm_reply_if_uncertain, _retryThreshold, _timeout, _make_tools_available);
+								}
+
 								return swr;
 							} else {
 								LOGGER.warn("swr response is null, giving up with model " + this.getModel_name());
@@ -200,9 +276,33 @@ public class OllamaSession {
 				}
 			}
 		} else {
-			LOGGER.warn("You cannot ask STRICTPROTOCOL questions to a session of type " + this.getSessiontype());
+			LOGGER.error("You cannot ask STRICTPROTOCOL questions to a session of type " + this.getSessiontype());
+			SystemUtils.halt();
 		}
 		return new SingleStringQuestionResponse();
+	}
+
+	private ArrayList<String> parseToolCalls(String tool_calls_csv) {
+		ArrayList<String> tool_calls = new ArrayList<String>();
+
+		if (tool_calls_csv == null || tool_calls_csv.trim().isEmpty()) {
+			System.out.println("The tool_calls CSV string is empty.");
+			System.exit(1);
+		}
+
+		// Regex to split on commas outside of parentheses and quotes
+		String regex = ",\\s*(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)(?![^()]*\\))";
+		String[] entries = tool_calls_csv.split(regex);
+
+		// Print each entry on a new line, trimmed and clean
+		for (String entry : entries) {
+			String trimmedEntry = entry.trim();
+			if (!trimmedEntry.isEmpty()) {
+				tool_calls.add(trimmedEntry);
+			}
+		}
+
+		return tool_calls;
 	}
 
 	public String askRawChatQuestion(String _question, long _timeout) {
@@ -238,7 +338,7 @@ public class OllamaSession {
 			}
 		}
 	}
-	
+
 	public Options getOptions() {
 		return options;
 	}

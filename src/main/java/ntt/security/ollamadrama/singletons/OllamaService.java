@@ -1,14 +1,19 @@
 package ntt.security.ollamadrama.singletons;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.TreeMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.github.amithkoujalgi.ollama4j.core.OllamaAPI;
+import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
+import io.modelcontextprotocol.spec.McpSchema.Tool;
 import ntt.security.ollamadrama.config.Globals;
 import ntt.security.ollamadrama.config.OllamaDramaSettings;
+import ntt.security.ollamadrama.objects.MCPEndpoint;
+import ntt.security.ollamadrama.objects.MCPTool;
 import ntt.security.ollamadrama.objects.OllamaEndpoint;
 import ntt.security.ollamadrama.objects.SessionType;
 import ntt.security.ollamadrama.objects.sessions.OllamaSession;
@@ -24,7 +29,12 @@ public class OllamaService {
 	private static final int threadPoolCount = 20;
 
 	private static ArrayList<String> service_cnets;
+
+	// ollama url as key
 	private static TreeMap<String, OllamaEndpoint> ollama_endpoints = new TreeMap<>();
+
+	// key is schema://host:port-toolname
+	private static TreeMap<String, MCPTool> mcp_tools = new TreeMap<>();
 
 	private OllamaService(OllamaDramaSettings _settings) {
 		super();
@@ -59,9 +69,142 @@ public class OllamaService {
 		// before launch, make sure we can find at least one ollama server
 		boolean found_ollamas = wireOllama(true);
 		LOGGER.info("found_ollamas: " + found_ollamas);
+
+		// optional check for mcp servers
+		boolean found_mcps = wireMCPs(false);
+		LOGGER.info("found_mcps: " + found_mcps);
 	}
 
+
+	@SuppressWarnings("serial")
+	public static boolean wireMCPs(boolean blockUntilReady) {
+		LOGGER.info("wireMCPs()");
+
+		boolean found_mcps = false;
+		int mcp_attempt_counter = 0;
+		boolean mcp_abort = false;
+		HashMap<String, Boolean> deduptool = new HashMap<>();
+
+		// key is schema://host:port-toolname
+		TreeMap<String, MCPTool> verified_tools = new TreeMap<>();
+
+		// key is host:port
+		TreeMap<String, MCPEndpoint> abandoned_mcps = new TreeMap<>();
+
+		while (!found_mcps && !mcp_abort) {
+			TreeMap<String, MCPEndpoint> mcps = new TreeMap<String, MCPEndpoint>();
+
+			if (settings.isMcp_scan()) {
+				if (blockUntilReady) LOGGER.info("Looking for open MCP server ports .. " + service_cnets);
+				mcps = NetUtilsLocal.performTCPPortSweepForMCP(settings.getMcp_ports(), service_cnets, 1, 255, 10, threadPoolCount);
+			} 
+
+			if (mcps.isEmpty() && (null == settings.getSatellites())) {
+				LOGGER.warn("Unable to find any hosts listening on MCP ports " + settings.getMcp_ports() + ", sweeped the networks " + service_cnets + ", will keep trying");
+				SystemUtils.sleepInSeconds(5);
+			} else {
+				LOGGER.info("activeHosts for MCP ports " + settings.getMcp_ports().toString() + ": " + mcps.keySet());
+
+				if (null != settings.getMcp_satellites() && !settings.getMcp_satellites().isEmpty()) {
+					LOGGER.info("We have defined satellite mcp endpoints, first entry is " + settings.getMcp_satellites().get(0).getHost() + "..");
+					for (MCPEndpoint oep: settings.getMcp_satellites()) {
+						String mcpkey_noschema_nopath = oep.getHost() + ":" + oep.getPort();
+						if (null != abandoned_mcps.get(mcpkey_noschema_nopath)) {
+							LOGGER.info("We have defined satellite mcp endpoints, but its been temporarily abandoned .. " + mcpkey_noschema_nopath + " (will reset after 10 loops)");
+						} else {
+							if (null == mcps.get(mcpkey_noschema_nopath)) {
+								LOGGER.info("Adding mcp endpoint " + mcpkey_noschema_nopath);
+								mcps.put(mcpkey_noschema_nopath, oep);
+							} else {
+								LOGGER.info(mcpkey_noschema_nopath + " is already in our list of candidates");
+							}
+						}
+					}
+				}
+
+				boolean mcp_listtools_reply = false;
+				for (String mcpkey_noschema_nopath: mcps.keySet())  {
+					MCPEndpoint oep = mcps.get(mcpkey_noschema_nopath);
+
+					if (null != abandoned_mcps.get(mcpkey_noschema_nopath)) {
+						LOGGER.info("Skipping MCP endpoint " + mcpkey_noschema_nopath + ", it is active but has been temporarily abandone (will reset after 10 loops)");
+					} else {
+						LOGGER.debug("Connecting to to MCP endpoint " + mcpkey_noschema_nopath + " .. which is not in the abandoned list: " + abandoned_mcps.keySet());
+
+						ArrayList<String> schemas = new ArrayList<String>() {{
+							this.add("http");
+							this.add("https");
+						}};
+
+						ArrayList<String> endpoint_paths = settings.getMcp_sse_paths();
+						if (null == endpoint_paths) endpoint_paths = new ArrayList<String>() {{
+							this.add("/sse");
+						}};
+						if (endpoint_paths.isEmpty()) endpoint_paths = new ArrayList<String>() {{
+							this.add("/sse");
+						}};
+
+						for (String endpoint_path: endpoint_paths) {
+							boolean endpoint_success = false;
+							for (String schema: schemas) {
+								if (!endpoint_success) {
+									String mcpURL = schema + "://" + oep.getHost() + ":" + oep.getPort();
+
+									// List all available tools
+									ListToolsResult tools = MCPUtils.listToolFromMCPEndpoint(mcpURL, endpoint_path, 30L);
+									if (null != tools) {
+										if (!tools.tools().isEmpty()) {
+											String available_tools_str = MCPUtils.prettyPrint(tools);
+											for (Tool t: tools.tools()) {
+												// key is schema://host:port-toolname
+												verified_tools.put(mcpURL + "-" + t.name(), new MCPTool(t.name(), available_tools_str, new MCPEndpoint(schema, oep.getHost(), oep.getPort(), endpoint_path)));
+												if (null == deduptool.get(t.name())) {
+													LOGGER.info("Found MCP tool " + t.name());
+													deduptool.put(t.name(), true);
+												}
+												endpoint_success = true;
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+
+				if (mcp_listtools_reply && verified_tools.isEmpty()) {
+					LOGGER.warn("Found hosts listening on mcp ports " + settings.getMcp_ports() + ", but none of them seem to respond well to our listTools call");
+					SystemUtils.sleepInSeconds(5);
+				} else if (!mcp_listtools_reply && verified_tools.isEmpty()) {
+					LOGGER.warn("Found no hosts listening on mcp ports " + settings.getMcp_ports() + ", we will need to keep looking (mcp_attempt_counter: " + mcp_attempt_counter + ")");
+					SystemUtils.sleepInSeconds(30);
+				} else {
+					if (blockUntilReady) LOGGER.info("Verified mcp service endpoints: " + verified_tools.keySet());
+					mcp_tools = verified_tools;
+					found_mcps = true;
+				}
+			}
+
+			mcp_attempt_counter++;
+
+			// always give endpoints another chance
+			if (mcp_attempt_counter>10) {
+				LOGGER.info("OK time to clear and retry with the abandoned MCP endpoints");
+				abandoned_mcps = new TreeMap<>();
+			}
+
+			if (!blockUntilReady && (mcp_attempt_counter>10)) {
+				LOGGER.warn("Was attempting to update the list of mcp servers but found none");
+				mcp_abort = true;
+			}
+		}
+
+		return found_mcps;
+	}
+
+
 	public static boolean wireOllama(boolean blockUntilReady) {
+		LOGGER.info("wireOllamas()");
 		boolean found_ollamas = false;
 		int ollama_attempt_counter = 0;
 		boolean ollama_abort = false;
@@ -72,7 +215,7 @@ public class OllamaService {
 
 			if (settings.isOllama_scan()) {
 				if (blockUntilReady) LOGGER.info("Looking for ollama servers .. " + service_cnets);
-				ollamas = NetUtilsLocal.performTCPPortSweep(settings.getOllama_port(), service_cnets, 1, 255, 10, threadPoolCount, settings.getOllama_username(), settings.getOllama_password());
+				ollamas = NetUtilsLocal.performTCPPortSweepForOllama(settings.getOllama_port(), service_cnets, 1, 255, 10, threadPoolCount, settings.getOllama_username(), settings.getOllama_password());
 			} 
 
 			if (ollamas.isEmpty() && (null == settings.getSatellites())) {
@@ -151,7 +294,7 @@ public class OllamaService {
 														LOGGER.info("ollama host (with a functional instance of our preferred model " + modelname + ") found on: " + oep.getOllama_url() + " but its ABANDONED");
 													}
 												}
-	
+
 											}
 										} else {
 											LOGGER.info("Skipping model check for " + modelname + " since Ollama node has been abandoned.");
@@ -169,8 +312,8 @@ public class OllamaService {
 					LOGGER.warn("Found hosts listening on ollama port " + settings.getOllama_port() + ", but none of them seem to be running well behaving versions of our required models");
 					SystemUtils.sleepInSeconds(5);
 				} else if (!ollama_ping_reply && verified_ollamas.isEmpty()) {
-						LOGGER.warn("Found no hosts listening on ollama port " + settings.getOllama_port() + ", we will need to keep looking (ollama_attempt_counter: " + ollama_attempt_counter + ")");
-						SystemUtils.sleepInSeconds(30);
+					LOGGER.warn("Found no hosts listening on ollama port " + settings.getOllama_port() + ", we will need to keep looking (ollama_attempt_counter: " + ollama_attempt_counter + ")");
+					SystemUtils.sleepInSeconds(30);
 				} else {
 					if (blockUntilReady) LOGGER.info("Verified ollama service endpoints (all models): " + verified_ollamas.keySet());
 					ollama_endpoints = verified_ollamas;
@@ -179,7 +322,7 @@ public class OllamaService {
 			}
 
 			ollama_attempt_counter++;
-			
+
 			// always give endpoints another chance
 			if (ollama_attempt_counter>10) {
 				LOGGER.info("OK time to clear and retry with the abandoned Ollama endpoints");
@@ -253,6 +396,10 @@ public class OllamaService {
 			SystemUtils.sleepInSeconds(30);
 		}
 	}
+	
+	public static OllamaSession getStrictProtocolSession(String _model_name) {
+		return getStrictProtocolSession(_model_name, false, false);
+	}
 
 	public static OllamaSession getStrictProtocolSession(String _model_name, boolean hide_llm_reply_if_uncertain, boolean _use_random_seed) {
 		boolean model_exists = false;
@@ -271,7 +418,7 @@ public class OllamaService {
 			LOGGER.error("Attempt to create session with model not listed in settings (" + _model_name + "), halting. Models listed in settings: " + settings.getOllama_models());
 			SystemUtils.halt();
 		}
-		
+
 		String system_prompt = "";
 		if (_model_name.startsWith("cogito")) system_prompt = Globals.PROMPT_TEMPLATE_COGITO_DEEPTHINK;
 		system_prompt = system_prompt + 
@@ -279,7 +426,7 @@ public class OllamaService {
 				Globals.ENFORCE_SINGLE_KEY_JSON_RESPONSE_TO_STATEMENTS + 
 				Globals.ENFORCE_SINGLE_KEY_JSON_RESPONSE_TO_QUESTIONS + 
 				Globals.THREAT_TEMPLATE;
-		
+
 		return new OllamaSession(_model_name, OllamaService.getRandomActiveOllamaURL(),
 				Globals.createStrictOptionsBuilder(_model_name, _use_random_seed), OllamaService.getSettings(), 
 				system_prompt,
@@ -328,6 +475,38 @@ public class OllamaService {
 		return new OllamaSession(_model_name, OllamaService.getRandomActiveOllamaURL(),
 				Globals.createDefaultOptionsBuilder(), OllamaService.getSettings(), "",
 				SessionType.DEFAULT);
+	}
+
+	public static String getAllAvailableMCPTools() {
+		HashMap<String, Boolean> uniqtool = new HashMap<>();
+		StringBuffer sb = new StringBuffer();
+		sb.append("MCP TOOLS AVAILABLE:\n");
+		for (String toolid: mcp_tools.keySet()) {
+			LOGGER.debug("toolid: " + toolid);
+			MCPTool tool = mcp_tools.get(toolid);
+			if (null == uniqtool.get(tool.getTool_str())) {
+				sb.append(tool.getTool_str() + "\n");
+				uniqtool.put(tool.getTool_str(), true);
+			}
+		}
+		return sb.toString().replace("\n\n\n", "\n\n");
+	}
+
+	public static TreeMap<String, MCPTool> getMcp_tools() {
+		return mcp_tools;
+	}
+
+	public static void setMcp_tools(TreeMap<String, MCPTool> mcp_tools) {
+		OllamaService.mcp_tools = mcp_tools;
+	}
+
+	public static MCPTool getMCPURLForTool(String toolname) {
+		String mcpURL = "";
+		for (String toolid: mcp_tools.keySet()) {
+			MCPTool tool = mcp_tools.get(toolid);
+			if (toolname.equals(tool.getToolname())) return tool;
+		}
+		return null;
 	}
 
 }

@@ -8,22 +8,32 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import ntt.security.ollamadrama.objects.MCPEndpoint;
 import ntt.security.ollamadrama.objects.OllamaEndpoint;
 
+@SuppressWarnings("serial")
 public class OllamaDramaSettings {
 
-	@SuppressWarnings("unused")
-	private static final Logger LOGGER = LoggerFactory.getLogger(OllamaDramaSettings.class);
-	
     private String release = "Strawberrry";
 	
 	private String ollama_username = "";
 	private String ollama_password = "";
-	private String ollama_models = Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_MINIDIVERSE_M;
+	private String ollama_models = Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_MAXCONTEXT_L;
 	private Integer ollama_port = 11434;
-	private Integer threadPoolCount = 20;
 	private long ollama_timeout = 1200L; // 20 min
 	private boolean ollama_scan = true;
+	
+	private ArrayList<Integer> mcp_ports = new ArrayList<Integer>() {{
+		this.add(8080);
+		this.add(9000);
+	}};
+	private ArrayList<String> mcp_sse_paths = new ArrayList<String>() {{
+		this.add("/sse");
+	}};
+	private boolean mcp_scan = true;
+	private boolean mcp_blind_trust = false;
+	
+	private Integer threadPoolCount = 20;
 	
 	private String openaikey = "";
 	private boolean use_openai = false;
@@ -33,6 +43,7 @@ public class OllamaDramaSettings {
 	private String elevenlabs_voice2 = "";
 	
 	private ArrayList<OllamaEndpoint> satellites;
+	private ArrayList<MCPEndpoint> mcp_satellites;
 	
 	private String autopull_max_llm_size = "L"; // S, M, XL, XXL
 	
@@ -179,6 +190,46 @@ public class OllamaDramaSettings {
 
 	public void setOllama_timeout(long ollama_timeout) {
 		this.ollama_timeout = ollama_timeout;
+	}
+
+	public ArrayList<Integer> getMcp_ports() {
+		return mcp_ports;
+	}
+
+	public void setMcp_ports(ArrayList<Integer> mcp_ports) {
+		this.mcp_ports = mcp_ports;
+	}
+
+	public ArrayList<MCPEndpoint> getMcp_satellites() {
+		return mcp_satellites;
+	}
+
+	public void setMcp_satellites(ArrayList<MCPEndpoint> mcp_satellites) {
+		this.mcp_satellites = mcp_satellites;
+	}
+
+	public ArrayList<String> getMcp_sse_paths() {
+		return mcp_sse_paths;
+	}
+
+	public void setMcp_sse_paths(ArrayList<String> mcp_sse_paths) {
+		this.mcp_sse_paths = mcp_sse_paths;
+	}
+
+	public boolean isMcp_scan() {
+		return mcp_scan;
+	}
+
+	public void setMcp_scan(boolean mcp_scan) {
+		this.mcp_scan = mcp_scan;
+	}
+
+	public boolean isMcp_blind_trust() {
+		return mcp_blind_trust;
+	}
+
+	public void setMcp_blind_trust(boolean mcp_blind_trust) {
+		this.mcp_blind_trust = mcp_blind_trust;
 	}
 
 }

@@ -646,7 +646,8 @@ public class OllamaUtils {
 		} else {
 			System.out.println("[" + _r.getProbability() + "%] " + _r.getResponse());
 			System.out.println("motivation: " + _r.getMotivation());
-			System.out.println("assumptions_made: " + _r.getAssumptions_made() + "\n");
+			System.out.println("assumptions_made: " + _r.getAssumptions_made());
+			System.out.println("tool_calls: " + _r.getTool_calls() + "\n");
 			HashMap<String, HashMap<String, HashMap<HashMap<String,Integer>, SingleStringQuestionResponse>>> scorecard_t = scorecard.getScorecard();
 			HashMap<String, HashMap<HashMap<String,Integer>, SingleStringQuestionResponse>> model_scorecard =  scorecard_t.get(_model_name);
 			if (null == model_scorecard) model_scorecard = new HashMap<>();
@@ -672,18 +673,18 @@ public class OllamaUtils {
 
 	public static SingleStringQuestionResponse applyResponseSanity(SingleStringQuestionResponse _rx, String _model_name, boolean _hide_llm_reply_if_uncertain) {
 		if (null == _rx) {
-			_rx = new SingleStringQuestionResponse("JSONERROR", 0, "", "");
+			_rx = new SingleStringQuestionResponse("JSONERROR", 0, "", "", "");
 		} else {
 			//String orig_resp = rx.getResponse();
-			if (null == _rx.getProbability()) return new SingleStringQuestionResponse("JSONERROR", 0, "", "");
-			if (null == _rx.getMotivation()) return new SingleStringQuestionResponse("JSONERROR", 0, "", "");
-			if (null == _rx.getResponse()) return new SingleStringQuestionResponse("JSONERROR", 0, "", "");
-			if (null == _rx.getAssumptions_made()) return new SingleStringQuestionResponse("JSONERROR", 0, "", "");
+			if (null == _rx.getProbability()) return new SingleStringQuestionResponse("JSONERROR", 0, "", "", "");
+			if (null == _rx.getMotivation()) return new SingleStringQuestionResponse("JSONERROR", 0, "", "", "");
+			if (null == _rx.getResponse()) return new SingleStringQuestionResponse("JSONERROR", 0, "", "", "");
+			if (null == _rx.getAssumptions_made()) return new SingleStringQuestionResponse("JSONERROR", 0, "", "", "");
 
 			if (_hide_llm_reply_if_uncertain) {
 				Integer probaThreshold = Globals.MODEL_PROBABILITY_THRESHOLDS.get(_model_name);
 				if (null == probaThreshold) probaThreshold = 55;
-				if (_rx.getProbability() < probaThreshold) return new SingleStringQuestionResponse("LOWPROBA", _rx.getProbability(), _rx.getMotivation(), _rx.getAssumptions_made());
+				if (_rx.getProbability() < probaThreshold) return new SingleStringQuestionResponse("LOWPROBA", _rx.getProbability(), _rx.getMotivation(), _rx.getAssumptions_made(), _rx.getTool_calls());
 			}
 		}
 		return _rx;

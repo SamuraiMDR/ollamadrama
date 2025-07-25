@@ -19,6 +19,140 @@ public class OllamaGeneralKnowledgeTest {
 	private static final Logger LOGGER = LoggerFactory.getLogger(OllamaGeneralKnowledgeTest.class);
 
 	@Test
+	public void mcptools_missing_OllamaModels_XL() {
+		
+		HashMap<String, Integer> acceptable_answers = new HashMap<String, Integer>() {{
+			this.put("FAILTOUNDERSTAND", 1); 	// OK to be confused and not understand the question at all
+			this.put("LOWPROBA", 1); 			// OK to set LOWPROBA since OOikiOOA is completely fictional
+		}};
+
+		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
+				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, 
+				"What is the current temperature in Paris? Reply with only a number where the number is the temperature in celcius.",
+				acceptable_answers,
+				true, false);
+
+		// Print the scorecard
+		System.out.println("SCORECARD:");
+		scorecard.evaluate();
+		scorecard.print();
+
+		/*
+		tulu3:70b                                pos: 1   neg: 0  
+		cogito:8b                                pos: 1   neg: 0  
+		nemotron:70b                             pos: 1   neg: 0  
+		qwen3:8b                                 pos: 1   neg: 0  
+		qwen2.5:7b                               pos: 1   neg: 0  
+		llama3.1:8b                              pos: 1   neg: 0  
+		qwen3:4b                                 pos: 1   neg: 0  
+		tulu3:8b                                 pos: 1   neg: 0  
+		granite3.3:8b                            pos: 1   neg: 0  
+		llama3.2:3b                              pos: 1   neg: 0  
+		gemma3:27b                               pos: 1   neg: 0  
+		sailor2:20b                              pos: 1   neg: 0  
+		exaone-deep:7.8b                         pos: 1   neg: 0  
+		llava:34b                                pos: 1   neg: 0  
+		exaone3.5:32b                            pos: 1   neg: 0  
+		gemma2:9b                                pos: 1   neg: 0  
+		qwen2.5:72b                              pos: 1   neg: 0  
+		mistral:7b                               pos: 1   neg: 0  
+		cogito:14b                               pos: 1   neg: 0  
+		llama3.3:70b                             pos: 1   neg: 0  
+		r1-1776:70b                              pos: 1   neg: 0  
+		olmo2:13b                                pos: 1   neg: 0  
+		llama3.1:70b                             pos: 1   neg: 0  
+		marco-o1:7b                              pos: 1   neg: 0  
+		qwen2.5vl:72b                            pos: 1   neg: 0  
+		gemma3:12b                               pos: 1   neg: 0  
+		aya-expanse:32b                          pos: 1   neg: 0  
+		qwen3:32b                                pos: 1   neg: 0  
+		phi4:14b                                 pos: 1   neg: 0  
+		athene-v2:72b                            pos: 1   neg: 0  
+		openchat:7b                              pos: 1   neg: 0  
+		cogito:70b                               pos: 1   neg: 0  
+		qwen3:14b                                pos: 1   neg: 0  
+		-----
+		olmo2:7b                                 pos: 0   neg: 1  
+		aya-expanse:8b                           pos: 0   neg: 1  
+		gemma3n:e4b                              pos: 0   neg: 1 
+		 */
+
+		// Assert
+		assertTrue("Make sure we have a clean sheet for tier1 models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OLLAMA_ALL_TIER1_M_L_XL));
+	}
+	
+	@Test
+	public void mcptools_available_OllamaModels_XL() {
+		
+		HashMap<String, Integer> acceptable_answers = new HashMap<String, Integer>() {{
+			this.put("TOOLCALL", 1); 	// The LLM should realize it can and should reach out to an available tool
+		}};
+
+		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
+				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, 
+				"What is the current temperature in Paris? Reply with only a number where the number is the temperature in celcius."
+				+ "\n\n"
+				+ "MCP TOOLS AVAILABLE:\n"
+				+ "---\n"
+				+ "Tool: fetch_temperature\n"
+				+ "Description: Fetches the current temperature of a City in Celcius or Fahrenheit\n"
+				+ "Inputs:\n" 
+				+ "  - location (string) [required]: The City of interest\n"
+				+ "  - unit (string): The temperature unit\n"
+				+ "Example usage: fetch_temperature(location=\"New York\", unit=\"Celcius\")\n",
+				acceptable_answers,
+				false, false);
+
+		// Print the scorecard
+		System.out.println("SCORECARD:");
+		scorecard.evaluate();
+		scorecard.print();
+
+		/*
+		tulu3:70b                                pos: 1   neg: 0  
+		nemotron:70b                             pos: 1   neg: 0  
+		qwen3:8b                                 pos: 1   neg: 0  
+		qwen2.5:7b                               pos: 1   neg: 0  
+		llama3.1:8b                              pos: 1   neg: 0  
+		qwen3:4b                                 pos: 1   neg: 0  
+		tulu3:8b                                 pos: 1   neg: 0  
+		gemma3:27b                               pos: 1   neg: 0  
+		llava:34b                                pos: 1   neg: 0  
+		exaone3.5:32b                            pos: 1   neg: 0  
+		gemma2:9b                                pos: 1   neg: 0  
+		qwen2.5:72b                              pos: 1   neg: 0  
+		cogito:14b                               pos: 1   neg: 0  
+		llama3.3:70b                             pos: 1   neg: 0  
+		r1-1776:70b                              pos: 1   neg: 0  
+		olmo2:13b                                pos: 1   neg: 0  
+		llama3.1:70b                             pos: 1   neg: 0  
+		marco-o1:7b                              pos: 1   neg: 0  
+		qwen2.5vl:72b                            pos: 1   neg: 0  
+		gemma3:12b                               pos: 1   neg: 0  
+		aya-expanse:32b                          pos: 1   neg: 0  
+		qwen3:32b                                pos: 1   neg: 0  
+		phi4:14b                                 pos: 1   neg: 0  
+		athene-v2:72b                            pos: 1   neg: 0  
+		cogito:70b                               pos: 1   neg: 0  
+		qwen3:14b                                pos: 1   neg: 0  
+		-----
+		cogito:8b                                pos: 0   neg: 1  
+		granite3.3:8b                            pos: 0   neg: 1  
+		llama3.2:3b                              pos: 0   neg: 1  
+		sailor2:20b                              pos: 0   neg: 1  
+		exaone-deep:7.8b                         pos: 0   neg: 1  
+		olmo2:7b                                 pos: 0   neg: 1  
+		mistral:7b                               pos: 0   neg: 1  
+		aya-expanse:8b                           pos: 0   neg: 1  
+		gemma3n:e4b                              pos: 0   neg: 1  
+		openchat:7b                              pos: 0   neg: 1  
+		 */
+
+		// Assert
+		assertTrue("Make sure we have a clean sheet for tier1 models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OLLAMA_ALL_TIER1_M_L_XL));
+	}
+	
+	@Test
 	public void simpleDomain2CompanyKnowledge_OllamaModels_XL() {
 		
 		HashMap<String, Integer> acceptable_answers = new HashMap<String, Integer>() {{

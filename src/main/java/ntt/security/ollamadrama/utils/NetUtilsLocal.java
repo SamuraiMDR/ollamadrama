@@ -18,12 +18,13 @@ import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import ntt.security.ollamadrama.objects.MCPEndpoint;
 import ntt.security.ollamadrama.objects.OllamaEndpoint;
 
 public class NetUtilsLocal {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(NetUtilsLocal.class);
-	
+
 	public static boolean isValidIPV4(final String ipv4String) {
 		if (null == ipv4String) {
 			return false;
@@ -75,7 +76,7 @@ public class NetUtilsLocal {
 		}
 		return false;
 	}
-	
+
 	public static ArrayList<String> determineLocalIPv4s() {
 		ArrayList<String> localips = new ArrayList<String>();
 		localips.add("127.0.0.1");
@@ -97,7 +98,7 @@ public class NetUtilsLocal {
 		}
 		return localips;
 	}
-	
+
 	public static String grabCnetworkSlice(final String ip) {
 		final String octets[] = ip.split("\\.");
 		if (octets.length == 4) {
@@ -108,7 +109,7 @@ public class NetUtilsLocal {
 	}
 
 
-	public static TreeMap<String, OllamaEndpoint> performTCPPortSweep(int port, ArrayList<String> cnets, int startIP, int stopIP, int timeout, int threadPoolCount, String _username, String _password) {
+	public static TreeMap<String, OllamaEndpoint> performTCPPortSweepForOllama(int port, ArrayList<String> cnets, int startIP, int stopIP, int timeout, int threadPoolCount, String _username, String _password) {
 		TreeMap<String, OllamaEndpoint> activeEndpoints = new TreeMap<String, OllamaEndpoint>();
 		if (stopIP<startIP) {
 			LOGGER.error("stopIP (" + stopIP + ") cannot be smaller than startIP (" + startIP + ")");
@@ -147,6 +148,53 @@ public class NetUtilsLocal {
 			}
 		} catch (Exception ex) {
 			LOGGER.warn("performTCPPortSweep ex: " + ex.getMessage());
+		}
+		return activeEndpoints;
+	}
+
+	public static TreeMap<String, MCPEndpoint> performTCPPortSweepForMCP(ArrayList<Integer> ports, ArrayList<String> cnets, int startIP, int stopIP, int timeout, int threadPoolCount) {
+		TreeMap<String, MCPEndpoint> activeEndpoints = new TreeMap<String, MCPEndpoint>();
+		if (stopIP<startIP) {
+			LOGGER.error("stopIP (" + stopIP + ") cannot be smaller than startIP (" + startIP + ")");
+			SystemUtils.halt();
+		}
+
+		for (int port: ports) {
+			if (port>65535) {
+				LOGGER.error("invalid port " + port + " specified as input");
+				SystemUtils.halt();
+			}
+			if (port<0) {
+				LOGGER.error("invalid port " + port + " specified as input");
+				SystemUtils.halt();
+			}
+			try {
+				final ExecutorService es = Executors.newFixedThreadPool(threadPoolCount);
+				final List<Future<String>> futures = new ArrayList<>();
+				for (int lastOctet = startIP; lastOctet <= stopIP; lastOctet++) {
+					for (String cnet: cnets) {
+						if ("127.0.0".equals(cnet)) {
+							if (lastOctet>1) continue;
+						}
+						String ip = cnet + "." + lastOctet;
+						if (!NetUtilsLocal.isValidIPV4(ip)) {
+							LOGGER.error("Invalid ip generated from input parameters: " + ip);
+							SystemUtils.halt();
+						}
+						futures.add(portIsOpenForHost(es, ip, port, timeout));
+					}
+				}
+				es.shutdown();
+				for (final Future<String> f : futures) {
+					if (!"".equals(f.get())) {
+						String endpoint = f.get();
+						// schema and path not yet verified/checked
+						activeEndpoints.put(endpoint + "::" + port, new MCPEndpoint("", endpoint, port, ""));
+					}
+				}
+			} catch (Exception ex) {
+				LOGGER.warn("performTCPPortSweep ex: " + ex.getMessage());
+			}
 		}
 		return activeEndpoints;
 	}
