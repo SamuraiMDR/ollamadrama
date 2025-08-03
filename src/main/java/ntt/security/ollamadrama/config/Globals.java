@@ -35,10 +35,12 @@ public class Globals {
 			+ "The 'motivation' key should include a brief description string motivating your response and should motivate the selected probability value. "
 			+ "The 'assumptions_made' key should include a brief description string of the assumptions made in your response. "
 			+ "The 'tool_calls' key is a string and should include a comma-separated list of tool calls you want the output from. If no tools are provided to you under 'MCP TOOLS AVAILABLE' section you should leave 'tool_calls' blank. "
-			+ "You MUST only populate the 'tools_calls' key with the name of a known tool name along with all its known required arguments in the suggested format, ie tool_name(arg1=\"val1\",arg2=\"val2\", ..). "
+			+ "Every tool listed 'tool_calls' should be preceeded with 'oneshot' or 'continous', indicating how often the tool is called. "
+			+ "Use 'oneshot' if you only need the tool output once. Use 'continous' if you want fresh tool output as part of all future interactions. "
+			+ "You MUST only populate the 'tools_calls' key with the name of a known tool name along with all its known required arguments in the suggested format, ie 'oneshot tool_name(arg1=\"val1\",arg2=\"val2\", ..)' or 'continous tool_name(arg1=\"val1\",arg2=\"val2\", ..)'"
 			+ "You should NEVER guess or assume the availability of tools mentioned in the 'tool_calls', you must have explicitly been told that a tool is available. "
 			+ "If the 'tool_calls' key is populated, the response key MUST be 'TOOLCALL' and the probability set to 0. "
-			+ "If the 'tool_calls' key is empty the response key MUST NEVER BE 'TOOLCALL' or a rabbit will die. "
+			+ "If the 'tool_calls' key is empty the response key MUST NEVER BE 'TOOLCALL' or a cute rabbit will die. "
 			+ "The reply string will be pure JSON will start with the character { since its JSON and NOT markdown. ";
 
 	public static String ENFORCE_SINGLE_KEY_JSON_RESPONSE_TO_STATEMENTS = "You MUST reply with with a single JSON formatted string with the keys 'response', 'assumptions_made' and 'explanation'. "
@@ -247,16 +249,6 @@ public class Globals {
 			+ "";
 
 
-	/**
-	 * L/XL MIX
-	 */
-
-	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_DIVERSE_MAXCONTEXT_L_XL = ""
-			+ "llama3.3:70b," 		// 43 GB
-			+ "qwen3:14b,"			// 9.3 GB
-			+ "cogito:14b"			// 9 GB
-			+ "";
-
 	// task specific
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_DIVERSE_SECURITY_XL = ""
@@ -287,10 +279,13 @@ public class Globals {
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_L = ""
-			+ "olmo2:13b,"			// 8.4 GB
 			+ "gemma3:12b,"			// 8.1 GB
 			+ "sailor2:20b,"		// 12 GB
 			+ "phi4:14b"			// 9 GB
+			+ "";
+	
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_L = ""
+			+ "olmo2:13b"			// 8.4 GB, tool call limitations
 			+ "";
 
 	// task specific
@@ -307,6 +302,21 @@ public class Globals {
 			+ "deepcoder:14b"		// 9.1 GB
 			+ "";
 
+	/**
+	 * L/XL MIX
+	 */
+
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_DIVERSE_MAXCONTEXT_L_XL = ""
+			+ "llama3.3:70b," 		// 43 GB
+			+ "qwen3:14b,"			// 9.3 GB
+			+ "cogito:14b"			// 9 GB
+			+ "";
+	
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_DIVERSE_L_XL = ""
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_MINIDIVERSE_XL + ","
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L + ","
+			+ "";
+	
 	/**
 	 * M (<8GB)
 	 */
@@ -336,7 +346,7 @@ public class Globals {
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER4_M = ""
 			+ "tulu3:8b,"				// 4.9 GB
 			+ "cogito:8b,"				// 4.1 GB, fails to trigger obvious tools
-			+ "exaone-deep:7.8b"		// 4.8 GB, fails to call tools for fresh data
+			+ "exaone-deep:7.8b,"		// 4.8 GB, fails to call tools for fresh data
 			+ "aya-expanse:8b,"			// 5.1 GB, assumes its knowledge is 'now'
 			+ "olmo2:7b,"				// 4.1 GB, wings random guesses at times, refuses to call tools
 			+ "gemma3n:e4b,"			// 7.5 GB, wings random guesses at times
@@ -394,6 +404,11 @@ public class Globals {
 			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER4_M
 			+ "";
 
+	public static String MODEL_NAMES_OLLAMA_ALL_TIER1_L_XL = ""
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL + ","
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L
+			+"";
+	
 	public static String MODEL_NAMES_OLLAMA_ALL_TIER1_M_L_XL = ""
 			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL + ","
 			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L + ","
@@ -415,6 +430,7 @@ public class Globals {
 	public static String MODEL_NAMES_OLLAMA_ALL_UP_TO_L = ""
 			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L + ","
 			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_L + ","
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_L + ","
 			+ MODEL_NAMES_OLLAMA_ALL_UP_TO_M
 			+"";
 

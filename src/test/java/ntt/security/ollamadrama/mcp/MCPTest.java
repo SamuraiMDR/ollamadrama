@@ -103,9 +103,12 @@ public class MCPTest {
 				"llama3.1:70b,cogito:14b", // cogito:14b 
 				"What is the current temperature in Paris? Reply with only a number where the number is the temperature in celcius."
 				+ "\n"
-				+ "TOOL CALL OUTPUT:\n"
-				+ "Tool call: fetch_temperature(\"location\"=\"Paris\", \"unit\"=\"Celcius\"\n"
-				+ "Tool call output: The temperature in Paris is currently 21 degrees",
+				+ "Response from running tool_call fetch_temperature(\"location\"=\"Paris\", \"unit\"=\"Celcius\"):\n"
+				+ "\n"
+				+ " * content type     : text\n"
+				+ " * content text     :\n"
+				+ " ----------------------------"
+				+"The temperature in Paris is currently 21 degrees",
 				"21",
 				true, false);
 

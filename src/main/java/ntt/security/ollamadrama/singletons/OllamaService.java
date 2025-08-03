@@ -80,6 +80,7 @@ public class OllamaService {
 	public static boolean wireMCPs(boolean blockUntilReady) {
 		LOGGER.info("wireMCPs()");
 
+		int retryCounter = 0;
 		boolean found_mcps = false;
 		int mcp_attempt_counter = 0;
 		boolean mcp_abort = false;
@@ -100,7 +101,7 @@ public class OllamaService {
 			} 
 
 			if (mcps.isEmpty() && (null == settings.getSatellites())) {
-				LOGGER.warn("Unable to find any hosts listening on MCP ports " + settings.getMcp_ports() + ", sweeped the networks " + service_cnets + ", will keep trying");
+				LOGGER.warn("Unable to find any hosts listening on MCP ports " + settings.getMcp_ports() + ", sweeped the networks " + service_cnets + ", will keep trying a couple of more times");
 				SystemUtils.sleepInSeconds(5);
 			} else {
 				LOGGER.info("activeHosts for MCP ports " + settings.getMcp_ports().toString() + ": " + mcps.keySet());
@@ -110,7 +111,7 @@ public class OllamaService {
 					for (MCPEndpoint oep: settings.getMcp_satellites()) {
 						String mcpkey_noschema_nopath = oep.getHost() + ":" + oep.getPort();
 						if (null != abandoned_mcps.get(mcpkey_noschema_nopath)) {
-							LOGGER.info("We have defined satellite mcp endpoints, but its been temporarily abandoned .. " + mcpkey_noschema_nopath + " (will reset after 10 loops)");
+							LOGGER.info("We have defined satellite mcp endpoints, but its been temporarily abandoned .. " + mcpkey_noschema_nopath + " (will reset after 3 loops)");
 						} else {
 							if (null == mcps.get(mcpkey_noschema_nopath)) {
 								LOGGER.info("Adding mcp endpoint " + mcpkey_noschema_nopath);
@@ -189,11 +190,11 @@ public class OllamaService {
 
 			// always give endpoints another chance
 			if (mcp_attempt_counter>10) {
-				LOGGER.info("OK time to clear and retry with the abandoned MCP endpoints");
+				if (!abandoned_mcps.isEmpty()) LOGGER.info("OK time to clear and retry with the abandoned MCP endpoints");
 				abandoned_mcps = new TreeMap<>();
 			}
 
-			if (!blockUntilReady && (mcp_attempt_counter>10)) {
+			if (!blockUntilReady && (mcp_attempt_counter>=3)) {
 				LOGGER.warn("Was attempting to update the list of mcp servers but found none");
 				mcp_abort = true;
 			}

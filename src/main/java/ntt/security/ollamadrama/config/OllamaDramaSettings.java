@@ -45,7 +45,7 @@ public class OllamaDramaSettings {
 	private ArrayList<OllamaEndpoint> satellites;
 	private ArrayList<MCPEndpoint> mcp_satellites;
 	
-	private String autopull_max_llm_size = "L"; // S, M, XL, XXL
+	private String autopull_max_llm_size = "XL"; // S, M, XL, XXL
 	
 	public OllamaDramaSettings() {
 		super();

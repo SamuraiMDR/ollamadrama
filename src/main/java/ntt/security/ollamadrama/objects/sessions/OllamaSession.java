@@ -148,8 +148,6 @@ public class OllamaSession {
 
 	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, int _retryThreshold, long _timeout, boolean _make_tools_available) {
 
-		if (!_question.endsWith("?")) _question = _question + "?";
-
 		if (_make_tools_available) {
 			String available_tool_summary = OllamaService.getAllAvailableMCPTools();
 			_question = _question + "\n\n" + available_tool_summary;
@@ -210,7 +208,7 @@ public class OllamaSession {
 									StringBuffer sb = new StringBuffer();
 									ArrayList<String> tool_calls = parseToolCalls(swr.getTool_calls());
 									for (String tool_call: tool_calls) {
-										System.out.println(" - tool_call: " + tool_call);
+										//System.out.println(" - tool_call: " + tool_call);
 
 										String toolname = MCPUtils.parseTool(tool_call);
 
@@ -240,7 +238,7 @@ public class OllamaSession {
 											if (make_call) {
 												CallToolResult result = MCPUtils.callToolUsingMCPEndpoint(mcpURL, mcpPATH, toolname, arguments, 30L);
 												String tool_response = "\nResponse from running tool_call " + tool_call + ":\n\n" + MCPUtils.prettyPrint(result);
-												System.out.println(tool_response);
+												//System.out.println(tool_response);
 												sb.append(tool_response + "\n");
 											} else {
 												LOGGER.info("Not making MCP call ..");

@@ -1087,14 +1087,19 @@ public class OllamaUtils {
 
 	private static final Set<String> SIZE_L = Stream.of(
 			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L,
-			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_L)
+			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_L,
+			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_CODE_L)
 			.flatMap(s -> parse(s).stream())
 			.collect(Collectors.toUnmodifiableSet());
 
 	private static final Set<String> SIZE_XL = Stream.of(
 			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL,
 			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_XL,
-			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_XL)
+			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_XL,
+			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_VISION_XL,
+			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_GUARDED_XL,
+			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_GUARDED_XL,
+			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_CODE_XL)
 			.flatMap(s -> parse(s).stream())
 			.collect(Collectors.toUnmodifiableSet());
 
