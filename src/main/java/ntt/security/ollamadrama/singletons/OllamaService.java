@@ -7,7 +7,7 @@ import java.util.TreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.github.amithkoujalgi.ollama4j.core.OllamaAPI;
+import io.github.ollama4j.OllamaAPI;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import ntt.security.ollamadrama.config.Globals;
@@ -71,8 +71,12 @@ public class OllamaService {
 		LOGGER.info("found_ollamas: " + found_ollamas);
 
 		// optional check for mcp servers
-		boolean found_mcps = wireMCPs(false);
-		LOGGER.info("found_mcps: " + found_mcps);
+
+		boolean found_mcps = false;
+		if (settings.isMcp_scan()) {
+			wireMCPs(false);
+			LOGGER.info("found_mcps: " + found_mcps);
+		}
 	}
 
 
@@ -80,7 +84,6 @@ public class OllamaService {
 	public static boolean wireMCPs(boolean blockUntilReady) {
 		LOGGER.info("wireMCPs()");
 
-		int retryCounter = 0;
 		boolean found_mcps = false;
 		int mcp_attempt_counter = 0;
 		boolean mcp_abort = false;
@@ -282,7 +285,7 @@ public class OllamaService {
 											if (model_exists) {
 												LOGGER.info("Performing simple sanity check on Ollama model " + modelname + " on " + oep.getOllama_url());
 												if (!OllamaUtils.verifyModelSanityUsingSingleWordResponse(oep.getOllama_url(), ollamaAPI, modelname, 
-														Globals.createStrictOptionsBuilder(modelname, true), "Is the capital city of France named Paris? You must reply with only a single word of Yes or No." + Globals.THREAT_TEMPLATE, 
+														Globals.createStrictOptionsBuilder(modelname, true, OllamaService.getSettings().getN_ctx_override()), "Is the capital city of France named Paris? You must reply with only a single word of Yes or No." + Globals.THREAT_TEMPLATE, 
 														"Yes", 1, settings.getAutopull_max_llm_size())) {
 													LOGGER.warn("Unable to pass simple sanity check for " + modelname + " on " + oep.getOllama_url() + ". Abandoning the node for now.");	
 													abandoned_ollamas.put(oep.getOllama_url(), oep);
@@ -397,7 +400,7 @@ public class OllamaService {
 			SystemUtils.sleepInSeconds(30);
 		}
 	}
-	
+
 	public static OllamaSession getStrictProtocolSession(String _model_name) {
 		return getStrictProtocolSession(_model_name, false, false);
 	}
@@ -429,7 +432,7 @@ public class OllamaService {
 				Globals.THREAT_TEMPLATE;
 
 		return new OllamaSession(_model_name, OllamaService.getRandomActiveOllamaURL(),
-				Globals.createStrictOptionsBuilder(_model_name, _use_random_seed), OllamaService.getSettings(), 
+				Globals.createStrictOptionsBuilder(_model_name, _use_random_seed, OllamaService.getSettings().getN_ctx_override()), OllamaService.getSettings(), 
 				system_prompt,
 				SessionType.STRICTPROTOCOL);
 	}
@@ -444,7 +447,7 @@ public class OllamaService {
 			SystemUtils.halt();
 		}
 		return new OllamaSession(_model_name, OllamaService.getRandomActiveOllamaURL(),
-				Globals.createStrictOptionsBuilder(_model_name, _use_random_seed), OllamaService.getSettings(),
+				Globals.createStrictOptionsBuilder(_model_name, _use_random_seed, OllamaService.getSettings().getN_ctx_override()), OllamaService.getSettings(),
 				Globals.PROMPT_TEMPLATE_STRICT_COMPLEXOUTPUT,
 				SessionType.STRICT);
 	}
@@ -459,7 +462,7 @@ public class OllamaService {
 			SystemUtils.halt();
 		}
 		return new OllamaSession(_model_name, OllamaService.getRandomActiveOllamaURL(),
-				Globals.createCreativeOptionsBuilder(_model_name), OllamaService.getSettings(),
+				Globals.createCreativeOptionsBuilder(_model_name, OllamaService.getSettings().getN_ctx_override()), OllamaService.getSettings(),
 				Globals.PROMPT_TEMPLATE_CREATIVE,
 				SessionType.CREATIVE);
 	}
@@ -502,7 +505,6 @@ public class OllamaService {
 	}
 
 	public static MCPTool getMCPURLForTool(String toolname) {
-		String mcpURL = "";
 		for (String toolid: mcp_tools.keySet()) {
 			MCPTool tool = mcp_tools.get(toolid);
 			if (toolname.equals(tool.getToolname())) return tool;

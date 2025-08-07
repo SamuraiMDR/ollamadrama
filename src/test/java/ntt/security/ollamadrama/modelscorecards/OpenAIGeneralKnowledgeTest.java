@@ -38,6 +38,7 @@ public class OpenAIGeneralKnowledgeTest {
 			}};
 
 			ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOpenAIModels(
+					false, // use MCP
 					Globals.MODEL_NAMES_OPENAI_ALL,
 					settings,
 					"What company or organization is associated with google.com? Reply with only the name",

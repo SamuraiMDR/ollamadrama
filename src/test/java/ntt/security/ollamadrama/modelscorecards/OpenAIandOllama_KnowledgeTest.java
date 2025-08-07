@@ -41,6 +41,7 @@ public class OpenAIandOllama_KnowledgeTest {
 			}};
 
 			ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOpenAIAndOllamaModels(
+					false, // use MCP
 					Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL,
 					Globals.MODEL_NAMES_OPENAI_ALL,
 					settings,
@@ -102,6 +103,7 @@ public class OpenAIandOllama_KnowledgeTest {
 		if (settings.getOpenaikey().length() > 10) {
 
 			ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOpenAIAndOllamaModels(
+					false, // use MCP
 					Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL,
 					Globals.MODEL_NAMES_OPENAI_ALL,
 					settings,
@@ -163,6 +165,7 @@ public class OpenAIandOllama_KnowledgeTest {
 
 		if (settings.getOpenaikey().length() > 10) {
 			ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOpenAIAndOllamaModels(
+					false, // use MCP
 					Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL,
 					Globals.MODEL_NAMES_OPENAI_ALL,
 					settings,
@@ -221,6 +224,7 @@ public class OpenAIandOllama_KnowledgeTest {
 
 		if (settings.getOpenaikey().length() > 10) {
 			ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOpenAIAndOllamaModels(
+					false, // use MCP
 					Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL,
 					Globals.MODEL_NAMES_OPENAI_ALL,
 					settings,
@@ -280,6 +284,7 @@ public class OpenAIandOllama_KnowledgeTest {
 
 		if (settings.getOpenaikey().length() > 10) {
 			ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOpenAIAndOllamaModels(
+					false, // use MCP
 					Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL,
 					Globals.MODEL_NAMES_OPENAI_ALL,
 					settings,

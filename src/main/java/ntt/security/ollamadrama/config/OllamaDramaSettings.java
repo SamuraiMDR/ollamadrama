@@ -22,6 +22,7 @@ public class OllamaDramaSettings {
 	private Integer ollama_port = 11434;
 	private long ollama_timeout = 1200L; // 20 min
 	private boolean ollama_scan = true;
+	private int n_ctx_override = -1;
 	
 	private ArrayList<Integer> mcp_ports = new ArrayList<Integer>() {{
 		this.add(8080);
@@ -230,6 +231,14 @@ public class OllamaDramaSettings {
 
 	public void setMcp_blind_trust(boolean mcp_blind_trust) {
 		this.mcp_blind_trust = mcp_blind_trust;
+	}
+
+	public int getN_ctx_override() {
+		return n_ctx_override;
+	}
+
+	public void setN_ctx_override(int n_ctx_override) {
+		this.n_ctx_override = n_ctx_override;
 	}
 
 }

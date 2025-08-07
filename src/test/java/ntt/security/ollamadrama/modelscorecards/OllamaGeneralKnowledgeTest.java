@@ -27,6 +27,7 @@ public class OllamaGeneralKnowledgeTest {
 		}};
 
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
+				true, // use MCP
 				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, 
 				"What is the current temperature in Paris? Reply with only a number where the number is the temperature in celcius.",
 				acceptable_answers,
@@ -89,6 +90,7 @@ public class OllamaGeneralKnowledgeTest {
 		}};
 
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
+				true, // use MCP
 				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, // Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL cogito:14b
 				"What is the current temperature in Paris? Reply with only a number where the number is the temperature in celcius."
 				+ "\n\n"
@@ -164,6 +166,7 @@ public class OllamaGeneralKnowledgeTest {
 		}};
 
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
+				true, // use MCP
 				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, 
 				"What company or organization is associated with google.com? Reply with only the name",
 				acceptable_answers,
@@ -228,7 +231,8 @@ public class OllamaGeneralKnowledgeTest {
 	public void simpleParis_OllamaModels_NEW() {
 		
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
-				"llama3.1:70b,cogito:14b", // cogito:14b 
+				false, // use MCP
+				"gpt-oss:20b", // cogito:14b gpt-oss:20b
 				"Is the capital city of France named Paris? Reply with Yes or No.", 
 				"Yes",
 				true, false);
@@ -243,6 +247,7 @@ public class OllamaGeneralKnowledgeTest {
 	public void simpleParis_OllamaModels_XL() {
 		
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
+				false, // use MCP
 				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, 
 				"Is the capital city of France named Paris? Reply with Yes or No.", 
 				"Yes",
@@ -254,28 +259,18 @@ public class OllamaGeneralKnowledgeTest {
 		scorecard.print();
 
 		/*
-		dolphin3:8b                              pos: 1   neg: 0  
 		tulu3:70b                                pos: 1   neg: 0  
 		cogito:8b                                pos: 1   neg: 0  
 		nemotron:70b                             pos: 1   neg: 0  
 		qwen3:8b                                 pos: 1   neg: 0  
 		qwen2.5:7b                               pos: 1   neg: 0  
-		llama3.1:8b                              pos: 1   neg: 0  
-		qwen2:7b                                 pos: 1   neg: 0  
 		qwen3:4b                                 pos: 1   neg: 0  
-		tulu3:8b                                 pos: 1   neg: 0  
 		granite3.3:8b                            pos: 1   neg: 0  
-		llama3.2:3b                              pos: 1   neg: 0  
 		gemma3:27b                               pos: 1   neg: 0  
 		sailor2:20b                              pos: 1   neg: 0  
-		exaone-deep:7.8b                         pos: 1   neg: 0  
-		command-r7b:7b                           pos: 1   neg: 0  
-		llava:34b                                pos: 1   neg: 0  
-		exaone3.5:32b                            pos: 1   neg: 0  
 		gemma2:9b                                pos: 1   neg: 0  
 		qwen2.5:72b                              pos: 1   neg: 0  
 		olmo2:7b                                 pos: 1   neg: 0  
-		gemma2:27b                               pos: 1   neg: 0  
 		mistral:7b                               pos: 1   neg: 0  
 		aya-expanse:8b                           pos: 1   neg: 0  
 		cogito:14b                               pos: 1   neg: 0  
@@ -288,12 +283,17 @@ public class OllamaGeneralKnowledgeTest {
 		aya-expanse:32b                          pos: 1   neg: 0  
 		qwen3:32b                                pos: 1   neg: 0  
 		phi4:14b                                 pos: 1   neg: 0  
-		dolphin-mistral:7b                       pos: 1   neg: 0  
-		openhermes:7b-mistral-v2.5-q4_0          pos: 1   neg: 0  
+		gemma3n:e4b                              pos: 1   neg: 0  
 		athene-v2:72b                            pos: 1   neg: 0  
 		openchat:7b                              pos: 1   neg: 0  
 		cogito:70b                               pos: 1   neg: 0  
 		qwen3:14b                                pos: 1   neg: 0  
+		-----
+		llama3.1:8b                              pos: 0   neg: 1  
+		tulu3:8b                                 pos: 0   neg: 1  
+		exaone-deep:7.8b                         pos: 0   neg: 1  
+		llava:34b                                pos: 0   neg: 1  
+		exaone3.5:32b                            pos: 0   neg: 1  
 		-----
 		 */
 
@@ -310,7 +310,7 @@ public class OllamaGeneralKnowledgeTest {
 			this.put("No", 1);		 			// OK based on its knowledge, but LOWPROBA preferred
 		}};
 
-		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, "Is the capital city of OOikiOOA named Mo1rstiooooo? Reply with Yes or No.", acceptable_answers, true, false);
+		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(false, Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, "Is the capital city of OOikiOOA named Mo1rstiooooo? Reply with Yes or No.", acceptable_answers, true, false);
 
 		// Print the scorecard
 		System.out.println("SCORECARD:");
@@ -369,7 +369,7 @@ public class OllamaGeneralKnowledgeTest {
 			this.put("LOWPROBA", 1); 			// OK to set LOWPROBA since the provided prompt is pure jibberish
 		}};
 		
-		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, "bmn,alkwjhuwihjkl7777oodottodooo?", acceptable_answers, true, false);
+		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(false, Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, "bmn,alkwjhuwihjkl7777oodottodooo?", acceptable_answers, true, false);
 
 		// Print the scorecard
 		System.out.println("SCORECARD:");
@@ -430,6 +430,7 @@ public class OllamaGeneralKnowledgeTest {
 	public void simpleStrawberryRCountVague_OllamaModels_XL() {
 		
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
+				false, // use MCP
 				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, 
 				"Count the number of R in strawberry. Answer with number only", "3", true, false);
 
@@ -490,6 +491,7 @@ public class OllamaGeneralKnowledgeTest {
 	public void simpleStrawberryRCount_OllamaModels_XL() {
 		
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
+				false, // use MCP
 				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, 
 				"Count the number of 'r' characters in the string 's t r a w b e r r y', which contains 10 characters from the alphabet in total. "
 				+ "Walk through each character in the word while counting and make note of the string index they occur at. "
@@ -555,6 +557,7 @@ public class OllamaGeneralKnowledgeTest {
 	public void simpleStrawberryRCount_OllamaModels_L() {
 		
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
+				false, // use MCP
 				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_L, 
 				"Count the number of 'r' characters in the string 's t r a w b e r r y', which contains 10 characters from the alphabet in total. "
 				+ "Walk through each character in the word while counting and make note of the string index they occur at. "
@@ -603,6 +606,7 @@ public class OllamaGeneralKnowledgeTest {
 	public void simpleStrawberryRCount_OllamaModels_M() {
 		
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
+				false, // use MCP
 				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_M, 
 				"Count the number of 'r' characters in the string 's t r a w b e r r y', which contains 10 characters from the alphabet in total. "
 				+ "Walk through each character in the word while counting and make note of the string index they occur at. "

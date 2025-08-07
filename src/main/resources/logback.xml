@@ -11,7 +11,7 @@
         </encoder>
     </appender>
 
- <logger name="io.github.amithkoujalgi.ollama4j" level="warn" />
+ <logger name="io.github.ollama4j" level="warn" />
  <logger name="io.modelcontextprotocol.client.transport.HttpClientSseClientTransport" level="OFF" />  <!-- Mutes noisy SSE connection error logs -->
  <logger name="reactor.core.publisher.Operators" level="OFF" />  <!-- Mutes Reactor's onErrorDropped logs -->
 

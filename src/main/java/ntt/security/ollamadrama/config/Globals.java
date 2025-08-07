@@ -6,8 +6,8 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.github.amithkoujalgi.ollama4j.core.utils.Options;
-import io.github.amithkoujalgi.ollama4j.core.utils.OptionsBuilder;
+import io.github.ollama4j.utils.Options;
+import io.github.ollama4j.utils.OptionsBuilder;
 
 public class Globals {
 
@@ -60,96 +60,103 @@ public class Globals {
 	public static String PROMPT_TEMPLATE_CREATIVE = "You are a free thinking creative bot and always give descriptive and long winded answers. You NEVER reply to a question with just one word and always justify your answer with an explaination.";
 
 	// ollama 0.9.3 RN: Ollama will now limit context length to what the model was trained against to avoid strange overflow behavior
-	public static final Map<String, Integer> n_ctx_train = Map.ofEntries(
-			Map.entry("wizard-vicuna-uncensored:30b", 2048),
-			Map.entry("llava:34b", 4096),
-			Map.entry("llama3.1:70b", 131072),
-			Map.entry("llama3.3:70b", 131072),
-			Map.entry("nemotron:70b", 131072),
-			Map.entry("qwen3:32b", 40960),
-			Map.entry("qwen2.5:72b", 32768),
-			Map.entry("gemma3:27b", 64*1024), // claims 126976 but wont load
-			Map.entry("cogito:70b", 131072),
-			Map.entry("athene-v2:72b", 32768),
-			Map.entry("r1-1776:70b", 131072),
-			Map.entry("tulu3:70b", 131072),
-			Map.entry("exaone3.5:32b", 32768),
-			Map.entry("gemma2:27b", 8192),
-			Map.entry("aya-expanse:32b", 8192),
-			Map.entry("sailor2:20b", 32768),
-			Map.entry("qwen3:14b", 40960),
-			Map.entry("olmo2:13b", 4096),
-			Map.entry("cogito:14b", 131072), // actual 131072 results in regular delays 
-			Map.entry("gemma3:12b", 64*1024), //// claims 126976 but wont load
-			Map.entry("phi4:14b", 16384),
-			Map.entry("marco-o1:7b", 32768),
-			Map.entry("qwen3:8b", 40960),
-			Map.entry("qwen2.5:7b", 32768),
-			Map.entry("olmo2:7b", 4096),
-			Map.entry("gemma2:9b", 8192),
-			Map.entry("openchat:7b", 8192),
-			Map.entry("dolphin-mistral:7b", 32768),
-			Map.entry("cogito:8b", 131072),
-			Map.entry("aya-expanse:8b", 8192),
-			Map.entry("llama3.1:8b", 131072),
-			Map.entry("qwen2:7b", 32768),
-			Map.entry("dolphin3:8b", 131072),
-			Map.entry("mistral:7b", 32768),
-			Map.entry("exaone-deep:7.8b", 32768),
-			Map.entry("openhermes:7b-mistral-v2.5-q4_0", 32768),
-			Map.entry("command-r7b:7b", 8192),
-			Map.entry("tulu3:8b", 131072),
-			Map.entry("granite3.3:8b", 131072),
-			Map.entry("granite3.1-dense:8b", 131072),
-			Map.entry("llama3.2:3b", 131072),
-			Map.entry("qwen3:4b", 40960),
-			Map.entry("dolphin-llama3:70b", 8192),
-			Map.entry("magistral:24b", 40000),
-			Map.entry("gemma3n:e4b", 5555),
-			Map.entry("mistral-small3.2:24b", 5555),
-			Map.entry("devstral:24b", 131072),
-			Map.entry("qwen2.5vl:72b", 32768),
-			Map.entry("qwen2.5-coder:32b", 131072),
-			Map.entry("deepcoder:14b", 131072),
-			Map.entry("opencoder:8b", 131072),
-			Map.entry("codestral:22b", 131072)
+
+	public static final Map<String, Integer> n_ctx_defaults = Map.ofEntries(
+			Map.entry("wizard-vicuna-uncensored:30b", 2048), // train 2048
+			Map.entry("llava:34b", 4096), // train 4096
+			Map.entry("llama3.1:70b", 32768), // train 131072
+			Map.entry("llama3.3:70b", 32768), // train 131072
+			Map.entry("nemotron:70b", 32768), // train 131072
+			Map.entry("qwen3:32b", 32768), // train 40960
+			Map.entry("qwen2.5:72b", 32768), // train 32768
+			Map.entry("gemma3:27b", 32768), // train 126976 but wont load
+			Map.entry("cogito:70b", 32768), // train 131072
+			Map.entry("athene-v2:72b", 32768), // train 32768
+			Map.entry("r1-1776:70b", 32768), // train 131072
+			Map.entry("tulu3:70b", 32768), // train 131072
+			Map.entry("exaone3.5:32b", 32768), // train 32768
+			Map.entry("gemma2:27b", 8192), // train 8192
+			Map.entry("aya-expanse:32b", 8192), // train 8192
+			Map.entry("sailor2:20b", 32768), // train 32768
+			Map.entry("qwen3:14b", 32768), // train 40960
+			Map.entry("olmo2:13b", 4096), // train 4096
+			Map.entry("cogito:14b", 32768), // train 131072 results in regular delays
+			Map.entry("gemma3:12b", 32768), // train 126976 but wont load
+			Map.entry("phi4:14b", 16384), // train 16384
+			Map.entry("marco-o1:7b", 32768), // train 32768
+			Map.entry("qwen3:8b", 32768), // train 40960
+			Map.entry("qwen2.5:7b", 32768), // train 32768
+			Map.entry("olmo2:7b", 4096), // train 4096
+			Map.entry("gemma2:9b", 8192), // train 8192
+			Map.entry("openchat:7b", 8192), // train 8192
+			Map.entry("dolphin-mistral:7b", 32768), // train 32768
+			Map.entry("cogito:8b", 32768), // train 131072
+			Map.entry("aya-expanse:8b", 8192), // train 8192
+			Map.entry("llama3.1:8b", 32768), // train 131072
+			Map.entry("qwen2:7b", 32768), // train 32768
+			Map.entry("dolphin3:8b", 32768), // train 131072
+			Map.entry("mistral:7b", 32768), // train 32768
+			Map.entry("exaone-deep:7.8b", 32768), // train 32768
+			Map.entry("openhermes:7b-mistral-v2.5-q4_0", 32768), // train 32768
+			Map.entry("command-r7b:7b", 8192), // train 8192
+			Map.entry("tulu3:8b", 32768), // train 131072
+			Map.entry("granite3.3:8b", 32768), // train 131072
+			Map.entry("granite3.1-dense:8b", 32768), // train 131072
+			Map.entry("llama3.2:3b", 32768), // train 131072
+			Map.entry("qwen3:4b", 32768), // train 40960
+			Map.entry("dolphin-llama3:70b", 8192), // train 8192
+			Map.entry("magistral:24b", 32768), // train 40000
+			Map.entry("gemma3n:e4b", 5555), // train 5555
+			Map.entry("mistral-small3.2:24b", 5555), // train 5555
+			Map.entry("devstral:24b", 32768), // train 131072
+			Map.entry("qwen2.5vl:72b", 32768), // train 32768
+			Map.entry("qwen2.5-coder:32b", 32768), // train 131072
+			Map.entry("deepcoder:14b", 32768), // train 131072
+			Map.entry("opencoder:8b", 32768), // train 131072
+			Map.entry("gpt-oss:20b", 32768), // train 131072
+			Map.entry("codestral:22b", 32768) // train 131072
 			);
 
-	public static Options createStrictOptionsBuilder(String _modelname, Boolean _use_random_seed) {
-		Integer n_ctx_train_size = n_ctx_train.get(_modelname);
-		if (null == n_ctx_train_size) {
-			LOGGER.warn("Unknown n_ctx_train for " + _modelname + ", falling back to 2048 for safety reasons");
-			n_ctx_train_size = 2048;
-		}
 
+	public static Options createStrictOptionsBuilder(String _modelname, Boolean _use_random_seed, int _n_ctx_override) {
+		Integer n_ctx = null;
+		if (_n_ctx_override == -1) {
+			n_ctx = n_ctx_defaults.get(_modelname);
+			if (null == n_ctx) {
+				LOGGER.warn("No n_ctx_defaults_size for " + _modelname + ", falling back to 2048 for safety reasons");
+				n_ctx = 2048;
+			}
+		} else {
+			n_ctx = _n_ctx_override;
+		}
 		if (_use_random_seed)  {
 			return new OptionsBuilder()
-					
+
 					// https://github.com/SillyTavern/SillyTavern/issues/4188
 					.setMirostat(0)					// 0 = DISABLED
 					//.setMirostat(2) 				// allows perplexity/uncertainty control
 					//.setMirostatEta(0.5f) 		// learning rate (default 0.1)
 					//.setMirostatTau(1.0f) 		// lower = more focused and coherent text (default 5.0)		
-					
+
 					.setTemperature(0.0f) 			// higher = more creative (default 0.8)
 					.setTopK(0) 					// 0-100, higher = more creative (default 40)
 					.setTopP(0.0f)					// 0.0-1.0, higher = more creative (default 0.9)
-					.setNumCtx(n_ctx_train_size) 	// Size of the context window (default 2048), https://github.com/ollama/ollama/blob/main/docs/faq.md#how-can-i-specify-the-context-window-size
+					.setNumCtx(n_ctx) 	// Size of the context window (default 2048), https://github.com/ollama/ollama/blob/main/docs/faq.md#how-can-i-specify-the-context-window-size
 					.build();
 		} else {
 			return new OptionsBuilder()
-					
+
 					// https://github.com/SillyTavern/SillyTavern/issues/4188
 					.setMirostat(0)					// 0 = DISABLED
 					//.setMirostat(2) 				// allows perplexity/uncertainty control
 					//.setMirostatEta(0.5f) 		// learning rate (default 0.1)
 					//.setMirostatTau(1.0f) 		// lower = more focused and coherent text (default 5.0)
-					
+
 					.setTemperature(0.0f) 			// higher = more creative (default 0.8)
 					.setTopK(0) 					// 0-100, higher = more creative (default 40)
 					.setTopP(0.0f)					// 0.0-1.0, higher = more creative (default 0.9)
 					.setSeed(42)					// Just make it fixed
-					.setNumCtx(n_ctx_train_size) 	// Size of the context window (default 2048), https://github.com/ollama/ollama/blob/main/docs/faq.md#how-can-i-specify-the-context-window-size
+					.setNumCtx(n_ctx) 	// Size of the context window (default 2048), https://github.com/ollama/ollama/blob/main/docs/faq.md#how-can-i-specify-the-context-window-size
 					.build();
 		}
 	}
@@ -161,11 +168,16 @@ public class Globals {
 		return new OptionsBuilder().build();
 	}
 
-	public static Options createCreativeOptionsBuilder(String _modelname) {
-		Integer n_ctx_train_size = n_ctx_train.get(_modelname);
-		if (null == n_ctx_train_size) {
-			LOGGER.warn("Unknown n_ctx_train for " + _modelname + ", falling back to 2048 for safety reasons");
-			n_ctx_train_size = 2048;
+	public static Options createCreativeOptionsBuilder(String _modelname, int _n_ctx_override) {
+		Integer n_ctx = null;
+		if (_n_ctx_override == -1) {
+			n_ctx = n_ctx_defaults.get(_modelname);
+			if (null == n_ctx) {
+				LOGGER.warn("No n_ctx_defaults_size for " + _modelname + ", falling back to 2048 for safety reasons");
+				n_ctx = 2048;
+			}
+		} else {
+			n_ctx = _n_ctx_override;
 		}
 		return new OptionsBuilder()
 				.setMirostatEta(Float.MAX_VALUE) 	// learning rate (default 0.1)
@@ -173,7 +185,7 @@ public class Globals {
 				.setTemperature(1.0f) 				// higher = more creative (default 0.8)
 				.setTopK(100) 						// 0-100, higher = more creative (default 40)
 				.setTopP(1.0f)						// 0.0-1.0, higher = more creative (default 0.9)
-				.setNumCtx(n_ctx_train_size) 		// Size of the context window (default 2048), https://github.com/ollama/ollama/blob/main/docs/faq.md#how-can-i-specify-the-context-window-size
+				.setNumCtx(n_ctx) 					// Size of the context window (default 2048), https://github.com/ollama/ollama/blob/main/docs/faq.md#how-can-i-specify-the-context-window-size
 				// num_ctx does not seem to work over api, use https://www.reddit.com/r/ollama/comments/1e4hklk/how_does_num_predict_and_num_ctx_work/
 				.build();
 	}
@@ -234,13 +246,13 @@ public class Globals {
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_CODE_XL = ""
 			+ "qwen2.5-coder:32b"		// 20 GB
 			+ "";
-	
+
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_UNCENSORED_XL = ""
 			+ "dolphin-llama3:70b"		// 39 GB
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_VISION_XL = ""
-			+ "qwen2.5vl:72b,"	// 49 GB
+			//+ "qwen2.5vl:72b,"	// 49 GB, fails after update to ollama 0.11.3
 			+ "llava:34b"		// 20 GB
 			+ "";
 
@@ -283,7 +295,7 @@ public class Globals {
 			+ "sailor2:20b,"		// 12 GB
 			+ "phi4:14b"			// 9 GB
 			+ "";
-	
+
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_L = ""
 			+ "olmo2:13b"			// 8.4 GB, tool call limitations
 			+ "";
@@ -311,12 +323,12 @@ public class Globals {
 			+ "qwen3:14b,"			// 9.3 GB
 			+ "cogito:14b"			// 9 GB
 			+ "";
-	
+
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_DIVERSE_L_XL = ""
 			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_MINIDIVERSE_XL + ","
 			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L + ","
 			+ "";
-	
+
 	/**
 	 * M (<8GB)
 	 */
@@ -372,7 +384,7 @@ public class Globals {
 			// tier1
 			+ "qwen3:4b"			// 2.6 GB
 			+ "";
-	
+
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_S = ""
 			// tier1
 			+ "llama3.2:3b"		// 2 GB, fails on tool calling and multiple score cards
@@ -408,7 +420,7 @@ public class Globals {
 			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL + ","
 			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L
 			+"";
-	
+
 	public static String MODEL_NAMES_OLLAMA_ALL_TIER1_M_L_XL = ""
 			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL + ","
 			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L + ","
@@ -529,7 +541,7 @@ public class Globals {
 		this.put("exaone-deep:7.8b", 44);
 		this.put("gemma2:27b", 14);
 		this.put("phi4:14b", 14);
-		
+
 		this.put("llama3.1:70b", 14);
 		this.put("llama3.2:3b", 14);
 		this.put("llama3.3:70b", 14);
@@ -551,7 +563,7 @@ public class Globals {
 		this.put("dolphin-llama3:70b", 14);
 		this.put("devstral:24b", 14);
 		this.put("gemma3n:e4b", 14);
-		
+
 		// openai llms - too humble
 		this.put("gpt-4o", 19);
 		this.put("gpt-4-turbo", 19);
@@ -568,7 +580,7 @@ public class Globals {
 		this.put("marco-o1:7b", 44);
 		this.put("athene-v2:72b", 44);
 		this.put("exaone3.5:32b", 44);
-		
+
 		this.put("openhermes:7b-mistral-v2.5-q4_0", 44);
 		this.put("falcon3:10b", 44);
 		this.put("olmo2:7b", 44);

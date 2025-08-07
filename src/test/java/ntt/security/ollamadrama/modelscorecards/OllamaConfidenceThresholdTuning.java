@@ -61,6 +61,7 @@ public class OllamaConfidenceThresholdTuning {
 		}};
 		for (int i=1; i<=iterations; i++) {
 			ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
+					true, // use MCP
 					Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL,
 					"bmn,alkwjhuwihjkl7777oodottodooo?", 
 					acceptable_answers_nonsenseinpu1,

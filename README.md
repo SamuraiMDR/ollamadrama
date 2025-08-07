@@ -54,13 +54,12 @@ Next we use OllamaDrama to ask if a website is available, and make sure to make 
 
    ```
    boolean make_tools_available = true;
-	SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion("Is the site https://www.ntt.com accessible?", make_tools_available);
-	ssr1.print();
+   SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion("Is the site https://www.ntt.com accessible?", make_tools_available);
+   ssr1.print();
    ```
 
 When running this unit test you will see output similar to the following: 
 
-The local network is scanned for ollama ports, and 1 endpoint is found:
   ```
    ... log_level="INFO" wireOllamas()
    ... log_level="INFO" Owned ips: [127.0.0.1, 192.168.100.12]
@@ -71,8 +70,7 @@ The local network is scanned for ollama ports, and 1 endpoint is found:
    ... log_level="INFO" Performing simple sanity check on Ollama model qwen3:14b on http://127.0.0.1:11434
    ... log_level="INFO" Verified ollama URL (with a functional instance of our preferred model (qwen3:14b) found on: http://127.0.0.1:11434
   ```
-
-The local network is scanned for the defined MCP ports, and 3 tools are indexed by ollamadrama:
+Here the local network is scanned for ollama ports, and 1 endpoint is found. Next the local network is scanned for the defined MCP ports, and 3 tools are indexed by ollamadrama:
   ```
    log_level="INFO" wireMCPs()
    ... log_level="INFO" activeHosts for MCP ports [8080, 9000]: [192.168.100.203::9000, 192.168.100.95::8080, 192.168.100.95::9000]
@@ -81,7 +79,7 @@ The local network is scanned for the defined MCP ports, and 3 tools are indexed 
    ... log_level="INFO" Found MCP tool convert_time
   ```
 
-Next the ollama session towards qwen3 is launched, and all detected tools are listed automatically as part of the prompt since we set make_tools_available to true:
+The ollama session towards the qwen3:14b model is launched, and all detected tools are listed automatically as part of the prompt since we set make_tools_available to true:
   ```
    - STRICT ollama session [qwen3:14b] is operational
    Is the site https://www.ntt.com accessible?

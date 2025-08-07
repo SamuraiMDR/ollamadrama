@@ -11,15 +11,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.github.amithkoujalgi.ollama4j.core.OllamaAPI;
-import io.github.amithkoujalgi.ollama4j.core.models.Model;
-import io.github.amithkoujalgi.ollama4j.core.models.OllamaResult;
-import io.github.amithkoujalgi.ollama4j.core.models.chat.OllamaChatMessage;
-import io.github.amithkoujalgi.ollama4j.core.models.chat.OllamaChatMessageRole;
-import io.github.amithkoujalgi.ollama4j.core.models.chat.OllamaChatRequestBuilder;
-import io.github.amithkoujalgi.ollama4j.core.models.chat.OllamaChatRequestModel;
-import io.github.amithkoujalgi.ollama4j.core.models.chat.OllamaChatResult;
-import io.github.amithkoujalgi.ollama4j.core.utils.Options;
+import io.github.ollama4j.OllamaAPI;
+import io.github.ollama4j.models.response.Model;
+import io.github.ollama4j.models.response.OllamaResult;
+import io.github.ollama4j.models.chat.OllamaChatMessage;
+import io.github.ollama4j.models.chat.OllamaChatMessageRole;
+import io.github.ollama4j.models.chat.OllamaChatRequest;
+import io.github.ollama4j.models.chat.OllamaChatRequestBuilder;
+import io.github.ollama4j.models.chat.OllamaChatResult;
+import io.github.ollama4j.utils.Options;
 import ntt.security.ollamadrama.config.Globals;
 import ntt.security.ollamadrama.config.OllamaDramaSettings;
 import ntt.security.ollamadrama.objects.ChatInteraction;
@@ -132,14 +132,14 @@ public class OllamaUtils {
 		return req_model_available;
 	}
 
-	public static boolean verifyModelSanityUsingSingleWordResponse(String _ollamaurl, OllamaAPI _ollamaAPI, String _modelname, Options _options, String _question, String _answer, int _maxRetries, String autopull_max_llm_size) {
+	public static boolean verifyModelSanityUsingSingleWordResponse(String _ollamaurl, OllamaAPI _ollamaAPI, String _modelname, Options _options, String _question, String _expected_answer, int _maxRetries, String autopull_max_llm_size) {
 		boolean debug = true;
 		boolean sanity_pass = false;
 		int retryCounter = 0;
 		while (retryCounter <= _maxRetries) {
 			try {
 				String raw_result = "";
-				OllamaResult result = _ollamaAPI.generate(_modelname, _question, _options);
+				OllamaResult result = _ollamaAPI.generate(_modelname, _question, false, _options);
 				if (null != result) {
 					if (null != result.getResponse()) {
 						if (!result.getResponse().isEmpty()) {
@@ -148,10 +148,10 @@ public class OllamaUtils {
 
 							// tolerate chatter
 							String res = raw_result.trim().split("\n")[0].split(",")[0].replace(".", "");
-							if (_answer.equals(res)) {
+							if (_expected_answer.equals(res)) {
 								sanity_pass = true;
 							} else {
-								if (debug) LOGGER.info(_answer + " is not " + res);
+								if (debug) LOGGER.info(res + " is not same as expected answer " + _expected_answer);
 							}
 						}
 					}
@@ -176,7 +176,7 @@ public class OllamaUtils {
 					}
 				} else {
 					LOGGER.warn("verifyModelSanityUsingSingleWordResponse() Exception #1: '" + e.getMessage() + "' while interacting with " + _ollamaurl);
-					LOGGER.warn("Catch all error handler while verifying sanity of " + _modelname + 	", retryCounter=" + retryCounter);
+					LOGGER.warn("Catch all error handler while verifying sanity of " + _modelname + ", retryCounter=" + retryCounter);
 				}
 				SystemUtils.sleepInSeconds(10);
 				retryCounter++;
@@ -214,7 +214,7 @@ public class OllamaUtils {
 				if (Character.isSupplementaryCodePoint(cp)) i++;
 
 				System.out.printf(
-						"%2d : U+%04X  (%s)%n",
+						"%2d : U+%04X (%s)%n",
 						i,
 						cp,
 						switch (cp) {
@@ -236,9 +236,9 @@ public class OllamaUtils {
 		OllamaChatResult chatResult = null;
 		int retryCounter = 0;
 		while (retryCounter < 5) {
-			try {				
+			try {
 				OllamaChatRequestBuilder builder = OllamaChatRequestBuilder.getInstance(_modelname).withOptions(_options);
-				OllamaChatRequestModel requestModel = builder.withMessage(OllamaChatMessageRole.SYSTEM,
+				OllamaChatRequest requestModel = builder.withMessage(OllamaChatMessageRole.SYSTEM,
 						_statement).build();
 				_ollamaAPI.setRequestTimeoutSeconds(_timeout);
 				chatResult = _ollamaAPI.chat(requestModel);
@@ -268,7 +268,7 @@ public class OllamaUtils {
 		while (retryCounter < 10) {
 			try {
 				while (retryCounter < 10) {
-					OllamaResult result = _ollamaAPI.generate(_modelname, _question + Globals.ENFORCE_SINGLE_KEY_JSON_RESPONSE_TO_QUESTIONS + Globals.THREAT_TEMPLATE, _options);
+					OllamaResult result = _ollamaAPI.generate(_modelname, _question + Globals.ENFORCE_SINGLE_KEY_JSON_RESPONSE_TO_QUESTIONS + Globals.THREAT_TEMPLATE, false, _options);
 					if (null != result) {
 						if (null != result.getResponse()) {
 							if (!result.getResponse().isEmpty()) {
@@ -301,7 +301,7 @@ public class OllamaUtils {
 				while (true) {
 					if (null != _chatResult) {
 						OllamaChatRequestBuilder builder = OllamaChatRequestBuilder.getInstance(_modelname).withOptions(_options);
-						OllamaChatRequestModel requestModel = null;
+						OllamaChatRequest requestModel = null;
 						if (null == _customChatHistory) {
 							requestModel = builder.withMessages(_chatResult.getChatHistory()).withMessage(OllamaChatMessageRole.USER, _question).build();
 						} else {
@@ -309,11 +309,11 @@ public class OllamaUtils {
 						}
 						_ollamaAPI.setRequestTimeoutSeconds(_timeout);
 						_chatResult = _ollamaAPI.chat(requestModel);
-						if (null !=_chatResult) {						
-							return new ChatInteraction(_chatResult, _chatResult.getResponse(), true);
+						if (null !=_chatResult) {
+							return new ChatInteraction(_chatResult, _chatResult.getResponseModel().getMessage().getContent(), true);
 						}
 						counter++;
-						if (counter > 5) System.out.println("DEBUG: struggling to get a proper reply with " + _modelname + " .. counter: " + counter + " .. \n<init_response>\n"  + "\n<fin_response>");
+						if (counter > 5) System.out.println("DEBUG: struggling to get a proper reply with " + _modelname + " .. counter: " + counter + " .. \n<init_response>\n" + "\n<fin_response>");
 						if (counter > 10) return new ChatInteraction(_chatResult, "N/A", false);
 						SystemUtils.sleepInSeconds(1); // throttle
 					} else {
@@ -344,26 +344,26 @@ public class OllamaUtils {
 				String addon = "";
 				while (true) {
 					OllamaChatRequestBuilder builder = OllamaChatRequestBuilder.getInstance(_modelname).withOptions(_options);
-					OllamaChatRequestModel requestModel = builder.withMessages(_chatResult.getChatHistory()).withMessage(OllamaChatMessageRole.USER,
+					OllamaChatRequest requestModel = builder.withMessages(_chatResult.getChatHistory()).withMessage(OllamaChatMessageRole.USER,
 							_question + Globals.ENFORCE_SINGLE_KEY_JSON_RESPONSE_TO_QUESTIONS + Globals.LOGIC_TEMPLATE + addon).build();
 					_ollamaAPI.setRequestTimeoutSeconds(_timeout);
 					_chatResult = _ollamaAPI.chat(requestModel);
 
 					// debug
 					if (retryCounter > 1) {
-						System.out.println("_chatResult.getResponse(): " + _chatResult.getResponse() + "\n");
+						System.out.println("_chatResult.getResponseModel().getMessage().getContent(): " + _chatResult.getResponseModel().getMessage().getContent() + "\n");
 					}
 
-					if (null !=_chatResult) {						
-						if (_chatResult.getResponse().contains("{") && _chatResult.getResponse().contains("}")) {
-							return new ChatInteraction(_chatResult, _chatResult.getResponse(), true);
+					if (null !=_chatResult) {
+						if (_chatResult.getResponseModel().getMessage().getContent().contains("{") && _chatResult.getResponseModel().getMessage().getContent().contains("}")) {
+							return new ChatInteraction(_chatResult, _chatResult.getResponseModel().getMessage().getContent(), true);
 						} else {
 							LOGGER.info("Trying to poke the LLM to get it to align with the JSON protocol");
 							addon = ". Make sure the response is JSON formatted";
 						}
 					}
 					counter++;
-					if (counter > 5) System.out.println("DEBUG: struggling to get a proper JSON reply with " + _modelname + " .. counter: " + counter + " .. \n<init_response>\n" + _chatResult.getResponse() + "\n<fin_response>");
+					if (counter > 5) System.out.println("DEBUG: struggling to get a proper JSON reply with " + _modelname + " .. counter: " + counter + " .. \n<init_response>\n" + _chatResult.getResponseModel().getMessage().getContent() + "\n<fin_response>");
 					if (counter > 10) return new ChatInteraction(_chatResult, "N/A", false);
 					SystemUtils.sleepInSeconds(1); // throttle
 				}
@@ -390,13 +390,13 @@ public class OllamaUtils {
 				String addon = "";
 				while (true) {
 					OllamaChatRequestBuilder builder = OllamaChatRequestBuilder.getInstance(_modelname).withOptions(_options);
-					OllamaChatRequestModel requestModel = builder.withMessages(_chatResult.getChatHistory()).withMessage(OllamaChatMessageRole.USER,
+					OllamaChatRequest requestModel = builder.withMessages(_chatResult.getChatHistory()).withMessage(OllamaChatMessageRole.USER,
 							_statement + addon).build();
 					_ollamaAPI.setRequestTimeoutSeconds(_timeout);
 					_chatResult = _ollamaAPI.chat(requestModel);
 
 					if (null !=_chatResult) {
-						return new ChatInteraction(_chatResult, _chatResult.getResponse(), true);
+						return new ChatInteraction(_chatResult, _chatResult.getResponseModel().getMessage().getContent(), true);
 					}
 					counter++;
 					if (counter > 10) {
@@ -424,7 +424,7 @@ public class OllamaUtils {
 				String addon = "";
 				while (true) {
 					OllamaChatRequestBuilder builder = OllamaChatRequestBuilder.getInstance(_modelname).withOptions(_options);
-					OllamaChatRequestModel requestModel = builder.withMessages(_chatResult.getChatHistory()).withMessage(OllamaChatMessageRole.USER,
+					OllamaChatRequest requestModel = builder.withMessages(_chatResult.getChatHistory()).withMessage(OllamaChatMessageRole.USER,
 							_statement + Globals.ENFORCE_SINGLE_KEY_JSON_RESPONSE_TO_STATEMENTS + addon).build();
 					_ollamaAPI.setRequestTimeoutSeconds(_timeout);
 					_chatResult = _ollamaAPI.chat(requestModel);
@@ -433,23 +433,23 @@ public class OllamaUtils {
 
 						// debug
 						if (retryCounter > 1) {
-							System.out.println("_chatResult.getResponse(): " + _chatResult.getResponse() + "\n");
+							System.out.println("_chatResult.getResponseModel().getMessage().getContent(): " + _chatResult.getResponseModel().getMessage().getContent() + "\n");
 						}
 
-						if (_chatResult.getResponse().contains("{") && _chatResult.getResponse().contains("}")) {
+						if (_chatResult.getResponseModel().getMessage().getContent().contains("{") && _chatResult.getResponseModel().getMessage().getContent().contains("}")) {
 
-							StatementResponse resp = JSONUtils.createPOJOFromJSONOpportunistic(_chatResult.getResponse(), StatementResponse.class);
+							StatementResponse resp = JSONUtils.createPOJOFromJSONOpportunistic(_chatResult.getResponseModel().getMessage().getContent(), StatementResponse.class);
 							if (null == resp) {
 								LOGGER.warn("Not able to map the statement response to StatementResponse");
-								LOGGER.warn("Response: " + _chatResult.getResponse());
+								LOGGER.warn("Response: " + _chatResult.getResponseModel().getMessage());
 								addon = ". Make sure the response is JSON formatted";
 							} else {
 								if (resp.getResponse().contains("OKIDOKI")) {
-									return new ChatInteraction(_chatResult, _chatResult.getResponse(), true);
+									return new ChatInteraction(_chatResult, _chatResult.getResponseModel().getMessage().getContent(), true);
 								} else {
-									LOGGER.warn("Struggling to get the model " + _modelname + " to understand the STATEMENT " +  _statement);
+									LOGGER.warn("Struggling to get the model " + _modelname + " to understand the STATEMENT " + _statement);
 									LOGGER.warn("Reason given for failure to understand: " + resp.getExplanation());
-									System.out.println("STATEMENT _chatResult.getResponse(): \n" + _chatResult.getResponse() + "\n");
+									System.out.println("STATEMENT _chatResult.getResponseModel().getMessage().getContent(): \n" + _chatResult.getResponseModel().getMessage().getContent() + "\n");
 								}
 							}
 						} else {
@@ -458,7 +458,7 @@ public class OllamaUtils {
 					}
 					counter++;
 					if (counter > 5) {
-						LOGGER.warn("Struggling to get a valid reply with " + _modelname + " .. result: " + " .. \n<init_response>\n" + _chatResult.getResponse() + "\n<fin_response>");
+						LOGGER.warn("Struggling to get a valid reply with " + _modelname + " .. result: " + " .. \n<init_response>\n" + _chatResult.getResponseModel().getMessage().getContent() + "\n<fin_response>");
 						addon = ". Make sure you reply with OKIDOKI if you understand";
 					}
 					if (counter > 10) {
@@ -487,7 +487,7 @@ public class OllamaUtils {
 
 	public static SingleStringEnsembleResponse strictEnsembleRun(String _query, String _models, OllamaDramaSettings _settings, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
 
-		// Launch singleton 
+		// Launch singleton
 		OllamaService.getInstance(_models, _settings);
 
 		// Populate an ensemble of agents
@@ -505,7 +505,7 @@ public class OllamaUtils {
 
 	public static String creativeEnsembleRunEarlyExitOnFirst(String _query, String _models, OllamaDramaSettings _settings) {
 
-		// Launch singleton 
+		// Launch singleton
 		OllamaService.getInstance(_models, _settings);
 
 		// Populate an ensemble of agents
@@ -524,8 +524,8 @@ public class OllamaUtils {
 
 		System.out.println("timeout x: " + _settings.getOllama_timeout());
 
-		
-		// Launch singleton 
+
+		// Launch singleton
 		OllamaService.getInstance(_models, _settings);
 
 		// Populate an ensemble of agents
@@ -547,7 +547,7 @@ public class OllamaUtils {
 
 	public static SingleStringQuestionResponse strictEnsembleRunEarlyExitOnFirstConfident(String _query, String _models, OllamaDramaSettings _settings, boolean _hide_llm_reply_if_uncertain, Integer probaThreshold, boolean _use_random_seed) {
 
-		// Launch singleton 
+		// Launch singleton
 		OllamaService.getInstance(_models, _settings);
 
 		// Populate an ensemble of agents
@@ -593,7 +593,7 @@ public class OllamaUtils {
 		OllamaDramaSettings ollama_settings = OllamaUtils.parseOllamaDramaConfigENV();
 		ollama_settings.sanityCheck();
 
-		// Launch singleton 
+		// Launch singleton
 		OllamaService.getInstance(_model_name, ollama_settings);
 
 		// Launch 3 agents, strict, creative, default
@@ -635,7 +635,7 @@ public class OllamaUtils {
 
 		if (null == _r) {
 			HashMap<String, HashMap<String, HashMap<HashMap<String, Integer>, SingleStringQuestionResponse>>> scorecard_t = scorecard.getScorecard();
-			HashMap<String, HashMap<HashMap<String, Integer>, SingleStringQuestionResponse>> model_scorecard =  scorecard_t.get(_model_name);
+			HashMap<String, HashMap<HashMap<String, Integer>, SingleStringQuestionResponse>> model_scorecard = scorecard_t.get(_model_name);
 			if (null == model_scorecard) model_scorecard = new HashMap<>();
 			HashMap<HashMap<String, Integer>, SingleStringQuestionResponse> model_q = model_scorecard.get(_query_index);
 			if (null == model_q) model_q = new HashMap<>();
@@ -649,7 +649,7 @@ public class OllamaUtils {
 			System.out.println("assumptions_made: " + _r.getAssumptions_made());
 			System.out.println("tool_calls: " + _r.getTool_calls() + "\n");
 			HashMap<String, HashMap<String, HashMap<HashMap<String,Integer>, SingleStringQuestionResponse>>> scorecard_t = scorecard.getScorecard();
-			HashMap<String, HashMap<HashMap<String,Integer>, SingleStringQuestionResponse>> model_scorecard =  scorecard_t.get(_model_name);
+			HashMap<String, HashMap<HashMap<String,Integer>, SingleStringQuestionResponse>> model_scorecard = scorecard_t.get(_model_name);
 			if (null == model_scorecard) model_scorecard = new HashMap<>();
 			HashMap<HashMap<String,Integer>, SingleStringQuestionResponse> model_q = model_scorecard.get(_query_index);
 			if (null == model_q) model_q = new HashMap<>();
@@ -720,10 +720,10 @@ public class OllamaUtils {
 	public static SingleStringEnsembleResponse merge(SingleStringEnsembleResponse _sser1, SingleStringEnsembleResponse _sser2) {
 		SingleStringEnsembleResponse mergedResponse = _sser1;
 
-		// agent responses,  these keys never overlap, instance based so just add sser2 over sser1
+		// agent responses, these keys never overlap, instance based so just add sser2 over sser1
 		HashMap<String, SingleStringQuestionResponse> newval = mergedResponse.getSession_responses();
 		for (String s: _sser2.getSession_responses().keySet()) {
-			SingleStringQuestionResponse val =  _sser2.getSession_responses().get(s);
+			SingleStringQuestionResponse val = _sser2.getSession_responses().get(s);
 			newval.put(s, val);
 		}
 		mergedResponse.setSession_responses(newval);
@@ -731,8 +731,8 @@ public class OllamaUtils {
 		// uniq responses
 		HashMap<String, HashMap<String, Boolean>> newuniqreplies = mergedResponse.getUniq_replies();
 		for (String s: _sser2.getUniq_replies().keySet()) {
-			HashMap<String, Boolean> val_existing =  mergedResponse.getUniq_replies().get(s);
-			HashMap<String, Boolean> val =  _sser2.getUniq_replies().get(s);
+			HashMap<String, Boolean> val_existing = mergedResponse.getUniq_replies().get(s);
+			HashMap<String, Boolean> val = _sser2.getUniq_replies().get(s);
 			if (null == val_existing) val_existing = new HashMap<String, Boolean>();
 			for (String k: val.keySet()) {
 				Boolean content = val.get(k);
@@ -745,8 +745,8 @@ public class OllamaUtils {
 		// uniq confident responses
 		HashMap<String, HashMap<String, Boolean>> newuniqcreplies = mergedResponse.getUniq_confident_replies();
 		for (String s: _sser2.getUniq_confident_replies().keySet()) {
-			HashMap<String, Boolean> val_existing =  mergedResponse.getUniq_confident_replies().get(s);
-			HashMap<String, Boolean> val =  _sser2.getUniq_confident_replies().get(s);
+			HashMap<String, Boolean> val_existing = mergedResponse.getUniq_confident_replies().get(s);
+			HashMap<String, Boolean> val = _sser2.getUniq_confident_replies().get(s);
 
 			// new unique reply?
 			if (null == val_existing) val_existing = new HashMap<String, Boolean>();
@@ -779,16 +779,16 @@ public class OllamaUtils {
 			}
 
 			SingleStringEnsembleResponse sser3 = OllamaUtils.strictEnsembleRun(
-					_query 
+					_query
 					+ Globals.ENSEMBLE_LOOP_STATEMENT + "\n"
 					+ sb.toString(),
 					_ollama_model_names,
 					_hide_llm_reply_if_uncertain,
 					_use_random_seed);
 
-			SingleStringEnsembleResponse sser4 = OpenAIUtils.strictEnsembleRun(_query 
+			SingleStringEnsembleResponse sser4 = OpenAIUtils.strictEnsembleRun(_query
 					+ Globals.ENSEMBLE_LOOP_STATEMENT + "\n"
-					+ sb.toString(), 
+					+ sb.toString(),
 					_openai_model_names, _ollama_settings,
 					_hide_llm_reply_if_uncertain);
 
@@ -946,7 +946,7 @@ public class OllamaUtils {
 
 			// Agent #2 - First question
 			SingleStringQuestionResponse ssr2b = null;
-			String q2b =  "It is now your turn to ask a question.\n";
+			String q2b = "It is now your turn to ask a question.\n";
 			System.out.println("\nTO a2: Prompt4\n" + "-".repeat(31) + "\n" + q2b + "-".repeat(31) + "\n");
 			ssr2b = a2.askStrictChatQuestion(q2b, false, settings.getOllama_timeout());
 			ssr2b = OllamaUtils.applyResponseSanity(ssr2b, a2.getModel_name(), false);
@@ -1034,11 +1034,11 @@ public class OllamaUtils {
 
 			roundcounter++;
 			System.out.println("\nROUND " + roundcounter + "\n");
-			System.out.println(" - a1_score: "  + a1_score);
-			System.out.println(" - a2_score: "  + a2_score);
+			System.out.println(" - a1_score: " + a1_score);
+			System.out.println(" - a2_score: " + a2_score);
 			System.out.println(" - ");
-			System.out.println(" - chatsize_wordcount_a1: "  + chatsize_wordcount_a1);
-			System.out.println(" - chatsize_wordcount_a2: "  + chatsize_wordcount_a2);
+			System.out.println(" - chatsize_wordcount_a1: " + chatsize_wordcount_a1);
+			System.out.println(" - chatsize_wordcount_a2: " + chatsize_wordcount_a2);
 			//SystemUtils.sleepInSeconds(10);
 		}
 
@@ -1072,7 +1072,7 @@ public class OllamaUtils {
 	public enum ModelSize { S, M, L, XL, XXL }
 
 	/* ------------------------------------------------------------ *
-	 *   Pre-computed look-up tables                                *
+	 * Pre-computed look-up tables *
 	 * ------------------------------------------------------------ */
 
 	private static final Set<String> SIZE_S = parse(Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_S);
@@ -1111,17 +1111,17 @@ public class OllamaUtils {
 	}
 
 	/* ------------------------------------------------------------ *
-	 *   Public API                                                 *
+	 * Public API *
 	 * ------------------------------------------------------------ */
 
 	/**
 	 * @return {@code true} when {@code modelName} exceeds {@code maxSizeStr}
-	 *         and should therefore be skipped.
+	 * and should therefore be skipped.
 	 *
 	 * @throws IllegalArgumentException if {@code maxSizeStr} is not S, M, L, XL, or XXL
 	 */
 	public static boolean is_skip_model_autopull(String maxSizeStr, String modelName) {
-		ModelSize maxSize  = toSize(maxSizeStr);
+		ModelSize maxSize = toSize(maxSizeStr);
 		ModelSize thisSize = resolveSize(modelName);
 
 		// Skip when model is larger than the allowed maximum
@@ -1129,15 +1129,15 @@ public class OllamaUtils {
 	}
 
 	/* ------------------------------------------------------------ *
-	 *   Internals                                                  *
+	 * Internals *
 	 * ------------------------------------------------------------ */
 
 	private static ModelSize resolveSize(String modelName) {
-		if (SIZE_S.contains(modelName))  return ModelSize.S;
-		if (SIZE_M.contains(modelName))  return ModelSize.M;
-		if (SIZE_L.contains(modelName))  return ModelSize.L;
+		if (SIZE_S.contains(modelName)) return ModelSize.S;
+		if (SIZE_M.contains(modelName)) return ModelSize.M;
+		if (SIZE_L.contains(modelName)) return ModelSize.L;
 		if (SIZE_XL.contains(modelName)) return ModelSize.XL;
-		return ModelSize.XXL;  // default / largest
+		return ModelSize.XXL; // default / largest
 	}
 
 	private static ModelSize toSize(String str) {

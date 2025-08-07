@@ -1,6 +1,6 @@
 package ntt.security.ollamadrama.objects;
 
-import io.github.amithkoujalgi.ollama4j.core.models.chat.OllamaChatResult;
+import io.github.ollama4j.models.chat.OllamaChatResult;
 
 public class ChatInteraction {
 

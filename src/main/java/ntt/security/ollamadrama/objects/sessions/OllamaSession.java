@@ -5,10 +5,10 @@ import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.github.amithkoujalgi.ollama4j.core.OllamaAPI;
-import io.github.amithkoujalgi.ollama4j.core.models.chat.OllamaChatMessage;
-import io.github.amithkoujalgi.ollama4j.core.models.chat.OllamaChatResult;
-import io.github.amithkoujalgi.ollama4j.core.utils.Options;
+import io.github.ollama4j.OllamaAPI;
+import io.github.ollama4j.models.chat.OllamaChatMessage;
+import io.github.ollama4j.models.chat.OllamaChatResult;
+import io.github.ollama4j.utils.Options;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import ntt.security.ollamadrama.config.OllamaDramaSettings;
 import ntt.security.ollamadrama.objects.ChatInteraction;
@@ -183,6 +183,9 @@ public class OllamaSession {
 
 						// JSON newline fix
 						json = json.replace("\n", " ").replace("\r", " ");
+						
+						// tool call forgiveness
+						json = json.replace("\"tool_calls\":[]", "\"tool_calls\":\"\"").replace("\"tool_calls\": []", "\"tool_calls\":\"\"");
 
 						// JSON reply check (LLM protocol helper hack)
 						if (json.contains("{") && json.contains("}") && json.contains("\"response\": FAILTOUNDERSTAND,")) {

@@ -74,9 +74,14 @@ public class OllamaDramaUtils {
 
 	}
 
-	public static ModelsScoreCard populateScorecardsForOllamaModels(String _models, String _question, HashMap<String, Integer> _acceptable_answers, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
+	public static ModelsScoreCard populateScorecardsForOllamaModels(boolean _use_mcp, String _models, String _question, HashMap<String, Integer> _acceptable_answers, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
 		ModelsScoreCard scorecard = new ModelsScoreCard();
 		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
+		if (_use_mcp) {
+			settings.setMcp_scan(true);
+		} else {
+			settings.setMcp_scan(false);
+		}
 		settings.setOllama_models(_models);
 		settings.sanityCheck();
 		OllamaService.getInstance(settings);
@@ -124,8 +129,13 @@ public class OllamaDramaUtils {
 		return scorecard;
 	}
 
-	public static ModelsScoreCard populateScorecardsForOpenAIModels(String _models, OllamaDramaSettings _settings, String _question, HashMap<String, Integer> _acceptable_answers, boolean _hide_llm_reply_if_uncertain) {
+	public static ModelsScoreCard populateScorecardsForOpenAIModels(boolean _use_mcp, String _models, OllamaDramaSettings _settings, String _question, HashMap<String, Integer> _acceptable_answers, boolean _hide_llm_reply_if_uncertain) {
 		ModelsScoreCard scorecard = new ModelsScoreCard();
+		if (_use_mcp) {
+			_settings.setMcp_scan(true);
+		} else {
+			_settings.setMcp_scan(false);
+		}
 		OpenAIService.getInstance(_settings);
 		for (String model_name: _models.split(",")) {
 			int queryindex = 1;
@@ -144,20 +154,20 @@ public class OllamaDramaUtils {
 		return scorecard;
 	}
 
-	public static ModelsScoreCard populateScorecardsForOllamaModels(String _models, String _question, String _expectedresponse, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
-		return populateScorecardsForOllamaModels(_models, _question, OllamaUtils.singleValScore(_expectedresponse, 1), _hide_llm_reply_if_uncertain, _use_random_seed);
+	public static ModelsScoreCard populateScorecardsForOllamaModels(boolean _use_mcp, String _models, String _question, String _expectedresponse, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
+		return populateScorecardsForOllamaModels(_use_mcp, _models, _question, OllamaUtils.singleValScore(_expectedresponse, 1), _hide_llm_reply_if_uncertain, _use_random_seed);
 	}
 
 
 	public static ModelsScoreCard populateScorecardsForOpenAIModels(String _models, OllamaDramaSettings _settings, String _question, String _expectedresponse, boolean _hide_llm_reply_if_uncertain) {
-		return populateScorecardsForOpenAIModels(_models, _settings, _question, OllamaUtils.singleValScore(_expectedresponse, 1), _hide_llm_reply_if_uncertain);
+		return populateScorecardsForOpenAIModels(_settings.isMcp_scan(), _models, _settings, _question, OllamaUtils.singleValScore(_expectedresponse, 1), _hide_llm_reply_if_uncertain);
 	}
 
-	public static ModelsScoreCard populateScorecardsForOpenAIAndOllamaModels(String _models, String _openaimodels, OllamaDramaSettings _settings, String _question, String _expectedresponse, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
-		return populateScorecardsForOpenAIAndOllamaModels(_models, _openaimodels, _settings, _question, OllamaUtils.singleValScore(_expectedresponse, 1), _hide_llm_reply_if_uncertain, _use_random_seed);
+	public static ModelsScoreCard populateScorecardsForOpenAIAndOllamaModels(boolean _use_mcp, String _models, String _openaimodels, OllamaDramaSettings _settings, String _question, String _expectedresponse, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
+		return populateScorecardsForOpenAIAndOllamaModels(_use_mcp, _models, _openaimodels, _settings, _question, OllamaUtils.singleValScore(_expectedresponse, 1), _hide_llm_reply_if_uncertain, _use_random_seed);
 	}
 
-	public static ModelsScoreCard populateScorecardsForOpenAIAndOllamaModels(String _models, String _openaimodels, OllamaDramaSettings _settings, String _question, HashMap<String, Integer> _acceptable_answers, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
+	public static ModelsScoreCard populateScorecardsForOpenAIAndOllamaModels(boolean _use_mcp, String _models, String _openaimodels, OllamaDramaSettings _settings, String _question, HashMap<String, Integer> _acceptable_answers, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
 		ModelsScoreCard scorecard = new ModelsScoreCard();
 		OllamaService.getInstance(_models);
 		for (String model_name: _models.split(",")) {

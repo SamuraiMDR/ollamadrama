@@ -68,6 +68,7 @@ public class MCPTest {
 			this.put("LOWPROBA", 2); 			// OK to set LOWPROBA since OOikiOOA is completely fictional
 		}};
 		ModelsScoreCard scorecard1 = OllamaDramaUtils.populateScorecardsForOllamaModels(
+				true, // use MCP
 				"llama3.1:70b,cogito:14b", // cogito:14b 
 				"What is the current temperature in Paris? Reply with only a number where the number is the temperature in celcius.",
 				acceptable_answers1,
@@ -81,6 +82,7 @@ public class MCPTest {
 			this.put("TOOLCALL", 1); 
 		}};
 		ModelsScoreCard scorecard2 = OllamaDramaUtils.populateScorecardsForOllamaModels(
+				true, // use MCP
 				"llama3.1:70b,cogito:14b", // cogito:14b 
 				"What is the current temperature in Paris? Reply with only a number where the number is the temperature in celcius."
 				+ "\n\n"
@@ -100,6 +102,7 @@ public class MCPTest {
 
 		// Finally provide prompt with tool output available
 		ModelsScoreCard scorecard3 = OllamaDramaUtils.populateScorecardsForOllamaModels(
+				true, // use MCP
 				"llama3.1:70b,cogito:14b", // cogito:14b 
 				"What is the current temperature in Paris? Reply with only a number where the number is the temperature in celcius."
 				+ "\n"
@@ -167,6 +170,7 @@ public class MCPTest {
 			this.put("LOWPROBA", 2); 			// OK to set LOWPROBA since OOikiOOA is completely fictional
 		}};
 		ModelsScoreCard scorecard1 = OllamaDramaUtils.populateScorecardsForOllamaModels(
+				true, // use MCP
 				"llama3.1:70b,cogito:14b", // cogito:14b 
 				"What is the current temperature in Paris? Reply with only a number where the number is the temperature in celcius.", 
 				acceptable_answers1,
