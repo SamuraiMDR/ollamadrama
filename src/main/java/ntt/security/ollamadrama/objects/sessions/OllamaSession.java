@@ -155,8 +155,10 @@ public class OllamaSession {
 
 		if (this.sessiontype == SessionType.STRICTPROTOCOL) {
 
-			if (!_question.contains("MCP TOOLS AVAILABLE")) _question = _question + "\n\nNO MCP TOOLS AVAILABLE."; 
-
+			if (_make_tools_available) {
+				if (!_question.contains("MCP TOOLS AVAILABLE")) _question = _question + "\n\nNO MCP TOOLS AVAILABLE."; 
+			}
+			
 			System.out.println(_question + "\n");
 
 			if (null == this.chatResult) {

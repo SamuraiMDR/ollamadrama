@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>ntt.security</groupId>
   <artifactId>ollamadrama</artifactId>
-  <version>0.4.0</version>
+  <version>0.4.1</version>
   <name>ollamadrama</name>
 
 	<properties>
@@ -86,7 +86,7 @@
 		<dependency>
 		    <groupId>io.github.ollama4j</groupId>
 		    <artifactId>ollama4j</artifactId>
-		    <version>1.0.100</version>
+		    <version>1.0.103</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>

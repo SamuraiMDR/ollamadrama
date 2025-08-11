@@ -24,7 +24,7 @@ public class Globals {
 	public static String ENFORCE_SINGLE_KEY_JSON_RESPONSE_TO_QUESTIONS = "You MUST reply with a single JSON formatted string with the keys 'response', 'probability', 'motivation', 'assumptions_made' and 'tool_calls'. "
 			+ "The 'response' key should only include your reply. "
 			+ "The 'probability' key will include an integer in the range 0-100 and reflects how certain you are that the response is correct. "
-			+ "Make sure the selected probability value is very conservative as you will be punished if you provide incorrect responses. "
+			+ "Make sure the selected probability value is conservative as you will be punished if you provide incorrect responses. "
 			+ "Make sure the selected probability value is below 30 if you would benefit from more data to answer the question. "
 			+ "Make sure the selected probability value is below 5 if you get insufficient information. "
 			+ "Never assume the input data contains typos. "
@@ -114,6 +114,7 @@ public class Globals {
 			Map.entry("deepcoder:14b", 32768), // train 131072
 			Map.entry("opencoder:8b", 32768), // train 131072
 			Map.entry("gpt-oss:20b", 32768), // train 131072
+			Map.entry("gpt-oss:120b", 32768), // train 131072
 			Map.entry("codestral:22b", 32768) // train 131072
 			);
 
@@ -194,7 +195,8 @@ public class Globals {
 	 * XXL (<256GB)
 	 */
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XXL = ""
-			+ "llama3.1:405b,"	// 243 GB
+			+ "gpt-oss:120b,"	// 65 GB
+			+ "llama3.1:405b"	// 243 GB
 			+ "";
 
 	// task specific
@@ -286,6 +288,7 @@ public class Globals {
 	 */
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L = ""
+			+ "gpt-oss:20b,"	// 14 GB
 			+ "cogito:14b,"		// 9 GB
 			+ "qwen3:14b"		// 9.3 GB
 			+ "";
