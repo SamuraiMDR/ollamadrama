@@ -151,22 +151,27 @@ public class OllamaService {
 						for (String endpoint_path: endpoint_paths) {
 							boolean endpoint_success = false;
 							for (String schema: schemas) {
-								if (!endpoint_success) {
-									String mcpURL = schema + "://" + oep.getHost() + ":" + oep.getPort();
-
-									// List all available tools
-									ListToolsResult tools = MCPUtils.listToolFromMCPEndpoint(mcpURL, endpoint_path, 30L);
-									if (null != tools) {
-										if (!tools.tools().isEmpty()) {
-											String available_tools_str = MCPUtils.prettyPrint(tools);
-											for (Tool t: tools.tools()) {
-												// key is schema://host:port-toolname
-												verified_tools.put(mcpURL + "-" + t.name(), new MCPTool(t.name(), available_tools_str, new MCPEndpoint(schema, oep.getHost(), oep.getPort(), endpoint_path)));
-												if (null == deduptool.get(t.name())) {
-													LOGGER.info("Found MCP tool " + t.name());
-													deduptool.put(t.name(), true);
+								if (NetUtilsLocal.isValidIPV4(oep.getHost()) && "https".equals(schema)) {
+									// dont attempt https + ip, wont be accepted
+								} else {
+									if (!endpoint_success) {
+										String mcpURL = schema + "://" + oep.getHost() + ":" + oep.getPort();
+										LOGGER.info("Running listTools() against " + mcpURL + " ...");
+										
+										// List all available tools
+										ListToolsResult tools = MCPUtils.listToolFromMCPEndpoint(mcpURL, endpoint_path, 30L);
+										if (null != tools) {
+											if (!tools.tools().isEmpty()) {
+												String available_tools_str = MCPUtils.prettyPrint(tools);
+												for (Tool t: tools.tools()) {
+													// key is schema://host:port-toolname
+													verified_tools.put(mcpURL + "-" + t.name(), new MCPTool(t.name(), available_tools_str, new MCPEndpoint(schema, oep.getHost(), oep.getPort(), endpoint_path)));
+													if (null == deduptool.get(t.name())) {
+														LOGGER.info("Found MCP tool " + t.name());
+														deduptool.put(t.name(), true);
+													}
+													endpoint_success = true;
 												}
-												endpoint_success = true;
 											}
 										}
 									}

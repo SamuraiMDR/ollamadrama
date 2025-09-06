@@ -31,7 +31,7 @@ public class OllamaDramaSettings {
 	private ArrayList<String> mcp_sse_paths = new ArrayList<String>() {{
 		this.add("/sse");
 	}};
-	private boolean mcp_scan = true;
+	private boolean mcp_scan = false;
 	private boolean mcp_blind_trust = false;
 	
 	private Integer threadPoolCount = 20;

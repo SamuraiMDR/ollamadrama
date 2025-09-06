@@ -103,7 +103,7 @@ public class OllamaDramaUtils {
 		}
 		return scorecard;
 	}
-	
+
 	public static ModelsScoreCard populateProbabilityForOllamaModels(String _models, String _question, HashMap<String, Integer> _acceptable_answers, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed, long _timeout) {
 		ModelsScoreCard scorecard = new ModelsScoreCard();
 		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
@@ -204,81 +204,98 @@ public class OllamaDramaUtils {
 		}
 		return scorecard;
 	}
-	
+
 	@SuppressWarnings({"serial"})
-	public static ModelsScoreCard performMemoryTestUsingRandomWordNeedleTest(String _models, int _nrErrorsToAllow, boolean _use_random_seed) {
+	public static ModelsScoreCard performMemoryTestUsingRandomWordNeedleTest(String _models, int _nrErrorsToAllow, boolean _use_random_seed, String _tag) {
 		String needle_word = "needle";
 		boolean apply_earlyexit_after_errorthreshold = true;
 		int len_random_word = 3; // o1 - one token typically corresponds to around 3–4 characters of text on average
 		ModelsScoreCard scorecard = new ModelsScoreCard();
-		OllamaService.getInstance(_models);
+
+		// launch ollamadrama
+		OllamaDramaSettings settings = new OllamaDramaSettings();
+		settings.setOllama_models(_models);
+		settings.setMcp_scan(false);
+		OllamaService.getInstance(settings);
+
+		// iterate through the needle test for each model with default n_ctx
 		String maxcapFilePath = "model_maxcap.csv";
-		FilesUtils.writeToFileUNIXNoException("model,expected,actual,context_wordcount,context_charcount,errorcount", maxcapFilePath);
+		FilesUtils.writeToFileUNIXNoException("tag,model,n_ctx,expected,actual,context_wordcount,context_charcount,errorcount", maxcapFilePath);
 		for (String model_name: _models.split(",")) {
+			Integer n_ctx = Globals.n_ctx_defaults.get(model_name);
 			int maxCharsCounted = 0;
 			int errorcounter = 0;
 			String bagOfWords = "";
 			for (int x=1000; x<=200000; x+=1000) {
-				if (false ||
-						(apply_earlyexit_after_errorthreshold && (errorcounter <= _nrErrorsToAllow)) ||
-						!apply_earlyexit_after_errorthreshold ||
-						false) {
-					OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, false, _use_random_seed);
-					if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama agent [" + model_name + "] is operational\n");
-					
-					int needle_pos = NumUtils.randomNumWithinRangeAsInt(20, x-20);
-			        
-			        String firstWord =  generateRandomWord(len_random_word);
-					bagOfWords = firstWord;
-					String lastWord = "";
-					for (int i=2; i<=(x+2); i++) {
-						String newWord = generateRandomWord(len_random_word);
-						if (i == needle_pos) {
-							bagOfWords = bagOfWords + " " + needle_word;
-						} else {
-							bagOfWords = bagOfWords + " " + newWord;
-						}
-						lastWord = newWord;
-					}
-					
-			        System.out.println("** Will test the LLM by placing the needle at word #" + needle_pos + " (bagsize: " + x + ")");
-					String qx = bagOfWords + "\n" + "Above is a list of individual words separated by space and ordered from left to right. The first word is " + firstWord + " and the last word is " + lastWord 
-							+ ". Your task is to find a lowercase English word from this list with length " + needle_word.length() + " characters. Make sure to walk through and "
-							+ "evaluate each candidate word and make sure your answer only consists of the single word. You will be punished if you answer with a word which is not " + needle_word.length() + " characters long and exists in the list."
-									+ " The list is complete and contains no typos so do not make any excuses about the list being too long to process manually. "
-									+ "I promise that you will find one of the following words in the list if you really put your mind to it: 'breeze', '" + needle_word + "', 'puzzle', 'glance' and 'borrow'";
-					System.out.println("Question: " + StringsUtils.cutAndPadStringToN(qx, len_random_word*16) + "..." + StringsUtils.getLastNCharacters(qx, 400));
-					SingleStringQuestionResponse rx = a1.askStrictChatQuestion(qx, false, 120); // 2 min timeout
-					if (rx != null) {
-						System.out.println("Current bagsize: " + x);
-						System.out.println("Current needle word location: " + needle_pos);
-						System.out.println("Response: " + rx.getResponse());
-						System.out.println("Response proba: " + rx.getProbability() + "%");
-						System.out.println("Response motivation: " + rx.getMotivation());
-						System.out.println("Response assumptions: " + rx.getAssumptions_made());
-						System.out.println("Previous errorcount: " + errorcounter);
-						if (rx.getResponse().equals("JSONERROR")) {
-							// likely LLM restart due to mem starvation
-							errorcounter = Integer.MAX_VALUE;
-						} else {
-							if (rx.getResponse().equals("" + needle_word)) {
-								if (errorcounter <= _nrErrorsToAllow) {
-									try {
-										if (x > maxCharsCounted) maxCharsCounted = x;
-									} catch (Exception e) {
-										// ignore
-									}
-								}
+				
+				// only go to next x if sucessful
+				boolean passed_x_level = false;
+				int trycounter = 0;
+				while (!passed_x_level && trycounter<=_nrErrorsToAllow) {
+					trycounter++;
+					if (false ||
+							(apply_earlyexit_after_errorthreshold && (errorcounter <= _nrErrorsToAllow)) ||
+							!apply_earlyexit_after_errorthreshold ||
+							false) {
+						OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, false, _use_random_seed);
+						if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama agent [" + model_name + "] is operational\n");
+
+						int needle_pos = NumUtils.randomNumWithinRangeAsInt(20, x-20);
+
+						String firstWord =  generateRandomWord(len_random_word);
+						bagOfWords = firstWord;
+						String lastWord = "";
+						for (int i=2; i<=(x+2); i++) {
+							String newWord = generateRandomWord(len_random_word);
+							if (i == needle_pos) {
+								bagOfWords = bagOfWords + " " + needle_word;
 							} else {
-								errorcounter++;
+								bagOfWords = bagOfWords + " " + newWord;
 							}
+							lastWord = newWord;
 						}
-						int chatsize_charcount = a1.getChatSizeCharCount();
-						int chatsize_wordcount = a1.getChatSizeWordCount();
-						FilesUtils.appendToFileUNIXNoException(model_name + "," + x + "," + maxCharsCounted + "," + chatsize_wordcount + "," + chatsize_charcount + "," + errorcounter, maxcapFilePath);;
-					} else {
-						// likely LLM restart due to mem starvasion
-						errorcounter = Integer.MAX_VALUE;
+
+						System.out.println("** Will test the LLM by placing the needle at word #" + needle_pos + " (bagsize: " + x + ")");
+						String qx = bagOfWords + "\n" + "Above is a list of individual words separated by space and ordered from left to right. The first word is " + firstWord + " and the last word is " + lastWord 
+								+ ". Your task is to find a lowercase English word from this list with length " + needle_word.length() + " characters. Make sure to walk through and "
+								+ "evaluate each candidate word and make sure your answer only consists of the single word. You will be punished if you answer with a word which is not " + needle_word.length() + " characters long and exists in the list."
+								+ " The list is complete and contains no typos so do not make any excuses about the list being too long to process manually. "
+								+ "I promise that you will find one of the following words in the list if you really put your mind to it: 'breeze', '" + needle_word + "', 'puzzle', 'glance' and 'borrow'";
+						System.out.println("Question: " + StringsUtils.cutAndPadStringToN(qx, len_random_word*16) + "..." + StringsUtils.getLastNCharacters(qx, 400));
+						
+						SingleStringQuestionResponse rx = a1.askStrictChatQuestion(qx, false, 1, 120, false); // 1 try, 2 min timeout
+						if (rx != null) {
+							System.out.println("Current bagsize: " + x);
+							System.out.println("Current needle word location: " + needle_pos);
+							System.out.println("Response: " + rx.getResponse());
+							System.out.println("Response proba: " + rx.getProbability() + "%");
+							System.out.println("Response motivation: " + rx.getMotivation());
+							System.out.println("Response assumptions: " + rx.getAssumptions_made());
+							System.out.println("Previous errorcount: " + errorcounter);
+							if (rx.getResponse().equals("JSONERROR")) {
+								// likely LLM restart due to mem starvation
+								errorcounter = Integer.MAX_VALUE;
+							} else {
+								if (rx.getResponse().equals("" + needle_word)) {
+									passed_x_level = true;
+									if (errorcounter <= _nrErrorsToAllow) {
+										try {
+											if (x > maxCharsCounted) maxCharsCounted = x;
+										} catch (Exception e) {
+											// ignore
+										}
+									}
+								} else {
+									errorcounter++;
+								}
+							}
+							int chatsize_charcount = a1.getChatSizeCharCount();
+							int chatsize_wordcount = a1.getChatSizeWordCount();
+							FilesUtils.appendToFileUNIXNoException(_tag + "," + model_name + "," + n_ctx + "," + x + "," + maxCharsCounted + "," + chatsize_wordcount + "," + chatsize_charcount + "," + errorcounter, maxcapFilePath);;
+						} else {
+							// likely LLM restart due to mem starvasion
+							errorcounter = Integer.MAX_VALUE;
+						}
 					}
 				}
 			}
@@ -293,15 +310,16 @@ public class OllamaDramaUtils {
 	}
 
 	@SuppressWarnings({"serial"})
-	public static ModelsScoreCard performMemoryTestUsingRandomWords(String _models, int _nrErrorsToAllow, boolean _use_random_seed) {
+	public static ModelsScoreCard performMemoryTestUsingRandomWords(String _models, int _nrErrorsToAllow, boolean _use_random_seed, String _tag) {
 		boolean apply_earlyexit_after_errorthreshold = true;
 		int len_random_word = 3; // o1 - one token typically corresponds to around 3–4 characters of text on average
 		ModelsScoreCard scorecard = new ModelsScoreCard();
 		OllamaService.getInstance(_models);
 		String maxcapFilePath = "model_maxcap.csv";
-		FilesUtils.writeToFileUNIXNoException("model,expected,actual,context_wordcount,context_charcount,errorcount", maxcapFilePath);
+		FilesUtils.writeToFileUNIXNoException("tag,model,n_ctx,expected,actual,context_wordcount,context_charcount,errorcount", maxcapFilePath);
 		// Populate an ensemble of agents
 		for (String model_name: _models.split(",")) {
+			Integer n_ctx = Globals.n_ctx_defaults.get(model_name);
 			int maxCharsCounted = 0;
 			int errorcounter = 0;
 			String bagOfWords = "";
@@ -352,7 +370,7 @@ public class OllamaDramaUtils {
 						}
 						int chatsize_charcount = a1.getChatSizeCharCount();
 						int chatsize_wordcount = a1.getChatSizeWordCount();
-						FilesUtils.appendToFileUNIXNoException(model_name + "," + x + "," + maxCharsCounted + "," + chatsize_wordcount + "," + chatsize_charcount + "," + errorcounter, maxcapFilePath);;
+						FilesUtils.appendToFileUNIXNoException(_tag + "," + model_name + "," + n_ctx + "," + x + "," + maxCharsCounted + "," + chatsize_wordcount + "," + chatsize_charcount + "," + errorcounter, maxcapFilePath);;
 					} else {
 						// likely LLM restart due to mem starvasion
 						errorcounter = Integer.MAX_VALUE;

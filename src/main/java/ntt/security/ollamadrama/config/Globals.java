@@ -130,6 +130,7 @@ public class Globals {
 		} else {
 			n_ctx = _n_ctx_override;
 		}
+		LOGGER.debug("n_ctx used: " + n_ctx);
 		if (_use_random_seed)  {
 			return new OptionsBuilder()
 

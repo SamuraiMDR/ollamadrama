@@ -139,7 +139,7 @@ public class OllamaUtils {
 		while (retryCounter <= _maxRetries) {
 			try {
 				String raw_result = "";
-				OllamaResult result = _ollamaAPI.generate(_modelname, _question, false, _options);
+				OllamaResult result = _ollamaAPI.generate(_modelname, _question, false, false, _options);
 				if (null != result) {
 					if (null != result.getResponse()) {
 						if (!result.getResponse().isEmpty()) {
@@ -268,7 +268,7 @@ public class OllamaUtils {
 		while (retryCounter < 10) {
 			try {
 				while (retryCounter < 10) {
-					OllamaResult result = _ollamaAPI.generate(_modelname, _question + Globals.ENFORCE_SINGLE_KEY_JSON_RESPONSE_TO_QUESTIONS + Globals.THREAT_TEMPLATE, false, _options);
+					OllamaResult result = _ollamaAPI.generate(_modelname, _question + Globals.ENFORCE_SINGLE_KEY_JSON_RESPONSE_TO_QUESTIONS + Globals.THREAT_TEMPLATE, false, false, _options);
 					if (null != result) {
 						if (null != result.getResponse()) {
 							if (!result.getResponse().isEmpty()) {
