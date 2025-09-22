@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.StringJoiner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +14,8 @@ import ntt.security.ollamadrama.objects.OllamaEndpoint;
 
 @SuppressWarnings("serial")
 public class OllamaDramaSettings {
+	
+	private static final Logger LOGGER = LoggerFactory.getLogger(OllamaDramaSettings.class);
 
     private String release = "Strawberrry";
 	
@@ -85,6 +88,20 @@ public class OllamaDramaSettings {
 	}
 
 	public void sanityCheck() {
+		
+		// make sure model names are unique
+		HashMap<String, Boolean> uniq = new HashMap<>();
+		for (String model: this.getOllama_models().split(",")) {
+			if (model.length()>0) {
+				uniq.put(model, true);
+			}
+		}
+		StringJoiner csvJoiner = new StringJoiner(",");
+		for (String key : uniq.keySet()) {
+		    csvJoiner.add(key);
+		}
+		this.setOllama_models(csvJoiner.toString());
+		LOGGER.info("Deduced models string: " + this.getOllama_models());
 	}
 
 	public Integer getThreadPoolCount() {

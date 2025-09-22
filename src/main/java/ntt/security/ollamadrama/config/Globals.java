@@ -241,6 +241,7 @@ public class Globals {
 			+ "llama3.3:70b," 	// 43 GB
 			+ "qwen2.5:72b,"	// 47 GB
 			+ "tulu3:70b,"		// 43 GB
+			+ "qwen3:32b,"		// 20 GB
 			+ "gemma3:27b"		// 16 GB
 			+ "";
 

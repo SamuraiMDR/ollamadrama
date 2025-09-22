@@ -41,6 +41,7 @@ public class OllamaService {
 
 		if (null == _settings) {
 			// fallback to env variables
+			LOGGER.info("Getting Ollama settings from environment");
 			_settings = ConfigUtils.parseConfigENV();
 		}
 		settings = _settings;
@@ -74,8 +75,13 @@ public class OllamaService {
 
 		boolean found_mcps = false;
 		if (settings.isMcp_scan()) {
-			wireMCPs(false);
+			found_mcps = wireMCPs(false);
 			LOGGER.info("found_mcps: " + found_mcps);
+			if (found_mcps) {
+				for (String tool: getMcp_tools().keySet()) {
+					System.out.println(" - " + tool);
+				}
+			}
 		}
 	}
 
@@ -213,7 +219,7 @@ public class OllamaService {
 
 
 	public static boolean wireOllama(boolean blockUntilReady) {
-		LOGGER.info("wireOllamas()");
+		LOGGER.info("wireOllamas() - " + settings.getOllama_models());
 		boolean found_ollamas = false;
 		int ollama_attempt_counter = 0;
 		boolean ollama_abort = false;

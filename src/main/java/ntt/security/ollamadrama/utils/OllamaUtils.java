@@ -498,6 +498,7 @@ public class OllamaUtils {
 			OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, _hide_llm_reply_if_uncertain, _use_random_seed);
 			LOGGER.info("Using " + a1.getEndpoint().getOllama_url() + " with model " + model_name);
 			e1.addWrappedSession(new OllamaWrappedSession(a1, Globals.MODEL_PROBABILITY_THRESHOLDS.get(model_name)));
+
 		}
 		SingleStringEnsembleResponse ssr1 = e1.askChatQuestion(_query, _hide_llm_reply_if_uncertain, _settings.getOllama_timeout());
 		return ssr1;

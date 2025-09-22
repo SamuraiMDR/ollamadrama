@@ -25,6 +25,7 @@ import io.modelcontextprotocol.spec.McpSchema.JsonSchema;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
+import ntt.security.ollamadrama.objects.ToolCallRequest;
 
 public class MCPUtils {
 
@@ -184,6 +185,51 @@ public class MCPUtils {
 		return sb.toString();
 	}
 
+	public static ArrayList<ToolCallRequest> parseToolCalls(String tool_calls_csv) {
+	    ArrayList<ToolCallRequest> toolCalls = new ArrayList<>();
+
+	    if (tool_calls_csv == null || tool_calls_csv.trim().isEmpty()) {
+	        System.out.println("The tool_calls CSV string is empty.");
+	        System.exit(1);
+	    }
+
+	    // Regex to split on commas outside of parentheses and quotes (your original magic)
+	    String regex = ",\\s*(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)(?![^()]*\\))";
+	    String[] entries = tool_calls_csv.split(regex);
+
+	    for (String entry : entries) {
+	        String trimmedEntry = entry.trim();
+	        if (trimmedEntry.isEmpty()) {
+	            continue;
+	        }
+
+	        // Split on the first space to separate calltype from the tool call
+	        int firstSpaceIndex = trimmedEntry.indexOf(' ');
+	        if (firstSpaceIndex == -1) {
+	            // Invalid entry? Skip or handle error as needed, but for now, we'll assume well-formed
+	            continue;
+	        }
+
+	        String calltype = trimmedEntry.substring(0, firstSpaceIndex).trim();
+	        String toolCall = trimmedEntry.substring(firstSpaceIndex + 1).trim();
+
+	        // Extract toolname: everything before the '('
+	        int parenIndex = toolCall.indexOf('(');
+	        if (parenIndex == -1) {
+	            continue; // Malformed, skip
+	        }
+	        String toolname = toolCall.substring(0, parenIndex).trim();
+
+	        // Parse arguments using your existing method (pass the full toolCall like "fetch(url=...)")
+	        HashMap<String, Object> arguments = MCPUtils.parseArguments(toolCall);
+
+	        // Create and add the request object
+	        ToolCallRequest request = new ToolCallRequest(toolname, calltype, arguments);
+	        toolCalls.add(request);
+	    }
+
+	    return toolCalls;
+	}
 
 	public static HashMap<String, Object> parseArguments(String _input) {
 		HashMap<String, Object> arguments = new HashMap<>();

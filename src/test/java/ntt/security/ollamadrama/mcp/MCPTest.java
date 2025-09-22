@@ -5,6 +5,8 @@ import static org.junit.Assert.assertFalse;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +14,7 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 import ntt.security.ollamadrama.config.OllamaDramaSettings;
 import ntt.security.ollamadrama.objects.ModelsScoreCard;
+import ntt.security.ollamadrama.objects.ToolCallRequest;
 import ntt.security.ollamadrama.objects.response.SingleStringQuestionResponse;
 import ntt.security.ollamadrama.objects.sessions.OllamaSession;
 import ntt.security.ollamadrama.singletons.OllamaService;
@@ -123,12 +126,45 @@ public class MCPTest {
 	}
 
 	@Test
+	public void simple_MCP_Tool_Request_Test() {
+
+		
+		String tcrs = "oneshot fetchA(url=\"https://www.ntt.com\", max_length=5000, start_index=0, raw=false),continous fetchB(url=\"https://www.ntt.com\", start_index=0, raw=false), oneshot fetchC(url=\"https://www.ntt.com\", max_length=5000, start_index=0)";
+		ArrayList<ToolCallRequest> tool_calls = MCPUtils.parseToolCalls(tcrs);
+		
+		int toolindex = 1;
+		for (ToolCallRequest tcr: tool_calls) {
+			System.out.println(" - tcr toolname: " + tcr.getToolname());
+			System.out.println(" - tcr calltype: " + tcr.getCalltype());
+			System.out.println(" - tcr arg keys: " + tcr.getArguments().keySet());
+			if (1 == toolindex) {
+				assertEquals("Ensure tool name is correct", "fetchA", tcr.getToolname());
+				assertEquals("Ensure tool calltype is correct", "oneshot", tcr.getCalltype());
+				assertEquals("Ensure tool args keys is correct", "[start_index, raw, url, max_length]", tcr.getArguments().keySet().toString());
+			}
+			if (2 == toolindex) {
+				assertEquals("Ensure tool name is correct", "fetchB", tcr.getToolname());
+				assertEquals("Ensure tool calltype is correct", "continous", tcr.getCalltype());
+				assertEquals("Ensure tool args keys is correct", "[start_index, raw, url]", tcr.getArguments().keySet().toString());
+			}
+			if (3 == toolindex) {
+				assertEquals("Ensure tool name is correct", "fetchC", tcr.getToolname());
+				assertEquals("Ensure tool calltype is correct", "oneshot", tcr.getCalltype());
+				assertEquals("Ensure tool args keys is correct", "[start_index, url, max_length]", tcr.getArguments().keySet().toString());
+			}
+			toolindex++;
+		}
+	}
+	
+	@Test
 	public void simple_HTTP_MCP_Tool_Test() {
 
 		boolean make_tools_available = true;
 		String model_name = "qwen3:14b"; // qwen3:14b cogito:14b
 		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
 		settings.setOllama_models(model_name);
+		settings.setMcp_scan(true);
+		settings.setMcp_blind_trust(true);
 		settings.sanityCheck();
 		OllamaService.getInstance(settings);
 
@@ -143,20 +179,26 @@ public class MCPTest {
 
 	}
 
+	@Ignore
 	@Test
 	public void simple_HTTP_MCP_ListTools_MANUAL_Test() {
 
 		// vars
-		String mcpURL = "http://localhost:9000";
+		String mcpURL = "http://127.0.0.1:8000";
 
 		// List all available tools
 		ListToolsResult tools = MCPUtils.listToolFromMCPEndpoint(mcpURL);
-		assertFalse("Make sure we see at least 1 exposed tool", tools.tools().isEmpty());
-		String available_tools_str = MCPUtils.prettyPrint(tools);
-		System.out.println(available_tools_str);
+		if (null == tools) {
+			assertFalse("Make sure we see at least 1 exposed tool", true);
+		} else {
+			assertFalse("Make sure we see at least 1 exposed tool", tools.tools().isEmpty());
+			String available_tools_str = MCPUtils.prettyPrint(tools);
+			System.out.println(available_tools_str);
+		}
 
 	}
 
+	@Ignore
 	@SuppressWarnings("serial")
 	@Test
 	public void simple_HTTP_MCP_SiteUp_LLMToolCallTest() {
@@ -204,14 +246,12 @@ public class MCPTest {
 				SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(q1, false, settings.getOllama_timeout());
 				ssr1 = OllamaUtils.applyResponseSanity(ssr1, model_name, false);
 				ssr1.print();
-				System.exit(1);
 			}
 		}
-		System.exit(1);
 
-
-		/*
+		// Fake temperature data
 		ModelsScoreCard scorecard3 = OllamaDramaUtils.populateScorecardsForOllamaModels(
+				true,
 				"llama3.1:70b,cogito:14b", // cogito:14b 
 				"What is the current temperature in Paris? Reply with only a number where the number is the temperature in celcius."
 				+ "\n"
@@ -225,7 +265,7 @@ public class MCPTest {
 		System.out.println("SCORECARD:");
 		scorecard3.evaluate();
 		scorecard3.print();
-		 */
+
 
 	}
 
