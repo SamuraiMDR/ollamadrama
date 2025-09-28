@@ -322,8 +322,10 @@ public class OllamaUtils {
 					}
 				}
 			} catch (Exception e) {
+				System.out.println("");
 				LOGGER.warn("askRawChatQuestion() Exception: " + e.getMessage() + " (timeout: " + _timeout + ")");
 				LOGGER.warn("Catch all error handler while making chat session request towards " + _modelname + ", retryCounter=" + retryCounter);
+				System.out.println("");
 				SystemUtils.sleepInSeconds(5);
 				retryCounter++;
 			}
@@ -345,7 +347,7 @@ public class OllamaUtils {
 				while (true) {
 					OllamaChatRequestBuilder builder = OllamaChatRequestBuilder.getInstance(_modelname).withOptions(_options);
 					OllamaChatRequest requestModel = builder.withMessages(_chatResult.getChatHistory()).withMessage(OllamaChatMessageRole.USER,
-							_question + Globals.ENFORCE_SINGLE_KEY_JSON_RESPONSE_TO_QUESTIONS + Globals.LOGIC_TEMPLATE + addon).build();
+							_question + "\n" + addon).build();
 					_ollamaAPI.setRequestTimeoutSeconds(_timeout);
 					_chatResult = _ollamaAPI.chat(requestModel);
 

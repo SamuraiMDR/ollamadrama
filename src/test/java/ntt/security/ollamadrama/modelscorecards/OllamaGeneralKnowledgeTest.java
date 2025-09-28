@@ -89,21 +89,27 @@ public class OllamaGeneralKnowledgeTest {
 			this.put("TOOLCALL", 1); 	// The LLM should realize it can and should reach out to an available tool
 		}};
 
+		String prompt = """
+		        What is the current temperature in Paris? Reply with only a number where the number is the temperature in celcius.
+		        
+		        MCP TOOLS AVAILABLE:
+		        ---
+		        Tool: fetch_temperature
+		        Description: Fetches the current temperature of a City in Celcius or Fahrenheit
+		        Inputs:
+		         - location (string) [required]: The City of interest
+		         - unit (string): The temperature unit
+		        Example usage: fetch_temperature(location="New York", unit="Celcius")
+		        """;
+
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
-				true, // use MCP
-				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, // Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL cogito:14b
-				"What is the current temperature in Paris? Reply with only a number where the number is the temperature in celcius."
-				+ "\n\n"
-				+ "MCP TOOLS AVAILABLE:\n"
-				+ "---\n"
-				+ "Tool: fetch_temperature\n"
-				+ "Description: Fetches the current temperature of a City in Celcius or Fahrenheit\n"
-				+ "Inputs:\n" 
-				+ "  - location (string) [required]: The City of interest\n"
-				+ "  - unit (string): The temperature unit\n"
-				+ "Example usage: fetch_temperature(location=\"New York\", unit=\"Celcius\")\n",
-				acceptable_answers,
-				false, false);
+		        true,  // use MCP
+		        Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL,
+		        prompt,
+		        acceptable_answers,
+		        false,  // hide_llm_reply_if_uncertain
+		        false   // use_random_seed
+		);
 
 		// Print the scorecard
 		System.out.println("SCORECARD:");

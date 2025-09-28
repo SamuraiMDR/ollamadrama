@@ -73,7 +73,7 @@ public class SingleStringQuestionResponse {
 
 	public void print() {
 		System.out.println("response         : " + this.response);
-		System.out.println("probability      : " + this.probability + "%");
+		if (this.tool_calls.equals("")) System.out.println("probability      : " + this.probability + "%");
 		System.out.println("motivation       : " + this.motivation);
 		System.out.println("assumptions_made : " + this.assumptions_made);
 		System.out.println("tool_calls       : " + this.tool_calls);

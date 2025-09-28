@@ -27,6 +27,7 @@ public class OllamaService {
 	private static OllamaDramaSettings settings = new OllamaDramaSettings();
 
 	private static final int threadPoolCount = 20;
+	private static final long mcp_listtools_timeout = 5L;
 
 	private static ArrayList<String> service_cnets;
 
@@ -162,10 +163,10 @@ public class OllamaService {
 								} else {
 									if (!endpoint_success) {
 										String mcpURL = schema + "://" + oep.getHost() + ":" + oep.getPort();
-										LOGGER.info("Running listTools() against " + mcpURL + " ...");
-										
+										LOGGER.info("Running listTools() against " + mcpURL + " ... with a " + mcp_listtools_timeout + " second timeout");
+
 										// List all available tools
-										ListToolsResult tools = MCPUtils.listToolFromMCPEndpoint(mcpURL, endpoint_path, 30L);
+										ListToolsResult tools = MCPUtils.listToolFromMCPEndpoint(mcpURL, endpoint_path, mcp_listtools_timeout);
 										if (null != tools) {
 											if (!tools.tools().isEmpty()) {
 												String available_tools_str = MCPUtils.prettyPrint(tools);
@@ -354,6 +355,7 @@ public class OllamaService {
 	}
 
 	public static OllamaService getInstance(OllamaDramaSettings _settings) {
+		_settings.sanityCheck();
 		if (single_instance == null) { // First check (no locking)
 			synchronized (OllamaService.class) {
 				if (single_instance == null) { // Second check (with locking)
@@ -413,10 +415,18 @@ public class OllamaService {
 	}
 
 	public static OllamaSession getStrictProtocolSession(String _model_name) {
-		return getStrictProtocolSession(_model_name, false, false);
+		return getStrictProtocolSession(_model_name, false, false, "");
+	}
+
+	public static OllamaSession getStrictProtocolSession(String _model_name, String _initial_prompt) {
+		return getStrictProtocolSession(_model_name, false, false, _initial_prompt);
 	}
 
 	public static OllamaSession getStrictProtocolSession(String _model_name, boolean hide_llm_reply_if_uncertain, boolean _use_random_seed) {
+		return getStrictProtocolSession(_model_name, hide_llm_reply_if_uncertain, _use_random_seed, "");
+	}
+
+	public static OllamaSession getStrictProtocolSession(String _model_name, boolean hide_llm_reply_if_uncertain, boolean _use_random_seed, String _initial_prompt) {
 		boolean model_exists = false;
 		if (settings == null) {
 			LOGGER.error("Is OllamaDrama initialized properly");
@@ -444,7 +454,7 @@ public class OllamaService {
 
 		return new OllamaSession(_model_name, OllamaService.getRandomActiveOllamaURL(),
 				Globals.createStrictOptionsBuilder(_model_name, _use_random_seed, OllamaService.getSettings().getN_ctx_override()), OllamaService.getSettings(), 
-				system_prompt,
+				system_prompt + "\n\n" + _initial_prompt,
 				SessionType.STRICTPROTOCOL);
 	}
 
@@ -499,16 +509,31 @@ public class OllamaService {
 		for (String toolid: mcp_tools.keySet()) {
 			LOGGER.debug("toolid: " + toolid);
 			MCPTool tool = mcp_tools.get(toolid);
-			if (null == uniqtool.get(tool.getTool_str())) {
-				sb.append(tool.getTool_str() + "\n");
-				uniqtool.put(tool.getTool_str(), true);
+			if (null == uniqtool.get(tool.getToolname())) {
+				if (isMatchingMCPTool(tool.getToolname(), settings.getFiltered_mcp_toolnames_csv())) {
+					//filtered
+				} else {
+					sb.append(tool.getTool_str() + "\n");
+					uniqtool.put(tool.getToolname(), true);
+				}
 			}
 		}
 		return sb.toString().replace("\n\n\n", "\n\n");
 	}
 
 	public static TreeMap<String, MCPTool> getMcp_tools() {
-		return mcp_tools;
+		TreeMap<String, MCPTool> mcp_tools_filtered = new TreeMap<String, MCPTool>();
+		for (String toolid: mcp_tools.keySet()) {
+			MCPTool tool = mcp_tools.get(toolid);
+			//System.out.println("comparing " + tool.getToolname() + " width " + settings.getFiltered_mcp_toolnames_csv());
+			if (isMatchingMCPTool(tool.getToolname(), settings.getFiltered_mcp_toolnames_csv())) {
+				//filtered
+			} else {
+				mcp_tools_filtered.put(toolid, tool);
+			}
+		}
+
+		return mcp_tools_filtered;
 	}
 
 	public static void setMcp_tools(TreeMap<String, MCPTool> mcp_tools) {
@@ -521,6 +546,13 @@ public class OllamaService {
 			if (toolname.equals(tool.getToolname())) return tool;
 		}
 		return null;
+	}
+
+	public static boolean isMatchingMCPTool(String toolname, String mcp_toolnames) {
+		for (String indexedtoolname: mcp_toolnames.split(",")) {
+			if (toolname.equals(indexedtoolname)) return true;
+		}
+		return false;
 	}
 
 }

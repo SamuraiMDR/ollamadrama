@@ -36,6 +36,8 @@ public class OllamaDramaSettings {
 	}};
 	private boolean mcp_scan = false;
 	private boolean mcp_blind_trust = false;
+	private String trusted_mcp_toolnames_csv = "";
+	private String filtered_mcp_toolnames_csv = "";
 	
 	private Integer threadPoolCount = 20;
 	
@@ -214,6 +216,26 @@ public class OllamaDramaSettings {
 		return mcp_ports;
 	}
 
+	public void setMcp_ports_csv(String csv) {
+		ArrayList<Integer> mcp_ports = new ArrayList<Integer>();
+		for (String entry: csv.split(",")) {
+			try {
+				Integer port = Integer.parseInt(entry);
+				if (true &&
+						(null != port) &&
+						(port <= 65535) &&
+						true) {
+					mcp_ports.add(port);
+				} else {
+					LOGGER.warn("Invalid MCP port specified: " + entry);
+				}
+			} catch (Exception e) {
+				LOGGER.warn("Invalid MCP port specified: " + entry);
+			}
+		}
+		this.mcp_ports = mcp_ports;
+	}
+	
 	public void setMcp_ports(ArrayList<Integer> mcp_ports) {
 		this.mcp_ports = mcp_ports;
 	}
@@ -256,6 +278,22 @@ public class OllamaDramaSettings {
 
 	public void setN_ctx_override(int n_ctx_override) {
 		this.n_ctx_override = n_ctx_override;
+	}
+
+	public String getTrusted_mcp_toolnames_csv() {
+		return trusted_mcp_toolnames_csv;
+	}
+
+	public void setTrusted_mcp_toolnames_csv(String trusted_mcp_toolnames_csv) {
+		this.trusted_mcp_toolnames_csv = trusted_mcp_toolnames_csv;
+	}
+
+	public String getFiltered_mcp_toolnames_csv() {
+		return filtered_mcp_toolnames_csv;
+	}
+
+	public void setFiltered_mcp_toolnames_csv(String filtered_mcp_toolnames_csv) {
+		this.filtered_mcp_toolnames_csv = filtered_mcp_toolnames_csv;
 	}
 
 }

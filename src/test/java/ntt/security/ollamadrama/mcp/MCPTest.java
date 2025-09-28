@@ -127,7 +127,6 @@ public class MCPTest {
 
 	@Test
 	public void simple_MCP_Tool_Request_Test() {
-
 		
 		String tcrs = "oneshot fetchA(url=\"https://www.ntt.com\", max_length=5000, start_index=0, raw=false),continous fetchB(url=\"https://www.ntt.com\", start_index=0, raw=false), oneshot fetchC(url=\"https://www.ntt.com\", max_length=5000, start_index=0)";
 		ArrayList<ToolCallRequest> tool_calls = MCPUtils.parseToolCalls(tcrs);

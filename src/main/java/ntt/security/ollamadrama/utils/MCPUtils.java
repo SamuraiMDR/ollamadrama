@@ -189,8 +189,8 @@ public class MCPUtils {
 	    ArrayList<ToolCallRequest> toolCalls = new ArrayList<>();
 
 	    if (tool_calls_csv == null || tool_calls_csv.trim().isEmpty()) {
-	        System.out.println("The tool_calls CSV string is empty.");
-	        System.exit(1);
+	        LOGGER.warn("The tool_calls CSV string is empty.");
+	        return toolCalls;
 	    }
 
 	    // Regex to split on commas outside of parentheses and quotes (your original magic)
@@ -224,7 +224,7 @@ public class MCPUtils {
 	        HashMap<String, Object> arguments = MCPUtils.parseArguments(toolCall);
 
 	        // Create and add the request object
-	        ToolCallRequest request = new ToolCallRequest(toolname, calltype, arguments);
+	        ToolCallRequest request = new ToolCallRequest(toolname, calltype, arguments, entry);
 	        toolCalls.add(request);
 	    }
 

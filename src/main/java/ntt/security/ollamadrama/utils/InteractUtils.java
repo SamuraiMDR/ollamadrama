@@ -27,36 +27,34 @@ public class InteractUtils {
 		}
 	}
 
-	/**
-	 * Prompts the user for a 'y' or 'n' response and returns true for 'y' and false for 'n'.
-	 * Loops until a valid input is received.
-	 * @param settings 
-	 */
 	public static boolean getYNResponse(String _q, OllamaDramaSettings _settings) {
+	    System.out.println(_q);
 
-		System.out.println(_q);
-		
-		if (_settings.getElevenlabs_apikey().length()>0) {
-			String elevenlabsapikey = _settings.getElevenlabs_apikey();
-			String voice1 = _settings.getElevenlabs_voice1();
-			SpeechUtils.justPlayAudioClipWithDefaults(_q, elevenlabsapikey, voice1);
-		}
+	    if (_settings.getElevenlabs_apikey().length() > 0) {
+	        String elevenlabsapikey = _settings.getElevenlabs_apikey();
+	        String voice1 = _settings.getElevenlabs_voice1();
+	        SpeechUtils.justPlayAudioClipWithDefaults(_q, elevenlabsapikey, voice1);
+	    }
 
-		System.out.print("Proceed? [y/n]: ");
-		try (BufferedReader reader = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8))) {
-			while (true) {
-				String input = reader.readLine();
-				if (input != null && input.matches("[yY]")) {
-					return true;
-				} else if (input != null && input.matches("[nN]")) {
-					return false;
-				}
-				System.out.print("Invalid input. Proceed? [y/n]: ");
-			}
-		} catch (Exception e) {
-			LOGGER.error("Error reading input", e);
-			return false; // Default to false on error
-		}
+	    BufferedReader reader = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
+
+	    while (true) {
+	        System.out.print("Proceed? [y/n]: ");
+	        try {
+	            while (true) {
+	                String input = reader.readLine();
+	                if (input != null && input.matches("[yY]")) {
+	                    return true;
+	                } else if (input != null && input.matches("[nN]")) {
+	                    return false;
+	                }
+	                System.out.print("Invalid input. Proceed? [y/n]: ");
+	            }
+	        } catch (Exception e) {
+	            LOGGER.error("Error reading input", e);
+	            SystemUtils.sleepInSeconds(10);
+	        }
+	    }
 	}
 
 }
