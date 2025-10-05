@@ -22,36 +22,39 @@ public class Globals {
 
 	// https://josephthacker.com/ai/2024/05/04/introducing-assumptions-made-for-ai-agents.html
 	public static final String ENFORCE_SINGLE_KEY_JSON_RESPONSE_TO_QUESTIONS = """
-		    You MUST reply with a single JSON formatted string with the keys 'response', 'probability', 'motivation', 'assumptions_made' and 'tool_calls'. 
-		    The 'response' key should only include your reply. 
-		    The 'probability' key will include an integer in the range 0-100 and reflects how certain you are that the response is correct. 
-		    Make sure the selected probability value is conservative as you will be punished if you provide incorrect responses. 
-		    Make sure the selected probability value is below 30 if you would benefit from more data to answer the question. 
-		    Make sure the selected probability value is below 5 if you get insufficient information. 
-		    Never assume the input data contains typos. 
-		    Never assume the input data contains abbreviations. 
-		    Never use markdown in your reply string. Output only plain text. Do not output markdown. 
-		    If you make uncertain assumptions the selected probability value should be below 5. 
-		    Input with a single or few characters should result in a probability value of 0. 
-		    The 'motivation' key should include a brief description string motivating your response and should motivate the selected probability value. 
-		    The 'assumptions_made' key should include a brief description string of the assumptions made in your response. 
-		    The 'tool_calls' key is a string and should include a comma-separated list of tool calls you want the output from. If no tools are provided to you under 'MCP TOOLS AVAILABLE' section you should leave 'tool_calls' blank. 
-		    Every tool listed in 'tool_calls' should be preceded with 'oneshot' or 'continous', indicating how often the tool is called. 
-		    Use 'oneshot' if you only need the tool output once. Use 'continous' if you want fresh tool output as part of all future interactions. 
-		    You MUST only populate the 'tool_calls' key with the name of a known tool name along with all its known required arguments in the suggested format, i.e. 'oneshot tool_name(arg1="val1",arg2="val2", ..)' or 'continous tool_name(arg1="val1",arg2="val2", ..)'. 
-		    You should NEVER guess or assume the availability of tools mentioned in the 'tool_calls'; you must have explicitly been told that a tool is available. 
-		    If the 'tool_calls' key is populated, the response key MUST be 'TOOLCALL' and the probability set to 0. 
-		    If the 'tool_calls' key is empty the response key MUST NEVER BE 'TOOLCALL' or a cute rabbit will die. 
-		    The reply string will be pure JSON and will start with the character { since it’s JSON and NOT markdown.
+		    - You MUST reply with a single JSON formatted string with the keys 'response', 'probability', 'motivation', 'assumptions_made' and 'tool_calls'. 
+		    - The 'response' key should only include your reply. 
+		    - The 'probability' key will include an integer in the range 0-100 and reflects how certain you are that the response is correct. 
+		    - Make sure the selected probability value is conservative as you will be punished if you provide incorrect responses. 
+		    - Make sure the selected probability value is below 30 if you would benefit from more data to answer the question. 
+		    - Make sure the selected probability value is below 5 if you get insufficient information. 
+		    - Never assume the input data contains typos. 
+		    - Never assume the input data contains abbreviations. 
+		    - Never use markdown in your reply string. Output only plain text. Do not output markdown. 
+		    - If you make uncertain assumptions the selected probability value should be below 5. 
+		    - Input with a single or few characters should result in a probability value of 0. 
+		    - The 'motivation' key should include a brief description string motivating your response and should motivate the selected probability value. 
+		    - The 'assumptions_made' key should include a brief description string of the assumptions made in your response. 
+		    - The 'tool_calls' key is a string and should include a comma-separated list of tool calls you want the output from. If no tools are provided to you under 'MCP TOOLS AVAILABLE' section you should leave 'tool_calls' blank. 
+		    - Every tool listed in 'tool_calls' should be preceded with 'oneshot' or 'continous', indicating how often the tool is called. 
+		    - Use 'oneshot' if you only need the tool output once. Use 'continous' if you want fresh tool output as part of all future interactions. 
+		    - You MUST only populate the 'tool_calls' key with the name of a known tool name along with all its known required arguments in the suggested format, i.e. 'oneshot tool_name(arg1="val1",arg2="val2", ..)' or 'continous tool_name(arg1="val1",arg2="val2", ..)'. 
+		    - You should NEVER guess or assume the availability of tools mentioned in the 'tool_calls'; you must have explicitly been told that a tool is available. 
+		    - If you want to call a tool after a pause, respond with 'TOOLCALL_AFTER_PAUSE' and (optionally) populate 'tool_calls' in the same way as for 'TOOLCALL'.
+		    - If you have nothing to and want to wait until your next interaction, respond with 'TOOLCALL_AFTER_PAUSE' and populate 'tool_calls'. 
+		    - The key 'tool_calls' MUST be populated if the response key is 'TOOLCALL'.
+		    - The key 'probability' key MUST BE 0 if the response key is 'TOOLCALL' or 'TOOLCALL_AFTER_PAUSE'. 
+		    - The reply string will be pure JSON and will start with the character { since it’s JSON and NOT markdown.
 		    """;
 
 	public static final String ENFORCE_SINGLE_KEY_JSON_RESPONSE_TO_STATEMENTS = """
-		    You MUST reply with a single JSON formatted string with the keys 'response', 'assumptions_made' and 'explanation'. 
-		    The 'response' key should only include the string 'OKIDOKI' if you understand what I just said. 
-		    The 'response' key should only include the string 'FAILTOUNDERSTAND' if you do not understand what I just said. 
-		    If you do not understand, you must describe what is unclear in the 'explanation' key. 
-		    The 'assumptions_made' key should include a brief description string of the assumptions made. 
-		    The reply string will be pure JSON and will start with the character { since it’s JSON and NOT markdown.
+		    - You MUST reply with a single JSON formatted string with the keys 'response', 'assumptions_made' and 'explanation'. 
+		    - The 'response' key should only include the string 'OKIDOKI' if you understand what I just said. 
+		    - The 'response' key should only include the string 'FAILTOUNDERSTAND' if you do not understand what I just said. 
+		    - If you do not understand, you must describe what is unclear in the 'explanation' key. 
+		    - The 'assumptions_made' key should include a brief description string of the assumptions made. 
+		    - The 'tool_calls' key must be populated if the response key is 'TOOLCALL'.
+		    - The reply string will be pure JSON and will start with the character { since it’s JSON and NOT markdown.
 		    """;
 
 	public static String PROMPT_TEMPLATE_COGITO_DEEPTHINK = "Enable deep thinking subroutine. ";

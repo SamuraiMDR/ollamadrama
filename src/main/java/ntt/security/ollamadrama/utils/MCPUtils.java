@@ -78,29 +78,119 @@ public class MCPUtils {
 		boolean success = false;
 		int trycounter = 0;
 		while (!success && (trycounter <= 10)) {
-			HttpClientSseClientTransport transport = HttpClientSseClientTransport.builder(_mcp_endpoint)
-					.sseEndpoint(_mcp_endpoint_path)
-					.customizeClient(builder -> builder.connectTimeout(Duration.ofSeconds(30)))
-					.build();
-			McpSyncClient client = McpClient.sync(transport)
-					.requestTimeout(Duration.ofSeconds(_timeout))
-					.capabilities(ClientCapabilities.builder().roots(true).build())
-					.build();
-			client.initialize();
+			try {
+				HttpClientSseClientTransport transport = HttpClientSseClientTransport.builder(_mcp_endpoint)
+						.sseEndpoint(_mcp_endpoint_path)
+						.customizeClient(builder -> builder.connectTimeout(Duration.ofSeconds(30)))
+						.build();
+				McpSyncClient client = McpClient.sync(transport)
+						.requestTimeout(Duration.ofSeconds(_timeout))
+						.capabilities(ClientCapabilities.builder().roots(true).build())
+						.build();
+				client.initialize();
 
-			result = client.callTool(
-					new CallToolRequest(_toolname, _arguments)
-					);
+				result = client.callTool(
+						new CallToolRequest(_toolname, _arguments)
+						);
 
-			if (!result.isError()) {
-				success = true;
-			} else {
-				LOGGER.info("Caught error when calling " +_toolname + " trycounter: " + trycounter);
+				if (!result.isError()) {
+					success = true;
+				} else {
+					LOGGER.info("Caught error when calling " +_toolname + " trycounter: " + trycounter);
+				}
+				trycounter++;
+			} catch (Exception e) {
+				LOGGER.warn("Caught Exception: " + e.getMessage());
+				LOGGER.info("trycounter: " + trycounter);
+				SystemUtils.sleepInSeconds(10);
 			}
-			trycounter++;
 		}
 
 		return result;
+	}
+
+	@SuppressWarnings("unchecked")
+	public static String prettyPrint(ListToolsResult tools, String _toolname) {
+		StringBuilder sb = new StringBuilder();
+		for (Tool tool : tools.tools()) {
+			if (tool.name().equals(_toolname)) {
+				sb.append("\n---\n");
+				sb.append("Tool: ").append(tool.name()).append("\n");
+				sb.append("Description: ").append(
+						StringsUtils.cutAndPadStringToN(
+								tool.description().split("\\.")[0], 100
+								)
+						).append("\n");
+
+				JsonSchema inputSchema = tool.inputSchema();
+
+				if (inputSchema == null || !"object".equals(inputSchema.type())) {
+					LOGGER.error("Unsupported or missing input schema for tool: " + tool.name());
+					SystemUtils.halt();
+				}
+
+				Map<String, Object> props = inputSchema.properties();
+				Set<String> requiredKeys = inputSchema.required() != null
+						? new HashSet<>(inputSchema.required())
+								: Collections.emptySet();
+
+				if (props == null) {
+					LOGGER.error("Missing 'properties' for tool: " + tool.name());
+					SystemUtils.halt();
+				}
+
+				sb.append("Inputs:\n");
+
+				List<String> exampleArgs = new ArrayList<>();
+
+				for (String key : props.keySet()) {
+					Object value = props.get(key);
+
+					if (!(value instanceof Map)) {
+						LOGGER.error("Unexpected schema format for key: " + key);
+						SystemUtils.halt();
+					}
+
+					Map<String, Object> propMap = (Map<String, Object>) value;
+					String type = (String) propMap.get("type");
+					String desc = (String) propMap.getOrDefault("description", "No description");
+					Object defaultValue = propMap.get("default");
+
+					if (type == null) {
+						LOGGER.warn("Missing type for key: " + key + " in tool: " + tool.name() + ", fallback to string?");
+					}
+
+					// Append to prompt
+					sb.append("  - ").append(key)
+					.append(" (").append(type).append(")")
+					.append(requiredKeys.contains(key) ? " [required]" : "")
+					.append(": ").append(desc).append("\n");
+
+					// Format the example argument
+					String exampleVal;
+					if (defaultValue != null) {
+						// Convert to string literal, wrap in quotes unless boolean/number
+						if (defaultValue instanceof Boolean || defaultValue instanceof Number) {
+							exampleVal = defaultValue.toString();
+						} else {
+							exampleVal = "\"" + defaultValue.toString() + "\"";
+						}
+					} else {
+						exampleVal = "\"...\"";
+					}
+
+					exampleArgs.add(key + "=" + exampleVal);
+				}
+
+				sb.append("Example usage: ")
+				.append(tool.name())
+				.append("(")
+				.append(String.join(", ", exampleArgs))
+				.append(")\n");
+			}
+		}
+
+		return sb.toString();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -186,49 +276,48 @@ public class MCPUtils {
 	}
 
 	public static ArrayList<ToolCallRequest> parseToolCalls(String tool_calls_csv) {
-	    ArrayList<ToolCallRequest> toolCalls = new ArrayList<>();
+		ArrayList<ToolCallRequest> toolCalls = new ArrayList<>();
 
-	    if (tool_calls_csv == null || tool_calls_csv.trim().isEmpty()) {
-	        LOGGER.warn("The tool_calls CSV string is empty.");
-	        return toolCalls;
-	    }
+		if (tool_calls_csv == null || tool_calls_csv.trim().isEmpty()) {
+			return toolCalls;
+		}
 
-	    // Regex to split on commas outside of parentheses and quotes (your original magic)
-	    String regex = ",\\s*(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)(?![^()]*\\))";
-	    String[] entries = tool_calls_csv.split(regex);
+		// Regex to split on commas outside of parentheses and quotes (your original magic)
+		String regex = ",\\s*(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)(?![^()]*\\))";
+		String[] entries = tool_calls_csv.split(regex);
 
-	    for (String entry : entries) {
-	        String trimmedEntry = entry.trim();
-	        if (trimmedEntry.isEmpty()) {
-	            continue;
-	        }
+		for (String entry : entries) {
+			String trimmedEntry = entry.trim();
+			if (trimmedEntry.isEmpty()) {
+				continue;
+			}
 
-	        // Split on the first space to separate calltype from the tool call
-	        int firstSpaceIndex = trimmedEntry.indexOf(' ');
-	        if (firstSpaceIndex == -1) {
-	            // Invalid entry? Skip or handle error as needed, but for now, we'll assume well-formed
-	            continue;
-	        }
+			// Split on the first space to separate calltype from the tool call
+			int firstSpaceIndex = trimmedEntry.indexOf(' ');
+			if (firstSpaceIndex == -1) {
+				// Invalid entry? Skip or handle error as needed, but for now, we'll assume well-formed
+				continue;
+			}
 
-	        String calltype = trimmedEntry.substring(0, firstSpaceIndex).trim();
-	        String toolCall = trimmedEntry.substring(firstSpaceIndex + 1).trim();
+			String calltype = trimmedEntry.substring(0, firstSpaceIndex).trim();
+			String toolCall = trimmedEntry.substring(firstSpaceIndex + 1).trim();
 
-	        // Extract toolname: everything before the '('
-	        int parenIndex = toolCall.indexOf('(');
-	        if (parenIndex == -1) {
-	            continue; // Malformed, skip
-	        }
-	        String toolname = toolCall.substring(0, parenIndex).trim();
+			// Extract toolname: everything before the '('
+			int parenIndex = toolCall.indexOf('(');
+			if (parenIndex == -1) {
+				continue; // Malformed, skip
+			}
+			String toolname = toolCall.substring(0, parenIndex).trim();
 
-	        // Parse arguments using your existing method (pass the full toolCall like "fetch(url=...)")
-	        HashMap<String, Object> arguments = MCPUtils.parseArguments(toolCall);
+			// Parse arguments using your existing method (pass the full toolCall like "fetch(url=...)")
+			HashMap<String, Object> arguments = MCPUtils.parseArguments(toolCall);
 
-	        // Create and add the request object
-	        ToolCallRequest request = new ToolCallRequest(toolname, calltype, arguments, entry);
-	        toolCalls.add(request);
-	    }
+			// Create and add the request object
+			ToolCallRequest request = new ToolCallRequest(toolname, calltype, arguments, entry);
+			toolCalls.add(request);
+		}
 
-	    return toolCalls;
+		return toolCalls;
 	}
 
 	public static HashMap<String, Object> parseArguments(String _input) {

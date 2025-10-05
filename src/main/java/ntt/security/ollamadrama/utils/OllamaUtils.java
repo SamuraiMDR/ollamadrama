@@ -232,7 +232,6 @@ public class OllamaUtils {
 	}
 
 	public static OllamaChatResult setChatSystemProfile(OllamaAPI _ollamaAPI, String _modelname, Options _options, String _statement, String _autopull_max_llm_size, long _timeout) {
-		if (!_statement.endsWith(".")) _statement = _statement + "."; // quick patch
 		OllamaChatResult chatResult = null;
 		int retryCounter = 0;
 		while (retryCounter < 5) {
@@ -293,7 +292,6 @@ public class OllamaUtils {
 	}
 
 	public static ChatInteraction askRawChatQuestionWithCustomChatHistory(OllamaAPI _ollamaAPI, String _modelname, Options _options, OllamaChatResult _chatResult, String _question, List<OllamaChatMessage> _customChatHistory, long _timeout) {
-		if (!_question.endsWith(".")) _question = _question + "."; // quick patch
 		int retryCounter = 0;
 		while (retryCounter < 10) {
 			try {
@@ -338,7 +336,6 @@ public class OllamaUtils {
 	}
 
 	public static ChatInteraction askChatQuestion(OllamaAPI _ollamaAPI, String _modelname, Options _options, OllamaChatResult _chatResult, String _question, Integer _retryThreshold, long _timeout) {
-		if (!_question.endsWith(".")) _question = _question + ".";
 		int retryCounter = 0;
 		while (retryCounter <= _retryThreshold) {
 			try {
@@ -384,7 +381,6 @@ public class OllamaUtils {
 	}
 
 	public static ChatInteraction addCreativeStatementToExistingChat(OllamaAPI _ollamaAPI, String _modelname, Options _options, OllamaChatResult _chatResult, String _statement, long _timeout) {
-		if (!_statement.endsWith(".")) _statement = _statement + "."; // quick patch
 		int retryCounter = 0;
 		while (retryCounter < 10) {
 			try {
@@ -418,7 +414,6 @@ public class OllamaUtils {
 	}
 
 	public static ChatInteraction addStrictStatementToExistingChat(OllamaAPI _ollamaAPI, String _modelname, Options _options, OllamaChatResult _chatResult, String _statement, long _timeout) {
-		if (!_statement.endsWith(".")) _statement = _statement + "."; // quick patch
 		int retryCounter = 0;
 		while (retryCounter < 10) {
 			try {
@@ -497,7 +492,7 @@ public class OllamaUtils {
 		for (String model_name: _models.split(",")) {
 
 			// Launch strict agent per included model type
-			OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, _hide_llm_reply_if_uncertain, _use_random_seed);
+			OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, _hide_llm_reply_if_uncertain, _use_random_seed, false);
 			LOGGER.info("Using " + a1.getEndpoint().getOllama_url() + " with model " + model_name);
 			e1.addWrappedSession(new OllamaWrappedSession(a1, Globals.MODEL_PROBABILITY_THRESHOLDS.get(model_name)));
 
@@ -535,7 +530,7 @@ public class OllamaUtils {
 		for (String model_name: _models.split(",")) {
 
 			// Launch strict agent per included model type
-			OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, _hide_llm_reply_if_uncertain, _use_random_seed);
+			OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, _hide_llm_reply_if_uncertain, _use_random_seed, false);
 			LOGGER.info("Using " + a1.getEndpoint().getOllama_url() + " with model " + model_name);
 			SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(_query, _hide_llm_reply_if_uncertain, _settings.getOllama_timeout());
 			Integer probaThreshold = Globals.MODEL_PROBABILITY_THRESHOLDS.get(model_name);

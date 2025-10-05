@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>ntt.security</groupId>
   <artifactId>ollamadrama</artifactId>
-  <version>0.4.8</version>
+  <version>0.4.9</version>
   <name>ollamadrama</name>
 
 	<properties>
@@ -14,38 +14,60 @@
 	</properties>
 	
 	<build>
-		<plugins>
-			<plugin>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.8.0</version>
-				<configuration>
-					<source>17</source>
-					<target>17</target>
-				</configuration>
-			</plugin>
+	  <resources>
+	    <resource>
+	      <directory>src/main/resources</directory>
+	      <filtering>false</filtering>
+	      <includes>
+	        <!-- include everything by default -->
+	        <include>**/*</include>
+	      </includes>
+	      <excludes>
+	        <!-- make sure no active logback configs slip in -->
+	        <exclude>logback.xml</exclude>
+	        <exclude>logback-test.xml</exclude>
+	        <exclude>logback.groovy</exclude>
+	        <exclude>**/logback.xml</exclude>
+	        <exclude>**/logback-test.xml</exclude>
+	        <exclude>**/logback.groovy</exclude>
+	      </excludes>
+	    </resource>
+	  </resources>
+	
+	  <plugins>
+	    <plugin>
+	      <artifactId>maven-compiler-plugin</artifactId>
+	      <version>3.8.0</version>
+	      <configuration>
+	        <source>17</source>
+	        <target>17</target>
+	      </configuration>
+	    </plugin>
+	
+	    <!-- OPTIONAL (and usually not recommended for libraries):
+	         If you really need an uber-jar for this library, keep this.
+	         Otherwise, delete this whole plugin and publish a thin JAR. -->
+	    <plugin>
+	      <artifactId>maven-assembly-plugin</artifactId>
+	      <version>3.1.1</version>
+	      <configuration>
+	        <descriptorRefs>
+	          <descriptorRef>jar-with-dependencies</descriptorRef>
+	        </descriptorRefs>
+	      </configuration>
+	      <executions>
+	        <execution>
+	          <id>make-my-jar-with-dependencies</id>
+	          <phase>package</phase>
+	          <goals>
+	            <goal>single</goal>
+	          </goals>
+	        </execution>
+	      </executions>
+	    </plugin>
+	  </plugins>
+</build>
 
-			<!-- We need this to build one jar, and specify mainClass -->
-			<plugin>
-				<artifactId>maven-assembly-plugin</artifactId>
-				<version>3.1.1</version>
-				<configuration>
-					<descriptorRefs>
-						<descriptorRef>jar-with-dependencies</descriptorRef>
-					</descriptorRefs>
-				</configuration>
-				<executions>
-					<execution>
-						<id>make-my-jar-with-dependencies</id>
-						<phase>package</phase>
-						<goals>
-							<goal>single</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-
-		</plugins>
-	</build>
 
 	<scm>
 		<connection>scm:svn:http://127.0.0.1/dummy</connection>
@@ -69,7 +91,7 @@
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
 			<version>1.2.13</version>
-			<scope>runtime</scope>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.google.guava</groupId>

@@ -90,7 +90,7 @@ public class OllamaDramaUtils {
 				int queryindex = 1;
 
 				// Launch strict session
-				OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, _hide_llm_reply_if_uncertain, _use_random_seed);
+				OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, _hide_llm_reply_if_uncertain, _use_random_seed, _use_mcp);
 				if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
 
 				// Make query
@@ -115,7 +115,7 @@ public class OllamaDramaUtils {
 				int queryindex = 1;
 
 				// Launch strict session
-				OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, _hide_llm_reply_if_uncertain, _use_random_seed);
+				OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, _hide_llm_reply_if_uncertain, _use_random_seed, false);
 				if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
 
 				// Make query
@@ -172,7 +172,7 @@ public class OllamaDramaUtils {
 		OllamaService.getInstance(_models);
 		for (String model_name: _models.split(",")) {
 			int queryindex = 1;
-			OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, _hide_llm_reply_if_uncertain, _use_random_seed);
+			OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, _hide_llm_reply_if_uncertain, _use_random_seed, false);
 			if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
 			String q1 = _question;
 			System.out.println("Question: " + q1);
@@ -237,7 +237,7 @@ public class OllamaDramaUtils {
 							(apply_earlyexit_after_errorthreshold && (errorcounter <= _nrErrorsToAllow)) ||
 							!apply_earlyexit_after_errorthreshold ||
 							false) {
-						OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, false, _use_random_seed);
+						OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, false, _use_random_seed, false);
 						if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama agent [" + model_name + "] is operational\n");
 
 						int needle_pos = NumUtils.randomNumWithinRangeAsInt(20, x-20);
@@ -328,7 +328,7 @@ public class OllamaDramaUtils {
 						(apply_earlyexit_after_errorthreshold && (errorcounter <= _nrErrorsToAllow)) ||
 						!apply_earlyexit_after_errorthreshold ||
 						false) {
-					OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, false, _use_random_seed);
+					OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, false, _use_random_seed, false);
 					if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama agent [" + model_name + "] is operational\n");
 					String firstWord = generateRandomWord(len_random_word);
 					bagOfWords = firstWord;
@@ -418,7 +418,7 @@ public class OllamaDramaUtils {
 			for (int x=20; x<=30000; x+=20) {
 
 				// Launch strict agent per test
-				OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, true, _use_random_seed);
+				OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, true, _use_random_seed, false);
 				if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama agent [" + model_name + "] is operational\n");
 
 				bagOfCharacters = "";

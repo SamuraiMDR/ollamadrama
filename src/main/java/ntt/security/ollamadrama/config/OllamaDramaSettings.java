@@ -28,6 +28,7 @@ public class OllamaDramaSettings {
 	private int n_ctx_override = -1;
 	
 	private ArrayList<Integer> mcp_ports = new ArrayList<Integer>() {{
+		this.add(8000);
 		this.add(8080);
 		this.add(9000);
 	}};

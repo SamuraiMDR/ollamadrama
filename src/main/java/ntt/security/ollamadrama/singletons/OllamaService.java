@@ -169,10 +169,11 @@ public class OllamaService {
 										ListToolsResult tools = MCPUtils.listToolFromMCPEndpoint(mcpURL, endpoint_path, mcp_listtools_timeout);
 										if (null != tools) {
 											if (!tools.tools().isEmpty()) {
-												String available_tools_str = MCPUtils.prettyPrint(tools);
 												for (Tool t: tools.tools()) {
 													// key is schema://host:port-toolname
-													verified_tools.put(mcpURL + "-" + t.name(), new MCPTool(t.name(), available_tools_str, new MCPEndpoint(schema, oep.getHost(), oep.getPort(), endpoint_path)));
+													String tool_str = MCPUtils.prettyPrint(tools, t.name());
+
+													verified_tools.put(mcpURL + "-" + t.name(), new MCPTool(t.name(), tool_str, new MCPEndpoint(schema, oep.getHost(), oep.getPort(), endpoint_path)));
 													if (null == deduptool.get(t.name())) {
 														LOGGER.info("Found MCP tool " + t.name());
 														deduptool.put(t.name(), true);
@@ -415,18 +416,22 @@ public class OllamaService {
 	}
 
 	public static OllamaSession getStrictProtocolSession(String _model_name) {
-		return getStrictProtocolSession(_model_name, false, false, "");
+		return getStrictProtocolSession(_model_name, false, false, "", false);
 	}
 
-	public static OllamaSession getStrictProtocolSession(String _model_name, String _initial_prompt) {
-		return getStrictProtocolSession(_model_name, false, false, _initial_prompt);
+	public static OllamaSession getStrictProtocolSession(String _model_name, String _initial_prompt, boolean _make_tools_available) {
+		return getStrictProtocolSession(_model_name, false, false, _initial_prompt, _make_tools_available);
 	}
 
+	public static OllamaSession getStrictProtocolSession(String _model_name, boolean hide_llm_reply_if_uncertain, boolean _use_random_seed, boolean _make_tools_available) {
+		return getStrictProtocolSession(_model_name, hide_llm_reply_if_uncertain, _use_random_seed, "", _make_tools_available);
+	}
+	
 	public static OllamaSession getStrictProtocolSession(String _model_name, boolean hide_llm_reply_if_uncertain, boolean _use_random_seed) {
-		return getStrictProtocolSession(_model_name, hide_llm_reply_if_uncertain, _use_random_seed, "");
+		return getStrictProtocolSession(_model_name, hide_llm_reply_if_uncertain, _use_random_seed, "", false);
 	}
 
-	public static OllamaSession getStrictProtocolSession(String _model_name, boolean hide_llm_reply_if_uncertain, boolean _use_random_seed, String _initial_prompt) {
+	public static OllamaSession getStrictProtocolSession(String _model_name, boolean hide_llm_reply_if_uncertain, boolean _use_random_seed, String _initial_prompt, boolean _make_tools_available) {
 		boolean model_exists = false;
 		if (settings == null) {
 			LOGGER.error("Is OllamaDrama initialized properly");
@@ -452,9 +457,19 @@ public class OllamaService {
 				Globals.ENFORCE_SINGLE_KEY_JSON_RESPONSE_TO_QUESTIONS + 
 				Globals.THREAT_TEMPLATE;
 
+		// Append initial tool index
+		String mcp_str = "";
+		if (_make_tools_available) {
+			String available_tool_summary = OllamaService.getAllAvailableMCPTools();
+			//FilesUtils.appendToFileUNIXNoException(available_tool_summary, "mcp_tool_overview.md");
+			mcp_str = "\n\n" + available_tool_summary + "\n\n";
+		} else {
+			mcp_str = "\n\nNO MCP TOOLS AVAILABLE.\n\n"; 
+		}
+
 		return new OllamaSession(_model_name, OllamaService.getRandomActiveOllamaURL(),
 				Globals.createStrictOptionsBuilder(_model_name, _use_random_seed, OllamaService.getSettings().getN_ctx_override()), OllamaService.getSettings(), 
-				system_prompt + "\n\n" + _initial_prompt,
+				system_prompt + "\n\n" + _initial_prompt + "\n\n" + mcp_str,
 				SessionType.STRICTPROTOCOL);
 	}
 
@@ -464,7 +479,7 @@ public class OllamaService {
 			if (existing_model.equals(_model_name)) model_exists = true;
 		}
 		if (!model_exists) {
-			LOGGER.error("Attempt to create session with model not listed in settings, halting (model: " + _model_name + ")");
+			LOGGER.error("Attempt to create session with model not listed in settings, halting (model requested: " + _model_name + ", settings: " + settings.getOllama_models() + ")");
 			SystemUtils.halt();
 		}
 		return new OllamaSession(_model_name, OllamaService.getRandomActiveOllamaURL(),
@@ -479,7 +494,7 @@ public class OllamaService {
 			if (existing_model.equals(_model_name)) model_exists = true;
 		}
 		if (!model_exists) {
-			LOGGER.error("Attempt to create session with model not listed in settings, halting (model: " + _model_name + ")");
+			LOGGER.error("Attempt to create session with model not listed in settings, halting (model requested: " + _model_name + ", settings: " + settings.getOllama_models() + ")");
 			SystemUtils.halt();
 		}
 		return new OllamaSession(_model_name, OllamaService.getRandomActiveOllamaURL(),
@@ -518,6 +533,7 @@ public class OllamaService {
 				}
 			}
 		}
+
 		return sb.toString().replace("\n\n\n", "\n\n");
 	}
 

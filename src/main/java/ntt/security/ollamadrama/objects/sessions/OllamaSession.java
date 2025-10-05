@@ -18,6 +18,7 @@ import ntt.security.ollamadrama.objects.SessionType;
 import ntt.security.ollamadrama.objects.ToolCallRequest;
 import ntt.security.ollamadrama.objects.response.SingleStringQuestionResponse;
 import ntt.security.ollamadrama.singletons.OllamaService;
+import ntt.security.ollamadrama.utils.FilesUtils;
 import ntt.security.ollamadrama.utils.InteractUtils;
 import ntt.security.ollamadrama.utils.JSONUtils;
 import ntt.security.ollamadrama.utils.MCPUtils;
@@ -148,41 +149,35 @@ public class OllamaSession {
 		}
 	}
 
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _make_tools_available) {
-		return askStrictChatQuestion(_question, false, 3000L, _make_tools_available);
+	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _make_tools_available, int _max_recursive_toolcall_depth) {
+		return askStrictChatQuestion(_question, false, 3000L, _make_tools_available, _max_recursive_toolcall_depth);
 	}
 
 	public SingleStringQuestionResponse askStrictChatQuestion(String _question,  int session_tokens_maxlen, boolean _make_tools_available) {
-		return askStrictChatQuestion(_question, session_tokens_maxlen, false, 30, 120, _make_tools_available, 0, 0);
+		return askStrictChatQuestion(_question, session_tokens_maxlen, false, 30, 120, _make_tools_available, 0, 0, 30);
 	}
 
 	public SingleStringQuestionResponse askStrictChatQuestion(String _question, long _timeout) {
-		return askStrictChatQuestion(_question, false, _timeout, false);
+		return askStrictChatQuestion(_question, false, _timeout, false, 5);
 	}
 
 	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, long _timeout) {
-		return askStrictChatQuestion(_question, _hide_llm_reply_if_uncertain, _timeout, false);
+		return askStrictChatQuestion(_question, _hide_llm_reply_if_uncertain, _timeout, false, 5);
 	}
 
 	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, int _retryThreshold, long _timeout, boolean _make_tools_available) {
-		return askStrictChatQuestion(_question, 60000, _hide_llm_reply_if_uncertain, _retryThreshold, _timeout, _make_tools_available, 0, 5);
+		return askStrictChatQuestion(_question, 60000, _hide_llm_reply_if_uncertain, _retryThreshold, _timeout, _make_tools_available, 0, 5, 30);
 	}
 
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, long _timeout, boolean _make_tools_available) {
-		return askStrictChatQuestion(_question, 60000, _hide_llm_reply_if_uncertain, 30, _timeout, _make_tools_available, 0, 5);
+	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, long _timeout, boolean _make_tools_available, int _max_recursive_toolcall_depth) {
+		return askStrictChatQuestion(_question, 60000, _hide_llm_reply_if_uncertain, 30, _timeout, _make_tools_available, 0, _max_recursive_toolcall_depth, 30);
 	}
 
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question, int session_tokens_maxlen, boolean _hide_llm_reply_if_uncertain, int _retryThreshold, long _timeout, boolean _make_tools_available, int _exec_depth_counter, int _max_recursive_toolcall_depth) {
-
-		// Append initial tool index
-		if (interactcounter == 0) {
-			String available_tool_summary = OllamaService.getAllAvailableMCPTools();
-			if (_make_tools_available) {
-				_question =  "\n\n" + available_tool_summary + "\n\n" + _question;
-			} else {
-				_question = "\n\nNO MCP TOOLS AVAILABLE.\n\n" + _question; 
-			}
-		}
+	public SingleStringQuestionResponse askStrictChatQuestion(String _question, int session_tokens_maxlen, boolean _hide_llm_reply_if_uncertain, int _retryThreshold, long _timeout, boolean _make_tools_available, int _exec_depth_counter, int _max_recursive_toolcall_depth, int _toolcall_pausetime_in_seconds) {
+		if (_max_recursive_toolcall_depth < 0) LOGGER.warn("No tools will be called if value of_max_recursive_toolcall_depth is not 1 or more");
+		boolean debug = false;
+		if (debug) System.out.println("interactcounter: " + interactcounter);
+		
 		this.interactcounter = interactcounter + 1;
 
 		if (this.sessiontype == SessionType.STRICTPROTOCOL) {
@@ -198,7 +193,6 @@ public class OllamaSession {
 					if (null != ci) {
 						String json = "";
 
-						boolean debug = false;
 						if (debug) System.out.println(ci.getResponse());
 
 						// JSON markdown (LLM protocol helper hack)
@@ -231,12 +225,6 @@ public class OllamaSession {
 									swr.setProbability(0);
 								}
 
-								// debug
-								if (debug) {
-									swr.print();
-									System.out.println("");
-								}
-
 								this.chatResult = ci.getChatResult();
 								swr.setEmpty(false);
 								swr = OllamaUtils.applyResponseSanity(swr, model_name, _hide_llm_reply_if_uncertain);
@@ -253,13 +241,28 @@ public class OllamaSession {
 								} else {
 									valid_tool_calls = false;
 								}
-
-								if (_make_tools_available && ("TOOLCALL".equals(swr.getResponse()) || valid_tool_calls)) {
+								
+								if ("TOOLCALL_AFTER_PAUSE".equals(swr.getResponse()) && valid_tool_calls) {
+									LOGGER.info("Pausing )" + _toolcall_pausetime_in_seconds + " before next round of toolcalls");
+									SystemUtils.sleepInSeconds(_toolcall_pausetime_in_seconds);
+								}
+								
+								if ("TOOLCALL_AFTER_PAUSE".equals(swr.getResponse()) && !valid_tool_calls) {
+									
+									// print intermediate result to STDOUT
+									swr.print();
+									System.out.println("");
+									
+									LOGGER.info("Pausing " + _toolcall_pausetime_in_seconds + " before next round");
+									SystemUtils.sleepInSeconds(_toolcall_pausetime_in_seconds);
+								}
+								
+								if (_make_tools_available && ("TOOLCALL".equals(swr.getResponse()) || "TOOLCALL_AFTER_PAUSE".equals(swr.getResponse())) && valid_tool_calls) {
 									StringBuffer sb = new StringBuffer();
 
 									LOGGER.debug("Tool Call Request: " + swr.getTool_calls());
 									ArrayList<ToolCallRequest> tool_calls = MCPUtils.parseToolCalls(swr.getTool_calls());
-
+	
 									for (ToolCallRequest tcr: tool_calls) {
 										if (!tcr.sanitycheck_pass()) {
 											LOGGER.error("Tool Call Request - name: " + tcr.getToolname() + " calltype: " + tcr.getCalltype() + " arguments:" + tcr.getArguments().toString());
@@ -285,9 +288,9 @@ public class OllamaSession {
 													LOGGER.info("Blindly allowing agent to run the tool call " + tcr.getToolname());
 												} else if (OllamaService.isMatchingMCPTool(tcr.getToolname(), settings.getTrusted_mcp_toolnames_csv())) {
 													make_call = true;
-													LOGGER.debug("Trusted mcp toolname so allowing agent to run the tool call " + tcr.getToolname());
+													LOGGER.debug("Trusted mcp toolname so allowing agent to run the tool call " + tcr.getToolname() + " arguments:" + tcr.getArguments().toString());
 												} else {
-													make_call = InteractUtils.getYNResponse("The agent is requesting to run the tool call " + tcr.getToolname() + ", press Y to allow and N to abort.", settings);
+													make_call = InteractUtils.getYNResponse("The agent is requesting to run the tool call " + tcr.getToolname() + " arguments:" + tcr.getArguments().toString() + ", press Y to allow and N to abort.", settings);
 												}
 
 												// Call tool
@@ -312,12 +315,27 @@ public class OllamaSession {
 										}
 									}
 
+									// check if we need to break due to token usage
+									int chatsize_wordcount_a1 = this.getChatSizeWordCount();
+									if (debug) LOGGER.info("session wordcount: " + chatsize_wordcount_a1);
+									if (chatsize_wordcount_a1 > session_tokens_maxlen) {
+										LOGGER.info("Breaking recursive toolcall since we have consumed roughly token " + chatsize_wordcount_a1);
+										return swr;
+									}
+									
 									// Early exit on recurisive tool calls
-									if (_exec_depth_counter >= _max_recursive_toolcall_depth) return swr;
+									if (_exec_depth_counter >= _max_recursive_toolcall_depth) {
+										LOGGER.info("Breaking recursive toolcall since we are at depth " + _exec_depth_counter);
+										return swr;
+									}
+									
+									// print intermediate result to STDOUT
+									swr.print();
+									System.out.println("");
 
 									_exec_depth_counter++;
 									//System.out.println("new query:\n\n" + _question + sb.toString());
-									return askStrictChatQuestion(sb.toString() + "\n\n" + _question, session_tokens_maxlen, _hide_llm_reply_if_uncertain, _retryThreshold, _timeout, _make_tools_available, _exec_depth_counter, _max_recursive_toolcall_depth);
+									return askStrictChatQuestion(_question+ "\n\n" + sb.toString() , session_tokens_maxlen, _hide_llm_reply_if_uncertain, _retryThreshold, _timeout, _make_tools_available, _exec_depth_counter, _max_recursive_toolcall_depth, _toolcall_pausetime_in_seconds);
 								}
 
 								return swr;

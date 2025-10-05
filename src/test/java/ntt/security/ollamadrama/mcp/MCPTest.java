@@ -18,6 +18,7 @@ import ntt.security.ollamadrama.objects.ToolCallRequest;
 import ntt.security.ollamadrama.objects.response.SingleStringQuestionResponse;
 import ntt.security.ollamadrama.objects.sessions.OllamaSession;
 import ntt.security.ollamadrama.singletons.OllamaService;
+import ntt.security.ollamadrama.utils.FilesUtils;
 import ntt.security.ollamadrama.utils.MCPUtils;
 import ntt.security.ollamadrama.utils.OllamaDramaUtils;
 import ntt.security.ollamadrama.utils.OllamaUtils;
@@ -170,9 +171,9 @@ public class MCPTest {
 		// Launch strict session
 		OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name);
 		if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
-
+		
 		// Make query with tools enabled
-		SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion("Is the site https://www.ntt.com accessible?", make_tools_available);
+		SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion("Is the site https://www.ntt.com accessible?", make_tools_available, 5);
 		ssr1.print();
 		assertEquals("Ensure tool_call to fetch() is run and validates site availability ", "Yes", ssr1.getResponse());
 
@@ -235,7 +236,7 @@ public class MCPTest {
 			if (model_name.length()>=3) {
 
 				// Launch strict session
-				OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, false, true);
+				OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, "", true);
 				if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
 
 				// Make query
