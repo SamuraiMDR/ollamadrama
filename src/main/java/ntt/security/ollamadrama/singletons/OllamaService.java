@@ -360,10 +360,12 @@ public class OllamaService {
 		if (single_instance == null) { // First check (no locking)
 			synchronized (OllamaService.class) {
 				if (single_instance == null) { // Second check (with locking)
-					_settings.setOllama_timeout(_settings.getOllama_timeout());
 					single_instance = new OllamaService(_settings);
+					LOGGER.info("Returning a new OllamaService");
 				}
 			}
+		} else {
+			LOGGER.info("Returning the existing OllamaService");
 		}
 		return single_instance;
 	}
@@ -569,6 +571,10 @@ public class OllamaService {
 			if (toolname.equals(indexedtoolname)) return true;
 		}
 		return false;
+	}
+
+	public static String getModels() {
+		return settings.getOllama_models();
 	}
 
 }

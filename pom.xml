@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>ntt.security</groupId>
   <artifactId>ollamadrama</artifactId>
-  <version>0.4.9</version>
+  <version>0.4.9.5</version>
   <name>ollamadrama</name>
 
 	<properties>

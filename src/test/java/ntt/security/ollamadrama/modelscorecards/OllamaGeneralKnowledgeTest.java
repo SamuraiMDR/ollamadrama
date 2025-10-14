@@ -27,7 +27,7 @@ public class OllamaGeneralKnowledgeTest {
 		}};
 
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
-				true, // use MCP
+				false, // dont use MCP
 				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, 
 				"What is the current temperature in Paris? Reply with only a number where the number is the temperature in celcius.",
 				acceptable_answers,
@@ -233,6 +233,22 @@ public class OllamaGeneralKnowledgeTest {
 		assertTrue("Make sure we have a clean sheet for tier1 models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OLLAMA_ALL_TIER1_M_L_XL));
 	}
 
+	@Test
+	public void simpleParisTemperature_OllamaModels_NEW() {
+		
+		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
+				false, // use MCP
+				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL,  // cogito:14b gpt-oss:20b
+				"What is the current temperature in Paris?", 
+				"FAILTOUNDERSTAND",
+				false, false);
+
+		// Print the scorecard
+		System.out.println("SCORECARD:");
+		scorecard.evaluate();
+		scorecard.print();
+	}
+	
 	@Test
 	public void simpleParis_OllamaModels_NEW() {
 		

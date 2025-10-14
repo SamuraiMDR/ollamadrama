@@ -177,7 +177,7 @@ public class OllamaSession {
 		if (_max_recursive_toolcall_depth < 0) LOGGER.warn("No tools will be called if value of_max_recursive_toolcall_depth is not 1 or more");
 		boolean debug = false;
 		if (debug) System.out.println("interactcounter: " + interactcounter);
-		
+
 		this.interactcounter = interactcounter + 1;
 
 		if (this.sessiontype == SessionType.STRICTPROTOCOL) {
@@ -241,101 +241,109 @@ public class OllamaSession {
 								} else {
 									valid_tool_calls = false;
 								}
-								
+
+								// print intermediate result to STDOUT
+								swr.print();
+								System.out.println("");
+
 								if ("TOOLCALL_AFTER_PAUSE".equals(swr.getResponse()) && valid_tool_calls) {
 									LOGGER.info("Pausing )" + _toolcall_pausetime_in_seconds + " before next round of toolcalls");
 									SystemUtils.sleepInSeconds(_toolcall_pausetime_in_seconds);
 								}
-								
+
 								if ("TOOLCALL_AFTER_PAUSE".equals(swr.getResponse()) && !valid_tool_calls) {
-									
+
 									// print intermediate result to STDOUT
 									swr.print();
 									System.out.println("");
-									
+
 									LOGGER.info("Pausing " + _toolcall_pausetime_in_seconds + " before next round");
 									SystemUtils.sleepInSeconds(_toolcall_pausetime_in_seconds);
 								}
-								
-								if (_make_tools_available && ("TOOLCALL".equals(swr.getResponse()) || "TOOLCALL_AFTER_PAUSE".equals(swr.getResponse())) && valid_tool_calls) {
-									StringBuffer sb = new StringBuffer();
 
-									LOGGER.debug("Tool Call Request: " + swr.getTool_calls());
-									ArrayList<ToolCallRequest> tool_calls = MCPUtils.parseToolCalls(swr.getTool_calls());
-	
-									for (ToolCallRequest tcr: tool_calls) {
-										if (!tcr.sanitycheck_pass()) {
-											LOGGER.error("Tool Call Request - name: " + tcr.getToolname() + " calltype: " + tcr.getCalltype() + " arguments:" + tcr.getArguments().toString());
-										} else {
+								if (_make_tools_available && ("TOOLCALL".equals(swr.getResponse()) || "TOOLCALL_AFTER_PAUSE".equals(swr.getResponse()))) {
 
-											// Find the MCP URL to call the tool
-											MCPTool mcpTool = OllamaService.getMCPURLForTool(tcr.getToolname());
-											if (null == mcpTool) {
-												LOGGER.error("Agent requested a tool_call which does not exist (" + tcr.getToolname() + ")\n");
-												SystemUtils.halt();
-											}
-											String mcpURL = mcpTool.getEndpoint().getSchema() + "://" + mcpTool.getEndpoint().getHost() + ":" + mcpTool.getEndpoint().getPort();
-											String mcpPATH = mcpTool.getEndpoint().getPath();
+									if (!valid_tool_calls) {
+										LOGGER.warn("Agent requested a tool_call which does not exist (" + swr.getTool_calls() + ")\n");
+										return swr;
+									} else {
 
-											if ( (tcr.getToolname().length()>0) && (mcpURL.startsWith("http") && mcpPATH.startsWith("/"))) {
+										StringBuffer sb = new StringBuffer();
 
-												boolean make_call = false;
-												if (OllamaService.isMatchingMCPTool(tcr.getToolname(), settings.getFiltered_mcp_toolnames_csv())) {
-													make_call = false;
-													LOGGER.info("Filtered mcp toolname so blocking agent to run the tool call " + tcr.getRawrequest());
-												} else if (settings.isMcp_blind_trust()) {
-													make_call = true;
-													LOGGER.info("Blindly allowing agent to run the tool call " + tcr.getToolname());
-												} else if (OllamaService.isMatchingMCPTool(tcr.getToolname(), settings.getTrusted_mcp_toolnames_csv())) {
-													make_call = true;
-													LOGGER.debug("Trusted mcp toolname so allowing agent to run the tool call " + tcr.getToolname() + " arguments:" + tcr.getArguments().toString());
-												} else {
-													make_call = InteractUtils.getYNResponse("The agent is requesting to run the tool call " + tcr.getToolname() + " arguments:" + tcr.getArguments().toString() + ", press Y to allow and N to abort.", settings);
-												}
+										LOGGER.debug("Tool Call Request: " + swr.getTool_calls());
+										ArrayList<ToolCallRequest> tool_calls = MCPUtils.parseToolCalls(swr.getTool_calls());
 
-												// Call tool
-												if (make_call) {
-													CallToolResult result = MCPUtils.callToolUsingMCPEndpoint(mcpURL, mcpPATH, tcr.getToolname(), tcr.getArguments(), 30L);
-													String tool_response = "\nResponse from running tool_call " + tcr.getRawrequest() + ":\n\n" + MCPUtils.prettyPrint(result);
-													if (null != tool_response) {
-														// replace sequences of 10 or more consecutive whitespaces with a single space
-														tool_response = tool_response.replaceAll("\\s{10,}", " ");
-														//System.out.println(tool_response);
-														sb.append(tool_response + "\n");
-													}
-												} else {
-													LOGGER.info("Not making MCP call ..");
-													sb.append("Your MCP Tool call to " + tcr.getToolname() + " was rejected\n");
-												}
-
+										for (ToolCallRequest tcr: tool_calls) {
+											if (!tcr.sanitycheck_pass()) {
+												LOGGER.warn("Tool Call Request sanitycheck failed - name: " + tcr.getToolname() + " calltype: " + tcr.getCalltype() + " arguments:" + tcr.getArguments().toString());
+												return swr;
 											} else {
-												LOGGER.error("Unable to call tool " + tcr.getToolname() + " with MCP URL " + mcpURL);
-												SystemUtils.halt();
+
+												// Find the MCP URL to call the tool
+												MCPTool mcpTool = OllamaService.getMCPURLForTool(tcr.getToolname());
+												if (null == mcpTool) {
+													LOGGER.error("Agent requested a tool_call which does not exist (" + tcr.getToolname() + ")\n");
+													SystemUtils.halt();
+												}
+												String mcpURL = mcpTool.getEndpoint().getSchema() + "://" + mcpTool.getEndpoint().getHost() + ":" + mcpTool.getEndpoint().getPort();
+												String mcpPATH = mcpTool.getEndpoint().getPath();
+
+												if ( (tcr.getToolname().length()>0) && (mcpURL.startsWith("http") && mcpPATH.startsWith("/"))) {
+
+													boolean make_call = false;
+													if (OllamaService.isMatchingMCPTool(tcr.getToolname(), settings.getFiltered_mcp_toolnames_csv())) {
+														make_call = false;
+														LOGGER.info("Filtered mcp toolname so blocking agent to run the tool call " + tcr.getRawrequest());
+													} else if (settings.isMcp_blind_trust()) {
+														make_call = true;
+														LOGGER.info("Blindly allowing agent to run the tool call " + tcr.getToolname());
+													} else if (OllamaService.isMatchingMCPTool(tcr.getToolname(), settings.getTrusted_mcp_toolnames_csv())) {
+														make_call = true;
+														LOGGER.debug("Trusted mcp toolname so allowing agent to run the tool call " + tcr.getToolname() + " arguments:" + tcr.getArguments().toString());
+													} else {
+														make_call = InteractUtils.getYNResponse("The agent is requesting to run the tool call " + tcr.getToolname() + " arguments:" + tcr.getArguments().toString() + ", press Y to allow and N to abort.", settings);
+													}
+
+													// Call tool
+													if (make_call) {
+														CallToolResult result = MCPUtils.callToolUsingMCPEndpoint(mcpURL, mcpPATH, tcr.getToolname(), tcr.getArguments(), 30L);
+														String tool_response = "\nResponse from running tool_call " + tcr.getRawrequest() + ":\n\n" + MCPUtils.prettyPrint(result);
+														if (null != tool_response) {
+															// replace sequences of 10 or more consecutive whitespaces with a single space
+															tool_response = tool_response.replaceAll("\\s{10,}", " ");
+															//System.out.println(tool_response);
+															sb.append(tool_response + "\n");
+														}
+													} else {
+														LOGGER.info("Not making MCP call ..");
+														sb.append("Your MCP Tool call to " + tcr.getToolname() + " was rejected\n");
+													}
+
+												} else {
+													LOGGER.warn("Unable to call tool " + tcr.getToolname() + " with MCP URL " + mcpURL);
+													return swr;
+												}
 											}
 										}
-									}
 
-									// check if we need to break due to token usage
-									int chatsize_wordcount_a1 = this.getChatSizeWordCount();
-									if (debug) LOGGER.info("session wordcount: " + chatsize_wordcount_a1);
-									if (chatsize_wordcount_a1 > session_tokens_maxlen) {
-										LOGGER.info("Breaking recursive toolcall since we have consumed roughly token " + chatsize_wordcount_a1);
-										return swr;
-									}
-									
-									// Early exit on recurisive tool calls
-									if (_exec_depth_counter >= _max_recursive_toolcall_depth) {
-										LOGGER.info("Breaking recursive toolcall since we are at depth " + _exec_depth_counter);
-										return swr;
-									}
-									
-									// print intermediate result to STDOUT
-									swr.print();
-									System.out.println("");
+										// check if we need to break due to token usage
+										int chatsize_wordcount_a1 = this.getChatSizeWordCount();
+										if (debug) LOGGER.info("session wordcount: " + chatsize_wordcount_a1);
+										if (chatsize_wordcount_a1 > session_tokens_maxlen) {
+											LOGGER.info("Breaking recursive toolcall since we have consumed roughly token " + chatsize_wordcount_a1);
+											return swr;
+										}
 
-									_exec_depth_counter++;
-									//System.out.println("new query:\n\n" + _question + sb.toString());
-									return askStrictChatQuestion(_question+ "\n\n" + sb.toString() , session_tokens_maxlen, _hide_llm_reply_if_uncertain, _retryThreshold, _timeout, _make_tools_available, _exec_depth_counter, _max_recursive_toolcall_depth, _toolcall_pausetime_in_seconds);
+										// Early exit on recurisive tool calls
+										if (_exec_depth_counter >= _max_recursive_toolcall_depth) {
+											LOGGER.info("Breaking recursive toolcall since we are at depth " + _exec_depth_counter);
+											return swr;
+										}
+
+										_exec_depth_counter++;
+										//System.out.println("new query:\n\n" + _question + sb.toString());
+										return askStrictChatQuestion(_question+ "\n\n" + sb.toString() , session_tokens_maxlen, _hide_llm_reply_if_uncertain, _retryThreshold, _timeout, _make_tools_available, _exec_depth_counter, _max_recursive_toolcall_depth, _toolcall_pausetime_in_seconds);
+									}
 								}
 
 								return swr;

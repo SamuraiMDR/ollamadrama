@@ -244,15 +244,21 @@ public class OllamaUtils {
 				return chatResult;
 			} catch (Exception e) {
 				if (e.getMessage() != null) {
-					LOGGER.warn("setChatSystemProfile() Exception: " + e.getMessage());
-					LOGGER.warn("Catch all error handler while setting system profile for " + _modelname + ", retryCounter=" + retryCounter);
-					if (e.getMessage().contains("try pulling it first")) {
-						if (OllamaUtils.is_skip_model_autopull(_autopull_max_llm_size, _modelname)) {
-							LOGGER.info("Ollamadrama is configured to skip autopull of the model " + _modelname + ", try to pull it manually once you have ensured your endpoint has enough VRAM. Or change the ollamadrama 'autopull_max_llm_size' configuration. ");
-							return null;
-						} else {
-							LOGGER.info("Trying to autoheal and pull model " + _modelname);
-							pullModel(_ollamaAPI, _modelname);
+					if (e.getMessage().contains("is null")) {
+						// exaone-deep:7.8b: Cannot invoke "java.lang.Long.longValue()" because the return value of "io.github.ollama4j.models.chat.OllamaChatResponseModel.getTotalDuration()" is null (through reference chain: io.github.ollama4j.models.chat.OllamaChatResult["responseTime"])
+						LOGGER.error("Unable to get a working session, exception: " + e.getMessage());
+						return null;
+					} else {
+						LOGGER.warn("setChatSystemProfile() Exception: " + e.getMessage());
+						LOGGER.warn("Catch all error handler while setting system profile for " + _modelname + ", retryCounter=" + retryCounter);
+						if (e.getMessage().contains("try pulling it first")) {
+							if (OllamaUtils.is_skip_model_autopull(_autopull_max_llm_size, _modelname)) {
+								LOGGER.info("Ollamadrama is configured to skip autopull of the model " + _modelname + ", try to pull it manually once you have ensured your endpoint has enough VRAM. Or change the ollamadrama 'autopull_max_llm_size' configuration. ");
+								return null;
+							} else {
+								LOGGER.info("Trying to autoheal and pull model " + _modelname);
+								pullModel(_ollamaAPI, _modelname);
+							}
 						}
 					}
 				}
@@ -520,9 +526,6 @@ public class OllamaUtils {
 
 	public static SingleStringQuestionResponse strictEnsembleRunEarlyExitOnFirstConfident(String _query, String _models, OllamaDramaSettings _settings, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
 
-		System.out.println("timeout x: " + _settings.getOllama_timeout());
-
-
 		// Launch singleton
 		OllamaService.getInstance(_models, _settings);
 
@@ -564,6 +567,14 @@ public class OllamaUtils {
 		return new SingleStringQuestionResponse();
 	}
 
+	public static SingleStringEnsembleResponse strictEnsembleRun(String _query, String _models) {
+		OllamaDramaSettings ollama_settings = OllamaUtils.parseOllamaDramaConfigENV();
+		ollama_settings.setOllama_models(_models); // specific wins over default
+		ollama_settings.sanityCheck();
+
+		return strictEnsembleRun(_query, _models, ollama_settings, false, false);
+	}
+	
 	public static SingleStringEnsembleResponse strictEnsembleRun(String _query, boolean _hide_llm_reply_if_uncertain) {
 		OllamaDramaSettings ollama_settings = OllamaUtils.parseOllamaDramaConfigENV();
 		ollama_settings.sanityCheck();

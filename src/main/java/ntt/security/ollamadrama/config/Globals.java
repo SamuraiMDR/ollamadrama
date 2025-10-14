@@ -235,9 +235,7 @@ public class Globals {
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_XL = ""
 			+ "cogito:70b,"			// 43 GB
 			+ "athene-v2:72b,"		// 47 GB
-			+ "r1-1776:70b,"		// 43 GB
-			+ "tulu3:70b,"			// 43 GB
-			+ "exaone3.5:32b"		// 19 GB
+			+ "r1-1776:70b"			// 43 GB
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_XL = ""
@@ -297,12 +295,12 @@ public class Globals {
 	 */
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L = ""
-			+ "gpt-oss:20b,"	// 14 GB
 			+ "cogito:14b,"		// 9 GB
 			+ "qwen3:14b"		// 9.3 GB
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_L = ""
+			+ "gpt-oss:20b,"		// 14 GB
 			+ "gemma3:12b,"			// 8.1 GB
 			+ "sailor2:20b,"		// 12 GB
 			+ "phi4:14b"			// 9 GB
@@ -370,7 +368,6 @@ public class Globals {
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER4_M = ""
 			+ "tulu3:8b,"				// 4.9 GB
 			+ "cogito:8b,"				// 4.1 GB, fails to trigger obvious tools
-			+ "exaone-deep:7.8b,"		// 4.8 GB, fails to call tools for fresh data
 			+ "aya-expanse:8b,"			// 5.1 GB, assumes its knowledge is 'now'
 			+ "olmo2:7b,"				// 4.1 GB, wings random guesses at times, refuses to call tools
 			+ "gemma3n:e4b,"			// 7.5 GB, wings random guesses at times
@@ -473,6 +470,8 @@ public class Globals {
 			// + "wizard-vicuna-uncensored:13b,"	// always 0% prob
 
 			// broken/unsupported in ollama
+			// + "exaone3.5:32b"					// 19 GB, model skips the duration key?
+			// + "exaone-deep:7.8b,"				// 4.8 GB, fails to call tools for fresh data
 			// + "codellama:70b"					// ??
 			// + "dolphin-mistral:7b,"				// OKIDOKI reply with 100% confidence to garbage in
 			// + "gemma2:27b"						// replies with FAIL instead of FAILTOUNDERSTAND
