@@ -491,7 +491,7 @@ public class OllamaUtils {
 	public static SingleStringEnsembleResponse strictEnsembleRun(String _query, String _models, OllamaDramaSettings _settings, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
 
 		// Launch singleton
-		OllamaService.getInstance(_models, _settings);
+		OllamaService.getInstance(_settings);
 
 		// Populate an ensemble of agents
 		OllamaEnsemble e1 = new OllamaEnsemble();
@@ -510,7 +510,7 @@ public class OllamaUtils {
 	public static String creativeEnsembleRunEarlyExitOnFirst(String _query, String _models, OllamaDramaSettings _settings) {
 
 		// Launch singleton
-		OllamaService.getInstance(_models, _settings);
+		OllamaService.getInstance(_settings);
 
 		// Populate an ensemble of agents
 		for (String model_name: _models.split(",")) {
@@ -527,7 +527,7 @@ public class OllamaUtils {
 	public static SingleStringQuestionResponse strictEnsembleRunEarlyExitOnFirstConfident(String _query, String _models, OllamaDramaSettings _settings, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
 
 		// Launch singleton
-		OllamaService.getInstance(_models, _settings);
+		OllamaService.getInstance(_settings);
 
 		// Populate an ensemble of agents
 		for (String model_name: _models.split(",")) {
@@ -549,7 +549,7 @@ public class OllamaUtils {
 	public static SingleStringQuestionResponse strictEnsembleRunEarlyExitOnFirstConfident(String _query, String _models, OllamaDramaSettings _settings, boolean _hide_llm_reply_if_uncertain, Integer probaThreshold, boolean _use_random_seed) {
 
 		// Launch singleton
-		OllamaService.getInstance(_models, _settings);
+		OllamaService.getInstance(_settings);
 
 		// Populate an ensemble of agents
 		for (String model_name: _models.split(",")) {
@@ -603,7 +603,7 @@ public class OllamaUtils {
 		ollama_settings.sanityCheck();
 
 		// Launch singleton
-		OllamaService.getInstance(_model_name, ollama_settings);
+		OllamaService.getInstance(ollama_settings);
 
 		// Launch 3 agents, strict, creative, default
 		OllamaSession agent_strict = OllamaService.getStrictProtocolSession(_model_name, _hide_llm_reply_if_uncertain, _use_random_seed);

@@ -43,6 +43,7 @@ public class Globals {
 		    - If you want to call a tool after a pause, respond with 'TOOLCALL_AFTER_PAUSE' and (optionally) populate 'tool_calls' in the same way as for 'TOOLCALL'.
 		    - If you have nothing to and want to wait until your next interaction, respond with 'TOOLCALL_AFTER_PAUSE' and populate 'tool_calls'. 
 		    - The key 'tool_calls' MUST be populated if the response key is 'TOOLCALL'.
+		    - When passing string arguments to tools, use double quotes (") only and NEVER single quotes(').
 		    - The key 'probability' key MUST BE 0 if the response key is 'TOOLCALL' or 'TOOLCALL_AFTER_PAUSE'. 
 		    - The reply string will be pure JSON and will start with the character { since it’s JSON and NOT markdown.
 		    """;

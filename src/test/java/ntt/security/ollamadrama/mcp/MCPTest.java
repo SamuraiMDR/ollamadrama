@@ -2,6 +2,7 @@ package ntt.security.ollamadrama.mcp;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -10,6 +11,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 import ntt.security.ollamadrama.config.OllamaDramaSettings;
@@ -18,7 +20,6 @@ import ntt.security.ollamadrama.objects.ToolCallRequest;
 import ntt.security.ollamadrama.objects.response.SingleStringQuestionResponse;
 import ntt.security.ollamadrama.objects.sessions.OllamaSession;
 import ntt.security.ollamadrama.singletons.OllamaService;
-import ntt.security.ollamadrama.utils.FilesUtils;
 import ntt.security.ollamadrama.utils.MCPUtils;
 import ntt.security.ollamadrama.utils.OllamaDramaUtils;
 import ntt.security.ollamadrama.utils.OllamaUtils;
@@ -157,10 +158,10 @@ public class MCPTest {
 	}
 	
 	@Test
-	public void simple_HTTP_MCP_Tool_Test() {
+	public void simple_HTTP_MCP_Tool_Test_fetch() {
 
 		boolean make_tools_available = true;
-		String model_name = "qwen3:14b"; // qwen3:14b cogito:14b
+		String model_name = "qwen2.5:72b"; // qwen3:14b cogito:14b
 		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
 		settings.setOllama_models(model_name);
 		settings.setMcp_scan(true);
@@ -169,22 +170,22 @@ public class MCPTest {
 		OllamaService.getInstance(settings);
 
 		// Launch strict session
-		OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name);
+		OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, make_tools_available);
 		if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
 		
 		// Make query with tools enabled
-		SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion("Is the site https://www.ntt.com accessible?", make_tools_available, 5);
-		ssr1.print();
+		SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion("Is the site https://www.ntt.com accessible? Answer with 'Yes' or 'No'.");
 		assertEquals("Ensure tool_call to fetch() is run and validates site availability ", "Yes", ssr1.getResponse());
 
+		System.out.println(a1.getChatHistory());
 	}
 
-	@Ignore
+	//@Ignore
 	@Test
 	public void simple_HTTP_MCP_ListTools_MANUAL_Test() {
 
 		// vars
-		String mcpURL = "http://127.0.0.1:8000";
+		String mcpURL = "http://127.0.0.1:7777"; // 192.168.100.95:8080 // http://127.0.0.1:8080
 
 		// List all available tools
 		ListToolsResult tools = MCPUtils.listToolFromMCPEndpoint(mcpURL);
@@ -266,7 +267,128 @@ public class MCPTest {
 		scorecard3.evaluate();
 		scorecard3.print();
 
-
 	}
 
+
+	//@Ignore
+	@Test
+	public void simpleToolTestMeaningOfLife() {
+
+		// Launch MCP service
+		LOGGER.info("Starting MCP server on port {}", 5656);
+		MCPServer.launchMcpService(5656);
+
+		boolean make_tools_available = true;
+		String model_name = "qwen2.5:72b"; // qwen3:32b
+		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
+		settings.setOllama_models(model_name);
+		settings.setElevenlabs_apikey("");
+		settings.setMcp_scan(true);
+		settings.setMcp_blind_trust(true);
+		settings.setMcp_ports_csv("5656");
+		OllamaService.getInstance(settings);
+
+		String initial_prompt = """
+				You are an AI assistant known as 'poi', always eager to use available tools to answer user questions. 
+
+				Key Guidelines:
+				- Answer directly if you are confident in your answer with your current knowledge.
+				- If you are hesitating in your own knowledge, dont hesitate to use any tools available to lookup information. 
+
+				""";
+
+		// Launch strict session
+		OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, initial_prompt, make_tools_available);
+		if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
+
+		String prompt = "What is the meaning of life?";
+		SingleStringQuestionResponse ssqr = a1.askStrictChatQuestion(prompt, make_tools_available, 10);
+
+		assertTrue("Ensure result is 42", "42".equals(ssqr.getResponse()));
+	}
+
+	
+	@Test
+	public void simpleToolTestCurrentTime() {
+
+		// Launch MCP service
+		LOGGER.info("Starting MCP server on port {}", 5656);
+		MCPServer.launchMcpService(5656);
+
+		boolean make_tools_available = true;
+		String model_name = "qwen2.5:72b"; // qwen3:32b
+		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
+		settings.setOllama_models(model_name);
+		settings.setElevenlabs_apikey("");
+		settings.setMcp_scan(true);
+		settings.setMcp_blind_trust(true);
+		settings.setMcp_ports_csv("5656");
+		OllamaService.getInstance(settings);
+
+		String initial_prompt = """
+				You are an AI assistant known as 'poi', always eager to use available tools to answer user questions. 
+
+				Key Guidelines:
+				- Answer directly if you are confident in your answer with your current knowledge.
+				- If you are hesitating in your own knowledge, dont hesitate to use any tools available to lookup information. 
+
+				""";
+
+		// Launch strict session
+		OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, initial_prompt, make_tools_available);
+		if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
+
+		String prompt = "What is the current time?";
+		SingleStringQuestionResponse ssqr1 = a1.askStrictChatQuestion(prompt, make_tools_available, 10);
+
+		assertTrue("Ensure result starts with 20", ssqr1.getResponse().startsWith("20"));
+	}
+	
+	
+	@Test
+	public void simpleToolDecodeTheHiddenFunction() {
+
+		// Launch MCP service
+		LOGGER.info("Starting MCP server on port {}", 5656);
+		MCPServer.launchMcpService(5656);
+
+		boolean make_tools_available = true;
+		String model_name = "llama3.1:70b"; // qwen3:32b llama3.1:70b qwen3:32b
+		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
+		settings.setOllama_models(model_name);
+		settings.setElevenlabs_apikey("");
+		settings.setMcp_scan(true);
+		settings.setMcp_blind_trust(true);
+		settings.setMcp_ports_csv("5656");
+		OllamaService.getInstance(settings);
+
+		String initial_prompt = """
+				You are an AI mathematical genius known as 'poi', always eager to take on challenges and unravel hidden secrets. 
+
+				Challenge:
+				- Call the tool use_hidden_algorithm_with_two_numbers() with numeric arguments of your choice and attempt to determine the underlying function.
+				- Once you think you have found a pattern, you MUST verify your assumed function with at least 5 different tool calls
+				- Only reply when you are 100% sure about the underlying function
+				- Once you believe you have decoded the underlying function, call the function 1 more time and then provide the function as your response. 
+				- In your 'motivation', include an example of a tool call which fulfills the function
+
+				""";
+
+		// Launch strict session
+		OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, initial_prompt, make_tools_available);
+		if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
+
+		String prompt = "What is your next action?";
+		
+		// Init interaction loop
+		int max_session_tokens = 20000;
+		int timeout_in_ms = 10000;
+		int max_recursive_toolcall_depth = 20;
+		int toolcall_pausetime_in_seconds = 60;
+		SingleStringQuestionResponse ssqr1 = a1.askStrictChatQuestion(prompt, false, max_session_tokens, timeout_in_ms, max_recursive_toolcall_depth, toolcall_pausetime_in_seconds);
+		
+		assertTrue("Ensure result exists", ssqr1.getResponse().contains("num1 + num2 + 1"));
+	}
+	
+	
 }

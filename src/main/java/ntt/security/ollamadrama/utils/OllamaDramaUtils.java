@@ -43,7 +43,7 @@ public class OllamaDramaUtils {
 	}
 
 	public static SingleStringEnsembleResponse collectIterativeEnsembleVotes(String _query, String _models, OllamaDramaSettings _settings, boolean _printFirstrun, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
-		OllamaService.getInstance(_models, _settings);
+		OllamaService.getInstance(_settings);
 		OpenAIService.getInstance(_settings);
 		SingleStringEnsembleResponse sser1 = OllamaUtils.strictEnsembleRun(
 				_query, 
@@ -263,7 +263,7 @@ public class OllamaDramaUtils {
 								+ "I promise that you will find one of the following words in the list if you really put your mind to it: 'breeze', '" + needle_word + "', 'puzzle', 'glance' and 'borrow'";
 						System.out.println("Question: " + StringsUtils.cutAndPadStringToN(qx, len_random_word*16) + "..." + StringsUtils.getLastNCharacters(qx, 400));
 						
-						SingleStringQuestionResponse rx = a1.askStrictChatQuestion(qx, false, 1, 120, false); // 1 try, 2 min timeout
+						SingleStringQuestionResponse rx = a1.askStrictChatQuestion(qx, false, 1, 120000L); // 1 try, 2 min timeout
 						if (rx != null) {
 							System.out.println("Current bagsize: " + x);
 							System.out.println("Current needle word location: " + needle_pos);

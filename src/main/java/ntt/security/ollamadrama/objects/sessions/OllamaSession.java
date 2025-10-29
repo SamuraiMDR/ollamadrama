@@ -40,8 +40,9 @@ public class OllamaSession {
 	private SessionType sessiontype;
 	private int interactcounter = 0;
 	private String initial_prompt = "";
+	private boolean make_tools_available = false;
 
-	public OllamaSession(String _model_name, OllamaEndpoint _endpoint, Options _options, OllamaDramaSettings _settings, String _profilestatement, SessionType _sessiontype) {
+	public OllamaSession(String _model_name, OllamaEndpoint _endpoint, Options _options, OllamaDramaSettings _settings, String _profilestatement, SessionType _sessiontype, boolean _make_tools_available) {
 		super();
 
 		this.model_name = _model_name;
@@ -51,6 +52,7 @@ public class OllamaSession {
 		this.settings = _settings;
 		this.uuid = UUID.randomUUID().toString();
 		this.sessiontype = _sessiontype;
+		this.make_tools_available = _make_tools_available;
 
 		this.initialized = setChatSystemProfileStatement(_profilestatement, _settings.getAutopull_max_llm_size(), _settings.getOllama_timeout());		
 	}
@@ -148,32 +150,40 @@ public class OllamaSession {
 			}
 		}
 	}
-
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _make_tools_available, int _max_recursive_toolcall_depth) {
-		return askStrictChatQuestion(_question, false, 3000L, _make_tools_available, _max_recursive_toolcall_depth);
+	
+	public SingleStringQuestionResponse askStrictChatQuestion(String _question) {
+		return askStrictChatQuestion(_question, false, 60000, 3000L, 5, 30);
 	}
-
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question,  int session_tokens_maxlen, boolean _make_tools_available) {
-		return askStrictChatQuestion(_question, session_tokens_maxlen, false, 30, 120, _make_tools_available, 0, 0, 30);
-	}
-
+	
 	public SingleStringQuestionResponse askStrictChatQuestion(String _question, long _timeout) {
-		return askStrictChatQuestion(_question, false, _timeout, false, 5);
+		return askStrictChatQuestion(_question, false, 60000,_timeout, 5, 30);
+	}
+	
+	public SingleStringQuestionResponse askStrictChatQuestion(String _question, int session_tokens_maxlen, int _max_recursive_toolcall_depth, int _toolcall_pausetime_in_seconds) {
+		return askStrictChatQuestion(_question, false, 60000, 3000L, _max_recursive_toolcall_depth, _toolcall_pausetime_in_seconds);
 	}
 
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, long _timeout) {
-		return askStrictChatQuestion(_question, _hide_llm_reply_if_uncertain, _timeout, false, 5);
+	public SingleStringQuestionResponse askStrictChatQuestion(String _question,  int session_tokens_maxlen) {
+		return askStrictChatQuestion(_question, session_tokens_maxlen, false, 30, 120, 0, 0, 30);
 	}
 
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, int _retryThreshold, long _timeout, boolean _make_tools_available) {
-		return askStrictChatQuestion(_question, 60000, _hide_llm_reply_if_uncertain, _retryThreshold, _timeout, _make_tools_available, 0, 5, 30);
+	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, long _timeout_in_ms) {
+		return askStrictChatQuestion(_question, _hide_llm_reply_if_uncertain, 60000, _timeout_in_ms, 5, 30);
+	}
+	
+	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, long _timeout_in_ms, int _toolcall_pausetime_in_seconds) {
+		return askStrictChatQuestion(_question, _hide_llm_reply_if_uncertain, 60000, _timeout_in_ms, 5, _toolcall_pausetime_in_seconds);
 	}
 
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, long _timeout, boolean _make_tools_available, int _max_recursive_toolcall_depth) {
-		return askStrictChatQuestion(_question, 60000, _hide_llm_reply_if_uncertain, 30, _timeout, _make_tools_available, 0, _max_recursive_toolcall_depth, 30);
+	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, int _retryThreshold, long _timeout_in_ms) {
+		return askStrictChatQuestion(_question, 60000, _hide_llm_reply_if_uncertain, _retryThreshold, _timeout_in_ms, 0, 5, 30);
 	}
 
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question, int session_tokens_maxlen, boolean _hide_llm_reply_if_uncertain, int _retryThreshold, long _timeout, boolean _make_tools_available, int _exec_depth_counter, int _max_recursive_toolcall_depth, int _toolcall_pausetime_in_seconds) {
+	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, int _session_tokens_maxlen, long _timeout_in_ms, int _max_recursive_toolcall_depth, int _toolcall_pausetime_in_seconds) {
+		return askStrictChatQuestion(_question, _session_tokens_maxlen, _hide_llm_reply_if_uncertain, 30, _timeout_in_ms, 0, _max_recursive_toolcall_depth, _toolcall_pausetime_in_seconds);
+	}
+
+	public SingleStringQuestionResponse askStrictChatQuestion(String _question, int session_tokens_maxlen, boolean _hide_llm_reply_if_uncertain, int _retryThreshold, long _timeout_in_ms, int _exec_depth_counter, int _max_recursive_toolcall_depth, int _toolcall_pausetime_in_seconds) {
 		if (_max_recursive_toolcall_depth < 0) LOGGER.warn("No tools will be called if value of_max_recursive_toolcall_depth is not 1 or more");
 		boolean debug = false;
 		if (debug) System.out.println("interactcounter: " + interactcounter);
@@ -189,7 +199,7 @@ public class OllamaSession {
 			} else {
 				int retryCounter = 0;
 				while (true) {
-					ChatInteraction ci =  OllamaUtils.askChatQuestion(this.ollamaAPI, this.model_name, this.options, this.chatResult, _question, _timeout);
+					ChatInteraction ci =  OllamaUtils.askChatQuestion(this.ollamaAPI, this.model_name, this.options, this.chatResult, _question, _timeout_in_ms);
 					if (null != ci) {
 						String json = "";
 
@@ -243,6 +253,7 @@ public class OllamaSession {
 								}
 
 								// print intermediate result to STDOUT
+								System.out.println("");
 								swr.print();
 								System.out.println("");
 
@@ -261,7 +272,7 @@ public class OllamaSession {
 									SystemUtils.sleepInSeconds(_toolcall_pausetime_in_seconds);
 								}
 
-								if (_make_tools_available && ("TOOLCALL".equals(swr.getResponse()) || "TOOLCALL_AFTER_PAUSE".equals(swr.getResponse()))) {
+								if (this.isMake_tools_available() && ("TOOLCALL".equals(swr.getResponse()) || "TOOLCALL_AFTER_PAUSE".equals(swr.getResponse()))) {
 
 									if (!valid_tool_calls) {
 										LOGGER.warn("Agent requested a tool_call which does not exist (" + swr.getTool_calls() + ")\n");
@@ -308,6 +319,7 @@ public class OllamaSession {
 													if (make_call) {
 														CallToolResult result = MCPUtils.callToolUsingMCPEndpoint(mcpURL, mcpPATH, tcr.getToolname(), tcr.getArguments(), 30L);
 														String tool_response = "\nResponse from running tool_call " + tcr.getRawrequest() + ":\n\n" + MCPUtils.prettyPrint(result);
+														System.out.println("tool_response: " + tool_response);
 														if (null != tool_response) {
 															// replace sequences of 10 or more consecutive whitespaces with a single space
 															tool_response = tool_response.replaceAll("\\s{10,}", " ");
@@ -342,7 +354,7 @@ public class OllamaSession {
 
 										_exec_depth_counter++;
 										//System.out.println("new query:\n\n" + _question + sb.toString());
-										return askStrictChatQuestion(_question+ "\n\n" + sb.toString() , session_tokens_maxlen, _hide_llm_reply_if_uncertain, _retryThreshold, _timeout, _make_tools_available, _exec_depth_counter, _max_recursive_toolcall_depth, _toolcall_pausetime_in_seconds);
+										return askStrictChatQuestion(_question+ "\n\n" + sb.toString() , session_tokens_maxlen, _hide_llm_reply_if_uncertain, _retryThreshold, _timeout_in_ms, _exec_depth_counter, _max_recursive_toolcall_depth, _toolcall_pausetime_in_seconds);
 									}
 								}
 
@@ -491,6 +503,14 @@ public class OllamaSession {
 
 	public void setSessiontype(SessionType sessiontype) {
 		this.sessiontype = sessiontype;
+	}
+
+	public boolean isMake_tools_available() {
+		return make_tools_available;
+	}
+
+	public void setMake_tools_available(boolean make_tools_available) {
+		this.make_tools_available = make_tools_available;
 	}
 
 }

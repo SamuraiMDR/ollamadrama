@@ -79,9 +79,11 @@ public class OllamaService {
 			found_mcps = wireMCPs(false);
 			LOGGER.info("found_mcps: " + found_mcps);
 			if (found_mcps) {
+				System.out.println("");
 				for (String tool: getMcp_tools().keySet()) {
 					System.out.println(" - " + tool);
 				}
+				System.out.println("");
 			}
 		}
 	}
@@ -199,6 +201,10 @@ public class OllamaService {
 					if (blockUntilReady) LOGGER.info("Verified mcp service endpoints: " + verified_tools.keySet());
 					mcp_tools = verified_tools;
 					found_mcps = true;
+					
+					LOGGER.info("Full MCP tool index below:");
+					String available_tool_summary = OllamaService.getAllAvailableMCPTools();
+					System.out.println("\n\n" + available_tool_summary + "\n\n");
 				}
 			}
 
@@ -278,43 +284,50 @@ public class OllamaService {
 
 								for (String modelname: settings.getOllama_models().split(",")) {
 									if (modelname.length()>3) {
-										if (null == abandoned_ollamas.get(oep.getOllama_url())) {
-											if (!OllamaUtils.verifyModelAvailable(ollamaAPI, modelname)) {
-												if (OllamaUtils.is_skip_model_autopull(settings.getAutopull_max_llm_size(), modelname)) {
-													LOGGER.info("Ollamadrama is configured to skip autopull of the model " + modelname + ", try to pull it manually once you have ensured your endpoint has enough VRAM. Or change the ollamadrama 'autopull_max_llm_size' configuration. ");
-													SystemUtils.sleepInSeconds(10);
-													LOGGER.warn("Skipping the ollama endpoint " + ollama_url);
-													abandoned_ollamas.put(oep.getOllama_url(), oep);
-												} else {
-													LOGGER.warn("Unable to find required model " + modelname + " on " + oep.getOllama_url() + ", will try to pull. This may take some time ..");
-													boolean success_pull = OllamaUtils.pullModel(ollamaAPI, modelname);
-													if (success_pull) {
-														if (OllamaUtils.verifyModelAvailable(ollamaAPI, modelname)) model_exists = true;
+										if (settings.isOllama_skip_paris_validation()) {
+											// assume all is ok (not recommended), for quick boot
+											LOGGER.info("Quick boot config setting: Assuming " + oep.getOllama_url() + " is a proper Ollama server without actually testing all models (not recommended)");
+											verified_ollamas.put(oep.getOllama_url(), oep);
+										} else {
+
+											if (null == abandoned_ollamas.get(oep.getOllama_url())) {
+												if (!OllamaUtils.verifyModelAvailable(ollamaAPI, modelname)) {
+													if (OllamaUtils.is_skip_model_autopull(settings.getAutopull_max_llm_size(), modelname)) {
+														LOGGER.info("Ollamadrama is configured to skip autopull of the model " + modelname + ", try to pull it manually once you have ensured your endpoint has enough VRAM. Or change the ollamadrama 'autopull_max_llm_size' configuration. ");
+														SystemUtils.sleepInSeconds(10);
+														LOGGER.warn("Skipping the ollama endpoint " + ollama_url);
+														abandoned_ollamas.put(oep.getOllama_url(), oep);
+													} else {
+														LOGGER.warn("Unable to find required model " + modelname + " on " + oep.getOllama_url() + ", will try to pull. This may take some time ..");
+														boolean success_pull = OllamaUtils.pullModel(ollamaAPI, modelname);
+														if (success_pull) {
+															if (OllamaUtils.verifyModelAvailable(ollamaAPI, modelname)) model_exists = true;
+														}
 													}
+												} else {
+													model_exists = true;
+												}
+												if (model_exists) {
+													LOGGER.info("Performing simple sanity check on Ollama model " + modelname + " on " + oep.getOllama_url());
+													if (!OllamaUtils.verifyModelSanityUsingSingleWordResponse(oep.getOllama_url(), ollamaAPI, modelname, 
+															Globals.createStrictOptionsBuilder(modelname, true, OllamaService.getSettings().getN_ctx_override()), "Is the capital city of France named Paris? You must reply with only a single word of Yes or No." + Globals.THREAT_TEMPLATE, 
+															"Yes", 1, settings.getAutopull_max_llm_size())) {
+														LOGGER.warn("Unable to pass simple sanity check for " + modelname + " on " + oep.getOllama_url() + ". Abandoning the node for now.");	
+														abandoned_ollamas.put(oep.getOllama_url(), oep);
+														verified_ollamas.remove(oep.getOllama_url(), oep);
+													} else {
+														if (null == abandoned_ollamas.get(oep.getOllama_url())) {
+															LOGGER.info("Verified ollama URL (with a functional instance of our preferred model " + modelname + ") found on: " + oep.getOllama_url());
+															verified_ollamas.put(oep.getOllama_url(), oep);
+														} else {
+															LOGGER.info("ollama host (with a functional instance of our preferred model " + modelname + ") found on: " + oep.getOllama_url() + " but its ABANDONED");
+														}
+													}
+
 												}
 											} else {
-												model_exists = true;
+												LOGGER.info("Skipping model check for " + modelname + " since Ollama node has been abandoned.");
 											}
-											if (model_exists) {
-												LOGGER.info("Performing simple sanity check on Ollama model " + modelname + " on " + oep.getOllama_url());
-												if (!OllamaUtils.verifyModelSanityUsingSingleWordResponse(oep.getOllama_url(), ollamaAPI, modelname, 
-														Globals.createStrictOptionsBuilder(modelname, true, OllamaService.getSettings().getN_ctx_override()), "Is the capital city of France named Paris? You must reply with only a single word of Yes or No." + Globals.THREAT_TEMPLATE, 
-														"Yes", 1, settings.getAutopull_max_llm_size())) {
-													LOGGER.warn("Unable to pass simple sanity check for " + modelname + " on " + oep.getOllama_url() + ". Abandoning the node for now.");	
-													abandoned_ollamas.put(oep.getOllama_url(), oep);
-													verified_ollamas.remove(oep.getOllama_url(), oep);
-												} else {
-													if (null == abandoned_ollamas.get(oep.getOllama_url())) {
-														LOGGER.info("Verified ollama URL (with a functional instance of our preferred model " + modelname + ") found on: " + oep.getOllama_url());
-														verified_ollamas.put(oep.getOllama_url(), oep);
-													} else {
-														LOGGER.info("ollama host (with a functional instance of our preferred model " + modelname + ") found on: " + oep.getOllama_url() + " but its ABANDONED");
-													}
-												}
-
-											}
-										} else {
-											LOGGER.info("Skipping model check for " + modelname + " since Ollama node has been abandoned.");
 										}
 									}
 								}
@@ -361,24 +374,19 @@ public class OllamaService {
 			synchronized (OllamaService.class) {
 				if (single_instance == null) { // Second check (with locking)
 					single_instance = new OllamaService(_settings);
-					LOGGER.info("Returning a new OllamaService");
+					LOGGER.info("Returning a new OllamaService (with models " + settings.getOllama_models() + ")");
 				}
 			}
 		} else {
-			LOGGER.info("Returning the existing OllamaService");
+			LOGGER.info("Returning the existing OllamaService (with models: " + settings.getOllama_models() + ")");
 		}
 		return single_instance;
 	}
 
-	public static OllamaService getInstance(String _model_names, OllamaDramaSettings _settings) {
-		_settings.setOllama_models(_model_names);
-		return getInstance(_settings);
-	}
-
 	public static OllamaService getInstance(String _model_names) {
-		OllamaDramaSettings settings = new OllamaDramaSettings();
-		settings.setOllama_models(_model_names);
-		return getInstance(settings);
+		OllamaDramaSettings fresh_settings = new OllamaDramaSettings();
+		fresh_settings.setOllama_models(_model_names);
+		return getInstance(fresh_settings);
 	}
 
 	public static OllamaService getInstance() {
@@ -418,7 +426,11 @@ public class OllamaService {
 	}
 
 	public static OllamaSession getStrictProtocolSession(String _model_name) {
-		return getStrictProtocolSession(_model_name, false, false, "", false);
+		return getStrictProtocolSession(_model_name, false, false, "You will get additional input soon, just reply with OKIDOKI for now.", false);
+	}
+	
+	public static OllamaSession getStrictProtocolSession(String _model_name, boolean _make_tools_available) {
+		return getStrictProtocolSession(_model_name, false, false, "You will get additional input soon, just reply with OKIDOKI for now.", _make_tools_available);
 	}
 
 	public static OllamaSession getStrictProtocolSession(String _model_name, String _initial_prompt, boolean _make_tools_available) {
@@ -426,11 +438,11 @@ public class OllamaService {
 	}
 
 	public static OllamaSession getStrictProtocolSession(String _model_name, boolean hide_llm_reply_if_uncertain, boolean _use_random_seed, boolean _make_tools_available) {
-		return getStrictProtocolSession(_model_name, hide_llm_reply_if_uncertain, _use_random_seed, "", _make_tools_available);
+		return getStrictProtocolSession(_model_name, hide_llm_reply_if_uncertain, _use_random_seed, "You will get additional input soon, just reply with OKIDOKI for now.", _make_tools_available);
 	}
-	
+
 	public static OllamaSession getStrictProtocolSession(String _model_name, boolean hide_llm_reply_if_uncertain, boolean _use_random_seed) {
-		return getStrictProtocolSession(_model_name, hide_llm_reply_if_uncertain, _use_random_seed, "", false);
+		return getStrictProtocolSession(_model_name, hide_llm_reply_if_uncertain, _use_random_seed, "You will get additional input soon, just reply with OKIDOKI for now.", false);
 	}
 
 	public static OllamaSession getStrictProtocolSession(String _model_name, boolean hide_llm_reply_if_uncertain, boolean _use_random_seed, String _initial_prompt, boolean _make_tools_available) {
@@ -447,8 +459,7 @@ public class OllamaService {
 			if (existing_model.equals(_model_name)) model_exists = true;
 		}
 		if (!model_exists) {
-			LOGGER.error("Attempt to create session with model not listed in settings (" + _model_name + "), halting. Models listed in settings: " + settings.getOllama_models());
-			SystemUtils.halt();
+			LOGGER.warn("Attempt to create session with model not listed in settings (" + _model_name + "), halting. Models listed in settings: " + settings.getOllama_models());
 		}
 
 		String system_prompt = "";
@@ -472,22 +483,7 @@ public class OllamaService {
 		return new OllamaSession(_model_name, OllamaService.getRandomActiveOllamaURL(),
 				Globals.createStrictOptionsBuilder(_model_name, _use_random_seed, OllamaService.getSettings().getN_ctx_override()), OllamaService.getSettings(), 
 				system_prompt + "\n\n" + _initial_prompt + "\n\n" + mcp_str,
-				SessionType.STRICTPROTOCOL);
-	}
-
-	public static OllamaSession getStrictSession(String _model_name, Boolean _use_random_seed) {
-		boolean model_exists = false;
-		for (String existing_model: settings.getOllama_models().split(",")) {
-			if (existing_model.equals(_model_name)) model_exists = true;
-		}
-		if (!model_exists) {
-			LOGGER.error("Attempt to create session with model not listed in settings, halting (model requested: " + _model_name + ", settings: " + settings.getOllama_models() + ")");
-			SystemUtils.halt();
-		}
-		return new OllamaSession(_model_name, OllamaService.getRandomActiveOllamaURL(),
-				Globals.createStrictOptionsBuilder(_model_name, _use_random_seed, OllamaService.getSettings().getN_ctx_override()), OllamaService.getSettings(),
-				Globals.PROMPT_TEMPLATE_STRICT_COMPLEXOUTPUT,
-				SessionType.STRICT);
+				SessionType.STRICTPROTOCOL, _make_tools_available);
 	}
 
 	public static OllamaSession getCreativeSession(String _model_name) {
@@ -496,13 +492,12 @@ public class OllamaService {
 			if (existing_model.equals(_model_name)) model_exists = true;
 		}
 		if (!model_exists) {
-			LOGGER.error("Attempt to create session with model not listed in settings, halting (model requested: " + _model_name + ", settings: " + settings.getOllama_models() + ")");
-			SystemUtils.halt();
+			LOGGER.warn("Attempt to create session with model not listed in settings, halting (model requested: " + _model_name + ", settings: " + settings.getOllama_models() + ")");
 		}
 		return new OllamaSession(_model_name, OllamaService.getRandomActiveOllamaURL(),
 				Globals.createCreativeOptionsBuilder(_model_name, OllamaService.getSettings().getN_ctx_override()), OllamaService.getSettings(),
 				Globals.PROMPT_TEMPLATE_CREATIVE,
-				SessionType.CREATIVE);
+				SessionType.CREATIVE, false);
 	}
 
 	public static OllamaSession getDefaultSession(String _model_name) {
@@ -511,12 +506,11 @@ public class OllamaService {
 			if (existing_model.equals(_model_name)) model_exists = true;
 		}
 		if (!model_exists) {
-			LOGGER.error("Attempt to create session with model not listed in settings, halting (model: " + _model_name + ")");
-			SystemUtils.halt();
+			LOGGER.warn("Attempt to create session with model not listed in settings, halting (model: " + _model_name + ", existing: " + settings.getOllama_models() + ")");
 		}
 		return new OllamaSession(_model_name, OllamaService.getRandomActiveOllamaURL(),
 				Globals.createDefaultOptionsBuilder(), OllamaService.getSettings(), "",
-				SessionType.DEFAULT);
+				SessionType.DEFAULT, false);
 	}
 
 	public static String getAllAvailableMCPTools() {
@@ -543,7 +537,6 @@ public class OllamaService {
 		TreeMap<String, MCPTool> mcp_tools_filtered = new TreeMap<String, MCPTool>();
 		for (String toolid: mcp_tools.keySet()) {
 			MCPTool tool = mcp_tools.get(toolid);
-			//System.out.println("comparing " + tool.getToolname() + " width " + settings.getFiltered_mcp_toolnames_csv());
 			if (isMatchingMCPTool(tool.getToolname(), settings.getFiltered_mcp_toolnames_csv())) {
 				//filtered
 			} else {
@@ -567,6 +560,7 @@ public class OllamaService {
 	}
 
 	public static boolean isMatchingMCPTool(String toolname, String mcp_toolnames) {
+		if (null == toolname) return false;
 		for (String indexedtoolname: mcp_toolnames.split(",")) {
 			if (toolname.equals(indexedtoolname)) return true;
 		}

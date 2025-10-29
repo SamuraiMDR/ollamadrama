@@ -58,13 +58,14 @@ public class MCPUtils {
 				client.initialize();
 				success = true;
 			} catch (Exception e) {
-				LOGGER.debug("Unable to initialize client: " + e.getMessage());
+				LOGGER.info("Unable to initialize client: " + e.getMessage());
 			}
 			retrycounter++;
 		}
 		if (!client.isInitialized()) {
-			LOGGER.debug("Failed to initialize MCP client against " + _mcp_url + " with path " + _mcp_endpoint_path);
+			LOGGER.info("Failed to initialize MCP client against " + _mcp_url + " with path " + _mcp_endpoint_path);
 		} else {
+			LOGGER.info("Calling listTools");
 			tools = client.listTools();
 			client.close();
 		}
@@ -93,14 +94,23 @@ public class MCPUtils {
 						new CallToolRequest(_toolname, _arguments)
 						);
 
-				if (!result.isError()) {
-					success = true;
+				if (null == result) {
+					LOGGER.warn("Got an empty result back when calling " + _toolname);
 				} else {
-					LOGGER.info("Caught error when calling " +_toolname + " trycounter: " + trycounter);
+					if (null == result.isError()) {
+						LOGGER.warn("Got an null error key back when calling " + _toolname);
+						System.out.println(result);
+					} else {
+						if (!result.isError()) {
+							success = true;
+						} else {
+							LOGGER.info("Caught error when calling " +_toolname + " trycounter: " + trycounter + " result: " + result.toString());
+						}
+					}
 				}
 				trycounter++;
 			} catch (Exception e) {
-				LOGGER.warn("Caught Exception: " + e.getMessage());
+				LOGGER.warn("Caught Exception in callToolUsingMCPEndpoint(): " + e.getMessage());
 				LOGGER.info("trycounter: " + trycounter);
 				SystemUtils.sleepInSeconds(10);
 			}
@@ -113,80 +123,84 @@ public class MCPUtils {
 	public static String prettyPrint(ListToolsResult tools, String _toolname) {
 		StringBuilder sb = new StringBuilder();
 		for (Tool tool : tools.tools()) {
-			if (tool.name().equals(_toolname)) {
-				sb.append("\n---\n");
-				sb.append("Tool: ").append(tool.name()).append("\n");
-				sb.append("Description: ").append(
-						StringsUtils.cutAndPadStringToN(
-								tool.description().split("\\.")[0], 100
-								)
-						).append("\n");
+			if (null != tool) {
+				if (null != tool.name()) {
+					if (tool.name().equals(_toolname)) {
+						sb.append("\n---\n");
+						sb.append("Tool: ").append(tool.name()).append("\n");
+						sb.append("Description: ").append(
+								StringsUtils.cutAndPadStringToN(
+										tool.description().split("\\.")[0], 100
+										)
+								).append("\n");
 
-				JsonSchema inputSchema = tool.inputSchema();
+						JsonSchema inputSchema = tool.inputSchema();
 
-				if (inputSchema == null || !"object".equals(inputSchema.type())) {
-					LOGGER.error("Unsupported or missing input schema for tool: " + tool.name());
-					SystemUtils.halt();
-				}
-
-				Map<String, Object> props = inputSchema.properties();
-				Set<String> requiredKeys = inputSchema.required() != null
-						? new HashSet<>(inputSchema.required())
-								: Collections.emptySet();
-
-				if (props == null) {
-					LOGGER.error("Missing 'properties' for tool: " + tool.name());
-					SystemUtils.halt();
-				}
-
-				sb.append("Inputs:\n");
-
-				List<String> exampleArgs = new ArrayList<>();
-
-				for (String key : props.keySet()) {
-					Object value = props.get(key);
-
-					if (!(value instanceof Map)) {
-						LOGGER.error("Unexpected schema format for key: " + key);
-						SystemUtils.halt();
-					}
-
-					Map<String, Object> propMap = (Map<String, Object>) value;
-					String type = (String) propMap.get("type");
-					String desc = (String) propMap.getOrDefault("description", "No description");
-					Object defaultValue = propMap.get("default");
-
-					if (type == null) {
-						LOGGER.warn("Missing type for key: " + key + " in tool: " + tool.name() + ", fallback to string?");
-					}
-
-					// Append to prompt
-					sb.append("  - ").append(key)
-					.append(" (").append(type).append(")")
-					.append(requiredKeys.contains(key) ? " [required]" : "")
-					.append(": ").append(desc).append("\n");
-
-					// Format the example argument
-					String exampleVal;
-					if (defaultValue != null) {
-						// Convert to string literal, wrap in quotes unless boolean/number
-						if (defaultValue instanceof Boolean || defaultValue instanceof Number) {
-							exampleVal = defaultValue.toString();
-						} else {
-							exampleVal = "\"" + defaultValue.toString() + "\"";
+						if (inputSchema == null || !"object".equals(inputSchema.type())) {
+							LOGGER.error("Unsupported or missing input schema for tool: " + tool.name());
+							SystemUtils.halt();
 						}
-					} else {
-						exampleVal = "\"...\"";
+
+						Map<String, Object> props = inputSchema.properties();
+						Set<String> requiredKeys = inputSchema.required() != null
+								? new HashSet<>(inputSchema.required())
+										: Collections.emptySet();
+
+						if (props == null) {
+							LOGGER.error("Missing 'properties' for tool: " + tool.name());
+							SystemUtils.halt();
+						}
+
+						sb.append("Inputs:\n");
+
+						List<String> exampleArgs = new ArrayList<>();
+
+						for (String key : props.keySet()) {
+							Object value = props.get(key);
+
+							if (!(value instanceof Map)) {
+								LOGGER.error("Unexpected schema format for key: " + key);
+								SystemUtils.halt();
+							}
+
+							Map<String, Object> propMap = (Map<String, Object>) value;
+							String type = (String) propMap.get("type");
+							String desc = (String) propMap.getOrDefault("description", "No description");
+							Object defaultValue = propMap.get("default");
+
+							if (type == null) {
+								LOGGER.warn("Missing type for key: " + key + " in tool: " + tool.name() + ", fallback to string?");
+							}
+
+							// Append to prompt
+							sb.append("  - ").append(key)
+							.append(" (").append(type).append(")")
+							.append(requiredKeys.contains(key) ? " [required]" : "")
+							.append(": ").append(desc).append("\n");
+
+							// Format the example argument
+							String exampleVal;
+							if (defaultValue != null) {
+								// Convert to string literal, wrap in quotes unless boolean/number
+								if (defaultValue instanceof Boolean || defaultValue instanceof Number) {
+									exampleVal = defaultValue.toString();
+								} else {
+									exampleVal = "\"" + defaultValue.toString() + "\"";
+								}
+							} else {
+								exampleVal = "\"...\"";
+							}
+
+							exampleArgs.add(key + "=" + exampleVal);
+						}
+
+						sb.append("Example usage: ")
+						.append(tool.name())
+						.append("(")
+						.append(String.join(", ", exampleArgs))
+						.append(")\n");
 					}
-
-					exampleArgs.add(key + "=" + exampleVal);
 				}
-
-				sb.append("Example usage: ")
-				.append(tool.name())
-				.append("(")
-				.append(String.join(", ", exampleArgs))
-				.append(")\n");
 			}
 		}
 
@@ -437,8 +451,6 @@ public class MCPUtils {
 				if ("text".equals(content.type())) {
 					TextContent tcontent = (TextContent) content;
 					sb.append(" * content type     : " + tcontent.type() + "\n");
-					if (null != tcontent.priority()) sb.append(" * content priority : " + tcontent.priority() + "\n");
-					if (null != tcontent.audience()) sb.append(" * content audience : " + tcontent.audience() + "\n");
 					sb.append(" * content text     :\n");
 					sb.append("----------------------------\n");
 					sb.append(StringsUtils.cutAndPadStringToN(tcontent.text(), 20000) + "\n");

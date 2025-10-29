@@ -25,6 +25,7 @@ public class OllamaDramaSettings {
 	private Integer ollama_port = 11434;
 	private long ollama_timeout = 1200L; // 20 min
 	private boolean ollama_scan = true;
+	private boolean ollama_skip_paris_validation = false;
 	private int n_ctx_override = -1;
 	
 	private ArrayList<Integer> mcp_ports = new ArrayList<Integer>() {{
@@ -119,9 +120,9 @@ public class OllamaDramaSettings {
 		return ollama_models;
 	}
 
-	public void setOllama_models(String ollama_models) {
-		if (ollama_models != null && !ollama_models.isEmpty()) {
-			String[] parts = ollama_models.split(",");
+	public void setOllama_models(String _ollama_models) {
+		if (_ollama_models != null && !_ollama_models.isEmpty()) {
+			String[] parts = _ollama_models.split(",");
 			Set<String> uniqueModels = new LinkedHashSet<>();
 			for (String part : parts) {
 				String trimmed = part.trim();
@@ -130,6 +131,7 @@ public class OllamaDramaSettings {
 				}
 			}
 			this.ollama_models = String.join(",", uniqueModels);
+			LOGGER.info("Ollamadrama settings models: " + _ollama_models);
 		} else {
 			this.ollama_models = "";
 		}
@@ -295,6 +297,14 @@ public class OllamaDramaSettings {
 
 	public void setFiltered_mcp_toolnames_csv(String filtered_mcp_toolnames_csv) {
 		this.filtered_mcp_toolnames_csv = filtered_mcp_toolnames_csv;
+	}
+
+	public boolean isOllama_skip_paris_validation() {
+		return ollama_skip_paris_validation;
+	}
+
+	public void setOllama_skip_paris_validation(boolean ollama_skip_paris_validation) {
+		this.ollama_skip_paris_validation = ollama_skip_paris_validation;
 	}
 
 }
