@@ -131,7 +131,6 @@ public class OllamaDramaSettings {
 				}
 			}
 			this.ollama_models = String.join(",", uniqueModels);
-			LOGGER.info("Ollamadrama settings models: " + _ollama_models);
 		} else {
 			this.ollama_models = "";
 		}

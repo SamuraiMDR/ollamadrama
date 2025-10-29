@@ -348,46 +348,76 @@ public class MCPTest {
 	@Test
 	public void simpleToolDecodeTheHiddenFunction() {
 
-		// Launch MCP service
+		// Launch MCP service to expose tool use_hidden_algorithm_with_two_numbers()
 		LOGGER.info("Starting MCP server on port {}", 5656);
 		MCPServer.launchMcpService(5656);
 
+		// Tool settings
+		int max_recursive_toolcall_depth = 20;
+		
+		// Models used
+		String agent1_model = "llama3.1:70b"; // qwen3:32b llama3.1:70b qwen3:32b
+		String judge_model = "qwen3:32b"; // qwen3:32b llama3.1:70b qwen3:32b
+		
+		// OllamaDrama settings
 		boolean make_tools_available = true;
-		String model_name = "llama3.1:70b"; // qwen3:32b llama3.1:70b qwen3:32b
 		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
-		settings.setOllama_models(model_name);
+		settings.setOllama_models(agent1_model + "," + judge_model);
 		settings.setElevenlabs_apikey("");
 		settings.setMcp_scan(true);
 		settings.setMcp_blind_trust(true);
 		settings.setMcp_ports_csv("5656");
 		OllamaService.getInstance(settings);
 
-		String initial_prompt = """
+		// Agent1 task: Determine hidden function
+		String initial_prompt1 = """
 				You are an AI mathematical genius known as 'poi', always eager to take on challenges and unravel hidden secrets. 
 
 				Challenge:
 				- Call the tool use_hidden_algorithm_with_two_numbers() with numeric arguments of your choice and attempt to determine the underlying function.
-				- Once you think you have found a pattern, you MUST verify your assumed function with at least 5 different tool calls
+				- Once you think you have found a pattern, you MUST verify your assumed function with additional tool calls
 				- Only reply when you are 100% sure about the underlying function
-				- Once you believe you have decoded the underlying function, call the function 1 more time and then provide the function as your response. 
-				- In your 'motivation', include an example of a tool call which fulfills the function
+				- Once you believe you have decoded the underlying function, call the function 3 more times to verify and then provide the function as your response. 
+				- Your response MUST only be the actual function
 
 				""";
 
-		// Launch strict session
-		OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, initial_prompt, make_tools_available);
-		if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
+		OllamaSession a1 = OllamaService.getStrictProtocolSession(agent1_model, initial_prompt1, make_tools_available);
+		if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + agent1_model + "] is operational\n");
+		
+		String prompt1 = "What is your next action?";
+		SingleStringQuestionResponse ssqr1 = a1.askStrictChatQuestion(prompt1, max_recursive_toolcall_depth);
+		
+		System.out.println("==========================================================");
+		System.out.println("==================      JUDGE PHASE      =================");
+		System.out.println("==========================================================");
+		
+		// Agent1 task: Determine hidden function
+		String initial_prompt2 = """
+				You are an AI mathematical genius known as 'poipoi', always eager to take on challenges and verify mathematical claims. 
 
-		String prompt = "What is your next action?";
+				Challenge:
+				- A competition is held where participants are tasked with unfolding the hidden mathematical function behind the tool use_hidden_algorithm_with_two_numbers()
+				- Your task is to call the tool use_hidden_algorithm_with_two_numbers() with numeric arguments of your choice to verify participant claims for the underlying function.
+				- You MUST verify the claim using multiple examples in order to be sure of the result
+				- If you find that the participant function claim is false, respond with 'INCORRECT'
+				- If you find that the participant function claim is true, respond with 'CORRECT' 
+
+				""";
+
+		OllamaSession a2 = OllamaService.getStrictProtocolSession(judge_model, initial_prompt2, make_tools_available);
+		if (a2.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + judge_model + "] is operational\n");
 		
-		// Init interaction loop
-		int max_session_tokens = 20000;
-		int timeout_in_ms = 10000;
-		int max_recursive_toolcall_depth = 20;
-		int toolcall_pausetime_in_seconds = 60;
-		SingleStringQuestionResponse ssqr1 = a1.askStrictChatQuestion(prompt, false, max_session_tokens, timeout_in_ms, max_recursive_toolcall_depth, toolcall_pausetime_in_seconds);
+		String prompt2 = "A participant claims that the underlying function is '" + ssqr1.getResponse() + ". What is your next action?";
+		SingleStringQuestionResponse ssqr2 = a2.askStrictChatQuestion(prompt2, max_recursive_toolcall_depth);
 		
-		assertTrue("Ensure result exists", ssqr1.getResponse().contains("num1 + num2 + 1"));
+		boolean correct_result = false;
+		if (ssqr1.getResponse().contains("num1 + num2 + 1")) correct_result = true;
+		if (ssqr1.getResponse().contains("x + y + 1")) correct_result = true;
+		
+		assertTrue("Ensure result exists", correct_result);
+		assertTrue("Ensure result verified by judge", ssqr2.getResponse().equals("CORRECT"));
+		
 	}
 	
 	

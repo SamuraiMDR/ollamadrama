@@ -163,8 +163,8 @@ public class OllamaSession {
 		return askStrictChatQuestion(_question, false, 60000, 3000L, _max_recursive_toolcall_depth, _toolcall_pausetime_in_seconds);
 	}
 
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question,  int session_tokens_maxlen) {
-		return askStrictChatQuestion(_question, session_tokens_maxlen, false, 30, 120, 0, 0, 30);
+	public SingleStringQuestionResponse askStrictChatQuestion(String _question, int _max_recursive_toolcall_depth) {
+		return askStrictChatQuestion(_question, 60000, false, 30, 120, 0, _max_recursive_toolcall_depth, 30);
 	}
 
 	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, long _timeout_in_ms) {

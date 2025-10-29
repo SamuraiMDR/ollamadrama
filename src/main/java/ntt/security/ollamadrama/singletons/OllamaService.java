@@ -79,11 +79,10 @@ public class OllamaService {
 			found_mcps = wireMCPs(false);
 			LOGGER.info("found_mcps: " + found_mcps);
 			if (found_mcps) {
-				System.out.println("");
+				// All endpoints (with overlaping tool names)
 				for (String tool: getMcp_tools().keySet()) {
-					System.out.println(" - " + tool);
+					LOGGER.debug(" - " + tool);
 				}
-				System.out.println("");
 			}
 		}
 	}

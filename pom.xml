@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>ntt.security</groupId>
   <artifactId>ollamadrama</artifactId>
-  <version>0.5.0</version>
+  <version>0.5.1</version>
   <name>ollamadrama</name>
 
 	<properties>
@@ -158,6 +158,13 @@
 		    <groupId>io.modelcontextprotocol.sdk</groupId>
 		    <artifactId>mcp-spring-webmvc</artifactId>
 		    <version>0.14.1</version>
+		</dependency>
+		
+	    <!-- A2A -->
+		<dependency>
+		    <groupId>io.github.a2asdk</groupId>
+		    <artifactId>a2a-java-sdk-reference-jsonrpc</artifactId>
+		    <version>0.3.0.Final</version>
 		</dependency>
 
 		<!-- ElevenLabs -->
