@@ -23,9 +23,9 @@ import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class MCPServer {
+public class MCPServerForExamples {
 	
-	private static final Logger LOGGER = LoggerFactory.getLogger(MCPServer.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MCPServerForExamples.class);
 	
 	private static final ObjectMapper mapper = new ObjectMapper();
 	private static final boolean DEBUG = false;
@@ -582,8 +582,8 @@ public class MCPServer {
 		HttpServer server;
 		try {
 			server = HttpServer.create(new InetSocketAddress(mcpport), 0);
-			server.createContext("/sse", MCPServer::handleSSE);
-			server.createContext("/messages", MCPServer::handleSSE); 
+			server.createContext("/sse", MCPServerForExamples::handleSSE);
+			server.createContext("/messages", MCPServerForExamples::handleSSE); 
 			server.setExecutor(null);
 			server.start();
 			LOGGER.info("MCP Server running on port " + mcpport);

@@ -275,8 +275,7 @@ public class MCPTest {
 	public void simpleToolTestMeaningOfLife() {
 
 		// Launch MCP service
-		LOGGER.info("Starting MCP server on port {}", 5656);
-		MCPServer.launchMcpService(5656);
+		MCPServerForExamples.launchMcpService(5656);
 
 		boolean make_tools_available = true;
 		String model_name = "qwen2.5:72b"; // qwen3:32b
@@ -312,11 +311,10 @@ public class MCPTest {
 	public void simpleToolTestCurrentTime() {
 
 		// Launch MCP service
-		LOGGER.info("Starting MCP server on port {}", 5656);
-		MCPServer.launchMcpService(5656);
+		MCPServerForExamples.launchMcpService(5656);
 
 		boolean make_tools_available = true;
-		String model_name = "qwen2.5:72b"; // qwen3:32b
+		String model_name = "llama3.1:70b"; // qwen3:32b
 		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
 		settings.setOllama_models(model_name);
 		settings.setElevenlabs_apikey("");
@@ -338,8 +336,8 @@ public class MCPTest {
 		OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, initial_prompt, make_tools_available);
 		if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
 
-		String prompt = "What is the current time?";
-		SingleStringQuestionResponse ssqr1 = a1.askStrictChatQuestion(prompt, make_tools_available, 10);
+		String prompt = "What is the current time in UTC?";
+		SingleStringQuestionResponse ssqr1 = a1.askStrictChatQuestion(prompt);
 
 		assertTrue("Ensure result starts with 20", ssqr1.getResponse().startsWith("20"));
 	}
@@ -349,8 +347,7 @@ public class MCPTest {
 	public void simpleToolDecodeTheHiddenFunction() {
 
 		// Launch MCP service to expose tool use_hidden_algorithm_with_two_numbers()
-		LOGGER.info("Starting MCP server on port {}", 5656);
-		MCPServer.launchMcpService(5656);
+		MCPServerForExamples.launchMcpService(5656);
 
 		// Tool settings
 		int max_recursive_toolcall_depth = 20;
