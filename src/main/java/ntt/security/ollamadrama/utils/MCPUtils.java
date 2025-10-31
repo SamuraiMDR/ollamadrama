@@ -453,7 +453,7 @@ public class MCPUtils {
 					sb.append(" * content type     : " + tcontent.type() + "\n");
 					sb.append(" * content text     :\n");
 					sb.append("----------------------------\n");
-					sb.append(StringsUtils.cutAndPadStringToN(tcontent.text(), 20000) + "\n");
+					sb.append(tcontent.text() + "\n");
 					sb.append("----------------------------\n");
 				} else {
 					LOGGER.info("Unhandled result type:" + content.type() + "\n");

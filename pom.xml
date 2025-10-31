@@ -159,13 +159,6 @@
 		    <artifactId>mcp-spring-webmvc</artifactId>
 		    <version>0.14.1</version>
 		</dependency>
-		
-	    <!-- A2A -->
-		<dependency>
-		    <groupId>io.github.a2asdk</groupId>
-		    <artifactId>a2a-java-sdk-reference-jsonrpc</artifactId>
-		    <version>0.3.0.Final</version>
-		</dependency>
 
 		<!-- ElevenLabs -->
 		<dependency>
