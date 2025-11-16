@@ -40,14 +40,21 @@ public class SingleStringEnsembleResponse {
 		this.uniq_confident_replies = uniq_confident_replies;
 	}
 
-	public void printEnsemble() {
+	public String getEnsemble() {
+		StringBuffer sb = new StringBuffer();
 		for (String model_name: this.getSession_responses().keySet()) {
 			SingleStringQuestionResponse session_response = this.getSession_responses().get(model_name);
-			System.out.println("STRICT [" + model_name + "]:\n-----------------");
-			System.out.println("[" + session_response.getProbability() + "%] " + session_response.getResponse());
-			System.out.println("motivation: " + session_response.getMotivation());
-			System.out.println("assumptions_made: " + session_response.getAssumptions_made() + "\n");
+			sb.append("STRICT [" + model_name + "]:\n-----------------" + "\n");
+			sb.append("[" + session_response.getProbability() + "%] " + session_response.getResponse() + "\n");
+			sb.append("motivation: " + session_response.getMotivation() + "\n");
+			sb.append("assumptions_made: " + session_response.getAssumptions_made() + "\n\n");
 		}
+		return sb.toString();
+	}
+	
+
+	public void printEnsemble() {
+		System.out.println(getEnsemble());
 		printEnsembleSummary();
 	}
 

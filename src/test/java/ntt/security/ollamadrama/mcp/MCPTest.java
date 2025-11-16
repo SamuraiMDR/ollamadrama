@@ -275,7 +275,7 @@ public class MCPTest {
 	public void simpleToolTestMeaningOfLife() {
 
 		// Launch MCP service
-		MCPServerForExamples.launchMcpService(5656);
+		MCPServerForExamples.launch_mcp_service(5656);
 
 		boolean make_tools_available = true;
 		String model_name = "qwen2.5:72b"; // qwen3:32b
@@ -291,8 +291,7 @@ public class MCPTest {
 				You are an AI assistant known as 'poi', always eager to use available tools to answer user questions. 
 
 				Key Guidelines:
-				- Answer directly if you are confident in your answer with your current knowledge.
-				- If you are hesitating in your own knowledge, dont hesitate to use any tools available to lookup information. 
+				- Always use any tools available to verify your current knowledge.
 
 				""";
 
@@ -301,7 +300,7 @@ public class MCPTest {
 		if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
 
 		String prompt = "What is the meaning of life?";
-		SingleStringQuestionResponse ssqr = a1.askStrictChatQuestion(prompt, make_tools_available, 10);
+		SingleStringQuestionResponse ssqr = a1.askStrictChatQuestion(prompt);
 
 		assertTrue("Ensure result is 42", "42".equals(ssqr.getResponse()));
 	}
@@ -311,7 +310,7 @@ public class MCPTest {
 	public void simpleToolTestCurrentTime() {
 
 		// Launch MCP service
-		MCPServerForExamples.launchMcpService(5656);
+		MCPServerForExamples.launch_mcp_service(5656);
 
 		boolean make_tools_available = true;
 		String model_name = "llama3.1:70b"; // qwen3:32b
@@ -336,7 +335,7 @@ public class MCPTest {
 		OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, initial_prompt, make_tools_available);
 		if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
 
-		String prompt = "What is the current time in UTC?";
+		String prompt = "What is the current time in UTC? You MUST only reply with the time.";
 		SingleStringQuestionResponse ssqr1 = a1.askStrictChatQuestion(prompt);
 
 		assertTrue("Ensure result starts with 20", ssqr1.getResponse().startsWith("20"));
@@ -347,7 +346,7 @@ public class MCPTest {
 	public void simpleToolDecodeTheHiddenFunction() {
 
 		// Launch MCP service to expose tool use_hidden_algorithm_with_two_numbers()
-		MCPServerForExamples.launchMcpService(5656);
+		MCPServerForExamples.launch_mcp_service(5656);
 
 		// Tool settings
 		int max_recursive_toolcall_depth = 20;
@@ -375,7 +374,8 @@ public class MCPTest {
 				- Once you think you have found a pattern, you MUST verify your assumed function with additional tool calls
 				- Only reply when you are 100% sure about the underlying function
 				- Once you believe you have decoded the underlying function, call the function 3 more times to verify and then provide the function as your response. 
-				- Your response MUST only be the actual function
+				- Your response MUST only be the actual function.
+				- You will be punished if you reply with 'VERIFIED', you must reply with the mathematical function. 
 
 				""";
 

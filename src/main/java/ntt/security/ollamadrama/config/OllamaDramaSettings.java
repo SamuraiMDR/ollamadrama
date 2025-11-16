@@ -1,10 +1,12 @@
 package ntt.security.ollamadrama.config;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
-import java.util.StringJoiner;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,37 +14,46 @@ import org.slf4j.LoggerFactory;
 import ntt.security.ollamadrama.objects.MCPEndpoint;
 import ntt.security.ollamadrama.objects.OllamaEndpoint;
 
-@SuppressWarnings("serial")
+/**
+ * Configuration settings for OllamaDrama application.
+ * Manages Ollama endpoints, MCP (Model Context Protocol) endpoints, and various API configurations.
+ */
 public class OllamaDramaSettings {
 	
 	private static final Logger LOGGER = LoggerFactory.getLogger(OllamaDramaSettings.class);
-
-    private String release = "Strawberrry";
 	
+	// Constants
+	private static final int DEFAULT_OLLAMA_PORT = 11434;
+	private static final long DEFAULT_OLLAMA_TIMEOUT = 1200L; // 20 minutes in seconds
+	private static final int DEFAULT_THREAD_POOL_COUNT = 20;
+	private static final int MAX_PORT_NUMBER = 65535;
+	private static final int MIN_PORT_NUMBER = 1;
+	
+	// Release info
+	private String release = "Strawberrry";
+	
+	// Ollama configuration
 	private String ollama_username = "";
 	private String ollama_password = "";
 	private String ollama_models = Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_MAXCONTEXT_L;
-	private Integer ollama_port = 11434;
-	private long ollama_timeout = 1200L; // 20 min
+	private Integer ollama_port = DEFAULT_OLLAMA_PORT;
+	private long ollama_timeout = DEFAULT_OLLAMA_TIMEOUT;
 	private boolean ollama_scan = true;
 	private boolean ollama_skip_paris_validation = false;
 	private int n_ctx_override = -1;
 	
-	private ArrayList<Integer> mcp_ports = new ArrayList<Integer>() {{
-		this.add(8000);
-		this.add(8080);
-		this.add(9000);
-	}};
-	private ArrayList<String> mcp_sse_paths = new ArrayList<String>() {{
-		this.add("/sse");
-	}};
+	// MCP configuration
+	private List<Integer> mcp_ports = new ArrayList<>(Arrays.asList(8000, 8080, 9000));
+	private List<String> mcp_sse_paths = new ArrayList<>(Collections.singletonList("/sse"));
 	private boolean mcp_scan = false;
 	private boolean mcp_blind_trust = false;
 	private String trusted_mcp_toolnames_csv = "";
 	private String filtered_mcp_toolnames_csv = "";
 	
-	private Integer threadPoolCount = 20;
+	// Thread pool configuration
+	private Integer threadPoolCount = DEFAULT_THREAD_POOL_COUNT;
 	
+	// API keys
 	private String openaikey = "";
 	private boolean use_openai = false;
 	
@@ -50,15 +61,19 @@ public class OllamaDramaSettings {
 	private String elevenlabs_voice1 = "";
 	private String elevenlabs_voice2 = "";
 	
-	private ArrayList<OllamaEndpoint> satellites;
-	private ArrayList<MCPEndpoint> mcp_satellites;
+	// Endpoints
+	private List<OllamaEndpoint> satellites = new ArrayList<>();
+	private List<MCPEndpoint> mcp_satellites = new ArrayList<>();
 	
+	// Autopull configuration
 	private String autopull_max_llm_size = "XL"; // S, M, XL, XXL
 	
 	public OllamaDramaSettings() {
-		super();
+		// Default constructor
 	}
 
+	// Getters and Setters
+	
 	public String getRelease() {
 		return release;
 	}
@@ -88,24 +103,27 @@ public class OllamaDramaSettings {
 	}
 
 	public void setOllama_port(Integer ollama_port) {
-		this.ollama_port = ollama_port;
+		if (ollama_port != null && (ollama_port < MIN_PORT_NUMBER || ollama_port > MAX_PORT_NUMBER)) {
+			LOGGER.warn("Invalid Ollama port {}. Using default port {}", ollama_port, DEFAULT_OLLAMA_PORT);
+			this.ollama_port = DEFAULT_OLLAMA_PORT;
+		} else {
+			this.ollama_port = ollama_port;
+		}
 	}
 
+	/**
+	 * Performs sanity checks on the configuration.
+	 * Ensures model names are unique and properly formatted.
+	 */
 	public void sanityCheck() {
+		// Deduplicate and clean model names
+		Set<String> uniqueModels = Arrays.stream(this.getOllama_models().split(","))
+			.map(String::trim)
+			.filter(s -> !s.isEmpty())
+			.collect(Collectors.toCollection(LinkedHashSet::new));
 		
-		// make sure model names are unique
-		HashMap<String, Boolean> uniq = new HashMap<>();
-		for (String model: this.getOllama_models().split(",")) {
-			if (model.length()>0) {
-				uniq.put(model, true);
-			}
-		}
-		StringJoiner csvJoiner = new StringJoiner(",");
-		for (String key : uniq.keySet()) {
-		    csvJoiner.add(key);
-		}
-		this.setOllama_models(csvJoiner.toString());
-		LOGGER.info("Deduced models string: " + this.getOllama_models());
+		this.setOllama_models(String.join(",", uniqueModels));
+		LOGGER.info("Deduced models string: {}", this.getOllama_models());
 	}
 
 	public Integer getThreadPoolCount() {
@@ -113,7 +131,12 @@ public class OllamaDramaSettings {
 	}
 
 	public void setThreadPoolCount(Integer threadPoolCount) {
-		this.threadPoolCount = threadPoolCount;
+		if (threadPoolCount != null && threadPoolCount <= 0) {
+			LOGGER.warn("Invalid thread pool count {}. Using default {}", threadPoolCount, DEFAULT_THREAD_POOL_COUNT);
+			this.threadPoolCount = DEFAULT_THREAD_POOL_COUNT;
+		} else {
+			this.threadPoolCount = threadPoolCount;
+		}
 	}
 
 	public String getOllama_models() {
@@ -122,32 +145,31 @@ public class OllamaDramaSettings {
 
 	public void setOllama_models(String _ollama_models) {
 		if (_ollama_models != null && !_ollama_models.isEmpty()) {
-			String[] parts = _ollama_models.split(",");
-			Set<String> uniqueModels = new LinkedHashSet<>();
-			for (String part : parts) {
-				String trimmed = part.trim();
-				if (!trimmed.isEmpty()) {
-					uniqueModels.add(trimmed);
-				}
-			}
+			Set<String> uniqueModels = Arrays.stream(_ollama_models.split(","))
+				.map(String::trim)
+				.filter(s -> !s.isEmpty())
+				.collect(Collectors.toCollection(LinkedHashSet::new));
+			
 			this.ollama_models = String.join(",", uniqueModels);
 		} else {
 			this.ollama_models = "";
 		}
 	}
 
-
-	public ArrayList<OllamaEndpoint> getSatellites() {
-		return satellites;
+	public List<OllamaEndpoint> getSatellites() {
+		return Collections.unmodifiableList(satellites);
 	}
 
-	public void setSatellites(ArrayList<OllamaEndpoint> satellites) {
-		this.satellites = satellites;
+	public void setSatellites(List<OllamaEndpoint> satellites) {
+		this.satellites = satellites != null ? new ArrayList<>(satellites) : new ArrayList<>();
 	}
 
 	public void addOllamaCustomEndpoint(OllamaEndpoint ep) {
-		if (null == this.satellites) this.satellites = new ArrayList<OllamaEndpoint>();
-		this.satellites.add(ep);
+		if (ep != null) {
+			this.satellites.add(ep);
+		} else {
+			LOGGER.warn("Attempted to add null OllamaEndpoint");
+		}
 	}
 
 	public String getOpenaikey() {
@@ -211,51 +233,60 @@ public class OllamaDramaSettings {
 	}
 
 	public void setOllama_timeout(long ollama_timeout) {
-		this.ollama_timeout = ollama_timeout;
-	}
-
-	public ArrayList<Integer> getMcp_ports() {
-		return mcp_ports;
-	}
-
-	public void setMcp_ports_csv(String csv) {
-		ArrayList<Integer> mcp_ports = new ArrayList<Integer>();
-		for (String entry: csv.split(",")) {
-			try {
-				Integer port = Integer.parseInt(entry);
-				if (true &&
-						(null != port) &&
-						(port <= 65535) &&
-						true) {
-					mcp_ports.add(port);
-				} else {
-					LOGGER.warn("Invalid MCP port specified: " + entry);
-				}
-			} catch (Exception e) {
-				LOGGER.warn("Invalid MCP port specified: " + entry);
-			}
+		if (ollama_timeout <= 0) {
+			LOGGER.warn("Invalid timeout {}. Using default {}", ollama_timeout, DEFAULT_OLLAMA_TIMEOUT);
+			this.ollama_timeout = DEFAULT_OLLAMA_TIMEOUT;
+		} else {
+			this.ollama_timeout = ollama_timeout;
 		}
-		this.mcp_ports = mcp_ports;
+	}
+
+	public List<Integer> getMcp_ports() {
+		return Collections.unmodifiableList(mcp_ports);
+	}
+
+	/**
+	 * Sets MCP ports from a comma-separated string.
+	 * Validates that ports are within valid range (1-65535).
+	 * 
+	 * @param csv comma-separated port numbers
+	 */
+	public void setMcp_ports_csv(String csv) {
+		List<Integer> validPorts = Arrays.stream(csv.split(","))
+			.map(String::trim)
+			.filter(s -> !s.isEmpty())
+			.map(s -> {
+				try {
+					return Integer.parseInt(s);
+				} catch (NumberFormatException e) {
+					LOGGER.warn("Invalid MCP port specified: {}", s);
+					return null;
+				}
+			})
+			.filter(port -> port != null && port >= MIN_PORT_NUMBER && port <= MAX_PORT_NUMBER)
+			.collect(Collectors.toList());
+		
+		this.mcp_ports = validPorts;
 	}
 	
-	public void setMcp_ports(ArrayList<Integer> mcp_ports) {
-		this.mcp_ports = mcp_ports;
+	public void setMcp_ports(List<Integer> mcp_ports) {
+		this.mcp_ports = mcp_ports != null ? new ArrayList<>(mcp_ports) : new ArrayList<>();
 	}
 
-	public ArrayList<MCPEndpoint> getMcp_satellites() {
-		return mcp_satellites;
+	public List<MCPEndpoint> getMcp_satellites() {
+		return Collections.unmodifiableList(mcp_satellites);
 	}
 
-	public void setMcp_satellites(ArrayList<MCPEndpoint> mcp_satellites) {
-		this.mcp_satellites = mcp_satellites;
+	public void setMcp_satellites(List<MCPEndpoint> mcp_satellites) {
+		this.mcp_satellites = mcp_satellites != null ? new ArrayList<>(mcp_satellites) : new ArrayList<>();
 	}
 
-	public ArrayList<String> getMcp_sse_paths() {
-		return mcp_sse_paths;
+	public List<String> getMcp_sse_paths() {
+		return Collections.unmodifiableList(mcp_sse_paths);
 	}
 
-	public void setMcp_sse_paths(ArrayList<String> mcp_sse_paths) {
-		this.mcp_sse_paths = mcp_sse_paths;
+	public void setMcp_sse_paths(List<String> mcp_sse_paths) {
+		this.mcp_sse_paths = mcp_sse_paths != null ? new ArrayList<>(mcp_sse_paths) : new ArrayList<>();
 	}
 
 	public boolean isMcp_scan() {
@@ -305,5 +336,4 @@ public class OllamaDramaSettings {
 	public void setOllama_skip_paris_validation(boolean ollama_skip_paris_validation) {
 		this.ollama_skip_paris_validation = ollama_skip_paris_validation;
 	}
-
 }

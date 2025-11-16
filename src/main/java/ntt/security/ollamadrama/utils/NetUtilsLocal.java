@@ -109,7 +109,7 @@ public class NetUtilsLocal {
 	}
 
 
-	public static TreeMap<String, OllamaEndpoint> performTCPPortSweepForOllama(int port, ArrayList<String> cnets, int startIP, int stopIP, int timeout, int threadPoolCount, String _username, String _password) {
+	public static TreeMap<String, OllamaEndpoint> performTCPPortSweepForOllama(int port, List<String> cnets, int startIP, int stopIP, int timeout, int threadPoolCount, String _username, String _password) {
 		TreeMap<String, OllamaEndpoint> activeEndpoints = new TreeMap<String, OllamaEndpoint>();
 		if (stopIP<startIP) {
 			LOGGER.error("stopIP (" + stopIP + ") cannot be smaller than startIP (" + startIP + ")");
@@ -152,14 +152,14 @@ public class NetUtilsLocal {
 		return activeEndpoints;
 	}
 
-	public static TreeMap<String, MCPEndpoint> performTCPPortSweepForMCP(ArrayList<Integer> ports, ArrayList<String> cnets, int startIP, int stopIP, int timeout, int threadPoolCount) {
+	public static TreeMap<String, MCPEndpoint> performTCPPortSweepForMCP(List<Integer> list, List<String> cnets, int startIP, int stopIP, int timeout, int threadPoolCount) {
 		TreeMap<String, MCPEndpoint> activeEndpoints = new TreeMap<String, MCPEndpoint>();
 		if (stopIP<startIP) {
 			LOGGER.error("stopIP (" + stopIP + ") cannot be smaller than startIP (" + startIP + ")");
 			SystemUtils.halt();
 		}
 
-		for (int port: ports) {
+		for (int port: list) {
 			if (port>65535) {
 				LOGGER.error("invalid port " + port + " specified as input");
 				SystemUtils.halt();

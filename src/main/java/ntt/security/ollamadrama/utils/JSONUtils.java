@@ -17,6 +17,7 @@ public class JSONUtils {
 		try {
 			pojo = mapper.readValue(jsonSTR, valueType);
 		} catch (Exception e) {
+			LOGGER.info("Exception e: " + e.getMessage());
 		}
 		return pojo;
 	}
