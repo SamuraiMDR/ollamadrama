@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import ntt.security.ollamadrama.config.Globals;
 import ntt.security.ollamadrama.config.OllamaDramaSettings;
+import ntt.security.ollamadrama.objects.ConfidenceThresholdCard;
 import ntt.security.ollamadrama.objects.ModelsScoreCard;
 import ntt.security.ollamadrama.objects.response.SingleStringEnsembleResponse;
 import ntt.security.ollamadrama.objects.response.SingleStringQuestionResponse;
@@ -74,9 +75,43 @@ public class OllamaDramaUtils {
 
 	}
 
+	public static ConfidenceThresholdCard populateConfidencecardsForOllamaModels(ConfidenceThresholdCard confidencecard, String _queryid, boolean _use_mcp, String _models, String _question, HashMap<String, Integer> _acceptable_answers, String _type_of_question) {
+		OllamaDramaSettings settings = OllamaUtils.parse_ollama_drama_config_env();
+		if (_use_mcp) {
+			settings.setMcp_scan(true);
+		} else {
+			settings.setMcp_scan(false);
+		}
+		settings.setOllama_models(_models);
+		settings.sanityCheck();
+		OllamaService.getInstance(settings);
+		for (String model_name: _models.split(",")) {
+			if (model_name.length()>=3) {
+				int querysubindex = 1;
+
+				// Launch strict session
+				OllamaSession a1 = OllamaService.get_strict_protocol_session(model_name, false, true, _use_mcp);
+				if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
+
+				// Make query
+				String q1 = _question;
+				System.out.println("Question: " + q1);
+				SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(q1, false, settings.getOllama_timeout());
+				
+				// we need to have an acceptable answer
+				if (null ==_acceptable_answers.get(ssr1.getResponse())) {
+					LOGGER.error("The model " + model_name + " got this wrong and replied with " + ssr1.getResponse() + ", should it even be part of this test?");
+					SystemUtils.halt();
+				}
+				confidencecard = OllamaUtils.update_confidence_card(confidencecard, model_name, _queryid + "_" + querysubindex, q1, _type_of_question, _acceptable_answers, ssr1);
+			}
+		}
+		return confidencecard;
+	}
+	
 	public static ModelsScoreCard populateScorecardsForOllamaModels(boolean _use_mcp, String _models, String _question, HashMap<String, Integer> _acceptable_answers, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
 		ModelsScoreCard scorecard = new ModelsScoreCard();
-		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
+		OllamaDramaSettings settings = OllamaUtils.parse_ollama_drama_config_env();
 		if (_use_mcp) {
 			settings.setMcp_scan(true);
 		} else {
@@ -90,15 +125,15 @@ public class OllamaDramaUtils {
 				int queryindex = 1;
 
 				// Launch strict session
-				OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, _hide_llm_reply_if_uncertain, _use_random_seed, _use_mcp);
+				OllamaSession a1 = OllamaService.get_strict_protocol_session(model_name, _hide_llm_reply_if_uncertain, _use_random_seed, _use_mcp);
 				if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
 
 				// Make query
 				String q1 = _question;
 				System.out.println("Question: " + q1);
 				SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(q1, _hide_llm_reply_if_uncertain, settings.getOllama_timeout());
-				ssr1 = OllamaUtils.applyResponseSanity(ssr1, model_name, _hide_llm_reply_if_uncertain);
-				scorecard = OllamaUtils.updateScoreCard(scorecard, model_name, "q" + queryindex, q1, _acceptable_answers, ssr1);
+				ssr1 = OllamaUtils.apply_response_sanity(ssr1, model_name, _hide_llm_reply_if_uncertain);
+				scorecard = OllamaUtils.update_score_card(scorecard, model_name, "q" + queryindex, q1, _acceptable_answers, ssr1);
 			}
 		}
 		return scorecard;
@@ -106,7 +141,7 @@ public class OllamaDramaUtils {
 
 	public static ModelsScoreCard populateProbabilityForOllamaModels(String _models, String _question, HashMap<String, Integer> _acceptable_answers, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed, long _timeout) {
 		ModelsScoreCard scorecard = new ModelsScoreCard();
-		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
+		OllamaDramaSettings settings = OllamaUtils.parse_ollama_drama_config_env();
 		settings.setOllama_models(_models);
 		settings.sanityCheck();
 		OllamaService.getInstance(settings);
@@ -115,15 +150,15 @@ public class OllamaDramaUtils {
 				int queryindex = 1;
 
 				// Launch strict session
-				OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, _hide_llm_reply_if_uncertain, _use_random_seed, false);
+				OllamaSession a1 = OllamaService.get_strict_protocol_session(model_name, _hide_llm_reply_if_uncertain, _use_random_seed, false);
 				if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
 
 				// Make query
 				String q1 = _question;
 				System.out.println("Question: " + q1);
 				SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(q1, _hide_llm_reply_if_uncertain, _timeout);
-				ssr1 = OllamaUtils.applyResponseSanity(ssr1, model_name, _hide_llm_reply_if_uncertain);
-				scorecard = OllamaUtils.updateScoreCard(scorecard, model_name, "q" + queryindex, q1, _acceptable_answers, ssr1);
+				ssr1 = OllamaUtils.apply_response_sanity(ssr1, model_name, _hide_llm_reply_if_uncertain);
+				scorecard = OllamaUtils.update_score_card(scorecard, model_name, "q" + queryindex, q1, _acceptable_answers, ssr1);
 			}
 		}
 		return scorecard;
@@ -237,7 +272,7 @@ public class OllamaDramaUtils {
 							(apply_earlyexit_after_errorthreshold && (errorcounter <= _nrErrorsToAllow)) ||
 							!apply_earlyexit_after_errorthreshold ||
 							false) {
-						OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, false, _use_random_seed, false);
+						OllamaSession a1 = OllamaService.get_strict_protocol_session(model_name, false, _use_random_seed, false);
 						if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama agent [" + model_name + "] is operational\n");
 
 						int needle_pos = NumUtils.randomNumWithinRangeAsInt(20, x-20);

@@ -78,4 +78,16 @@ public class SingleStringQuestionResponse {
 		System.out.println("assumptions_made : " + this.assumptions_made);
 		System.out.println("tool_calls       : " + this.tool_calls);
 	}
+	
+	public String getOutputAsString() {
+	    StringBuilder sb = new StringBuilder();
+	    sb.append("response : ").append(this.response).append("\n");
+	    if (this.tool_calls.equals("")) {
+	        sb.append("probability : ").append(this.probability).append("%\n");
+	    }
+	    sb.append("motivation : ").append(this.motivation).append("\n");
+	    sb.append("assumptions_made : ").append(this.assumptions_made).append("\n");
+	    sb.append("tool_calls : ").append(this.tool_calls).append("\n");
+	    return sb.toString();
+	}
 }

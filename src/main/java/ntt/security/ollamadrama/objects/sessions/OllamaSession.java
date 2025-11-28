@@ -254,6 +254,7 @@ public class OllamaSession {
 
 								// print intermediate result to STDOUT
 								System.out.println("");
+								System.out.println(this.model_name);
 								swr.print();
 								System.out.println("");
 

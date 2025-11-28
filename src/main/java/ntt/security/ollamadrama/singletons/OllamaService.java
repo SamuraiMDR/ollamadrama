@@ -684,11 +684,6 @@ public class OllamaService {
                 false);
     }
 
-    /**
-     * @deprecated Use {@link #get_creative_session(String, String)} instead.
-     * Provided for backward compatibility.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static OllamaSession getCreativeSession(String model_name, String initial_prompt) {
         return get_creative_session(model_name, initial_prompt);
     }
@@ -910,83 +905,43 @@ public class OllamaService {
 
     // ========== BACKWARD COMPATIBILITY WRAPPERS (DEPRECATED) ==========
 
-    /**
-     * @deprecated Use {@link #wire_mcps(boolean)} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static boolean wireMCPs(boolean block_until_ready) {
         return wire_mcps(block_until_ready);
     }
 
-    /**
-     * @deprecated Use {@link #wire_ollama(boolean)} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static boolean wireOllama(boolean block_until_ready) {
         return wire_ollama(block_until_ready);
     }
 
-    /**
-     * @deprecated Use {@link #get_settings()} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static OllamaDramaSettings getSettings() {
         return get_settings();
     }
 
-    /**
-     * @deprecated Use {@link #get_service_cnets()} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static List<String> getService_cnets() {
         return get_service_cnets();
     }
 
-    /**
-     * @deprecated Use {@link #get_ollama_hosts()} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static Map<String, OllamaEndpoint> getollama_hosts() {
         return get_ollama_hosts();
     }
 
-    /**
-     * @deprecated Use {@link #get_random_active_ollama_url()} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static OllamaEndpoint getRandomActiveOllamaURL() {
         return get_random_active_ollama_url();
     }
 
-    /**
-     * @deprecated Use {@link #get_strict_protocol_session(String)} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static OllamaSession getStrictProtocolSession(String model_name) {
         return get_strict_protocol_session(model_name);
     }
 
-    /**
-     * @deprecated Use {@link #get_strict_protocol_session(String, boolean)} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static OllamaSession getStrictProtocolSession(String model_name, boolean make_tools_available) {
         return get_strict_protocol_session(model_name, make_tools_available);
     }
 
-    /**
-     * @deprecated Use {@link #get_strict_protocol_session(String, String, boolean)} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static OllamaSession getStrictProtocolSession(String model_name, String initial_prompt, 
                                                           boolean make_tools_available) {
         return get_strict_protocol_session(model_name, initial_prompt, make_tools_available);
     }
 
-    /**
-     * @deprecated Use {@link #get_strict_protocol_session(String, boolean, boolean, boolean)} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static OllamaSession getStrictProtocolSession(String model_name, 
                                                           boolean hide_llm_reply_if_uncertain,
                                                           boolean use_random_seed,
@@ -995,20 +950,12 @@ public class OllamaService {
                                           use_random_seed, make_tools_available);
     }
 
-    /**
-     * @deprecated Use {@link #get_strict_protocol_session(String, boolean, boolean)} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static OllamaSession getStrictProtocolSession(String model_name,
                                                           boolean hide_llm_reply_if_uncertain,
                                                           boolean use_random_seed) {
         return get_strict_protocol_session(model_name, hide_llm_reply_if_uncertain, use_random_seed);
     }
 
-    /**
-     * @deprecated Use {@link #get_strict_protocol_session(String, boolean, boolean, String, boolean)} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static OllamaSession getStrictProtocolSession(String model_name,
                                                           boolean hide_llm_reply_if_uncertain,
                                                           boolean use_random_seed,
@@ -1018,58 +965,30 @@ public class OllamaService {
                                           use_random_seed, initial_prompt, make_tools_available);
     }
 
-    /**
-     * @deprecated Use {@link #get_default_session(String)} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static OllamaSession getDefaultSession(String model_name) {
         return get_default_session(model_name);
     }
 
-    /**
-     * @deprecated Use {@link #get_all_available_mcp_tools()} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static String getAllAvailableMCPTools() {
         return get_all_available_mcp_tools();
     }
 
-    /**
-     * @deprecated Use {@link #get_mcp_tools()} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static Map<String, MCPTool> getMcp_tools() {
         return get_mcp_tools();
     }
 
-    /**
-     * @deprecated Use {@link #set_mcp_tools(Map)} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static void setMcp_tools(Map<String, MCPTool> tools) {
         set_mcp_tools(tools);
     }
 
-    /**
-     * @deprecated Use {@link #get_mcp_url_for_tool(String)} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static MCPTool getMCPURLForTool(String tool_name) {
         return get_mcp_url_for_tool(tool_name);
     }
 
-    /**
-     * @deprecated Use {@link #is_matching_mcp_tool(String, String)} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static boolean isMatchingMCPTool(String tool_name, String mcp_tool_names) {
         return is_matching_mcp_tool(tool_name, mcp_tool_names);
     }
 
-    /**
-     * @deprecated Use {@link #get_models()} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static String getModels() {
         return get_models();
     }

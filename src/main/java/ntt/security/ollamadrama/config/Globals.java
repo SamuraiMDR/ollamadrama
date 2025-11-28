@@ -236,6 +236,7 @@ public class Globals {
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_XL = ""
 			+ "cogito:70b,"			// 43 GB
 			+ "athene-v2:72b,"		// 47 GB
+			+ "tulu3:70b,"		    // 43 GB
 			+ "r1-1776:70b"			// 43 GB
 			+ "";
 
@@ -243,7 +244,7 @@ public class Globals {
 			+ "aya-expanse:32b"	// 20 GB
 			+ "";
 
-	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_DIVERSE_XL = ""
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_DIVERSE_XL = ""
 			+ "llama3.3:70b," 	// 43 GB
 			+ "qwen2.5:72b,"	// 47 GB
 			+ "tulu3:70b,"		// 43 GB
@@ -274,8 +275,7 @@ public class Globals {
 	// task specific
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_DIVERSE_SECURITY_XL = ""
-			+ "llama3.3:70b," 	
-			+ "r1-1776:70b,"	
+			+ "llama3.3:70b," 		
 			+ "tulu3:70b,"	
 			+ "llama3.1:70b,"
 			+ "nemotron:70b,"
@@ -308,7 +308,6 @@ public class Globals {
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_L = ""
-			+ "olmo2:13b"			// 8.4 GB, tool call limitations
 			+ "";
 
 	// task specific
@@ -370,7 +369,6 @@ public class Globals {
 			+ "tulu3:8b,"				// 4.9 GB
 			+ "cogito:8b,"				// 4.1 GB, fails to trigger obvious tools
 			+ "aya-expanse:8b,"			// 5.1 GB, assumes its knowledge is 'now'
-			+ "olmo2:7b,"				// 4.1 GB, wings random guesses at times, refuses to call tools
 			+ "gemma3n:e4b,"			// 7.5 GB, wings random guesses at times
 			+ "granite3.3:8b"			// 4.9 GB, fails to follow more detailed instructions
 			+"";
@@ -471,6 +469,8 @@ public class Globals {
 			// + "wizard-vicuna-uncensored:13b,"	// always 0% prob
 
 			// broken/unsupported in ollama
+			//+ "olmo2:13b"			// 8.4 GB, tool call limitations
+			//+ "olmo2:7b,"				// 4.1 GB, wings random guesses at times, refuses to call tools
 			// + "exaone3.5:32b"					// 19 GB, model skips the duration key?
 			// + "exaone-deep:7.8b,"				// 4.8 GB, fails to call tools for fresh data
 			// + "codellama:70b"					// ??

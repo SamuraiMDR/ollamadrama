@@ -78,8 +78,18 @@ public class Domain2CompanyTest {
 	}
 
 	@Test
+	public void strict_ENSAMBLE_Paris_Ollama() {
+		SingleStringEnsembleResponse sser1 = OllamaUtils.strict_ensemble_run(
+				"Is Paris the capital of France? Answer with only Yes or No.",
+				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, true, false);
+		System.out.println("Confident ensamble response: " + sser1.getBestResponse(3));
+		sser1.printEnsemble();
+		System.out.println("Confident ensamble response: " + sser1.getBestResponse(3));
+	}
+	
+	@Test
 	public void strict_ENSAMBLE_Ollama_Domain2CompanyKnowledge_Ollama() {
-		SingleStringEnsembleResponse sser1 = OllamaUtils.strictEnsembleRun(
+		SingleStringEnsembleResponse sser1 = OllamaUtils.strict_ensemble_run(
 				"What company or organization is associated with the domain global.ntt? Reply with only the name in uppercase",
 				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, true, false);
 		sser1.printEnsemble();

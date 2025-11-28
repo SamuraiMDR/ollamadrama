@@ -26,6 +26,7 @@ import io.github.ollama4j.utils.Options;
 import ntt.security.ollamadrama.config.Globals;
 import ntt.security.ollamadrama.config.OllamaDramaSettings;
 import ntt.security.ollamadrama.objects.ChatInteraction;
+import ntt.security.ollamadrama.objects.ConfidenceThresholdCard;
 import ntt.security.ollamadrama.objects.ModelsScoreCard;
 import ntt.security.ollamadrama.objects.OllamaEndpoint;
 import ntt.security.ollamadrama.objects.OllamaEnsemble;
@@ -463,42 +464,22 @@ public class OllamaUtils {
 
     // ========== BACKWARD COMPATIBILITY WRAPPERS (DEPRECATED) ==========
 
-    /**
-     * @deprecated Use {@link #create_connection(OllamaEndpoint, long)} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static OllamaAPI createConnection(OllamaEndpoint endpoint, long timeout) {
         return create_connection(endpoint, timeout);
     }
 
-    /**
-     * @deprecated Use {@link #get_models_available(OllamaAPI)} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static ArrayList<String> getModelsAvailable(OllamaAPI ollama_api) {
         return new ArrayList<>(get_models_available(ollama_api));
     }
 
-    /**
-     * @deprecated Use {@link #pull_model(OllamaAPI, String)} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static Boolean pullModel(OllamaAPI ollama_api, String model_name) {
         return pull_model(ollama_api, model_name);
     }
 
-    /**
-     * @deprecated Use {@link #verify_model_available(OllamaAPI, String)} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static boolean verifyModelAvailable(OllamaAPI ollama_api, String model_name) {
         return verify_model_available(ollama_api, model_name);
     }
 
-    /**
-     * @deprecated Use {@link #verify_model_sanity_using_single_word_response} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static boolean verifyModelSanityUsingSingleWordResponse(
             String ollama_url, OllamaAPI ollama_api, String model_name,
             Options options, String question, String expected_answer,
@@ -508,10 +489,6 @@ public class OllamaUtils {
                 expected_answer, max_retries, autopull_max_llm_size);
     }
 
-    /**
-     * @deprecated Use {@link #parse_ollama_drama_config_env()} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static OllamaDramaSettings parseOllamaDramaConfigENV() {
         return parse_ollama_drama_config_env();
     }
@@ -1181,6 +1158,47 @@ public class OllamaUtils {
         return scorecard;
     }
 
+    
+    public static ConfidenceThresholdCard update_confidence_card(
+    		ConfidenceThresholdCard confidencecard,
+            String model_name,
+            String query_index,
+            String question,
+            String _type_of_question, 
+            Map<String, Integer> acceptable_answers,
+            SingleStringQuestionResponse ssqr) {
+        
+        Objects.requireNonNull(confidencecard, "Confidencecard cannot be null");
+        
+        if (_type_of_question.equals("100")) {
+        	HashMap<String, HashMap<String, Integer>> probas = confidencecard.getShould_be_100_proba();
+        	HashMap<String, Integer> entries = probas.get(model_name);
+        	if (null == entries) entries = new HashMap<>();
+        	entries.put(query_index, ssqr.getProbability());
+        	probas.put(model_name, entries);
+        	confidencecard.setShould_be_100_proba(probas);
+        } else if (_type_of_question.equals("0")) {
+        	HashMap<String, HashMap<String, Integer>> probas = confidencecard.getShould_be_0_proba();
+        	HashMap<String, Integer> entries = probas.get(model_name);
+        	if (null == entries) entries = new HashMap<>();
+        	entries.put(query_index, ssqr.getProbability());
+        	probas.put(model_name, entries);
+        	confidencecard.setShould_be_0_proba(probas);
+        } else if (_type_of_question.equals("50")) {
+        	HashMap<String, HashMap<String, Integer>> probas = confidencecard.getShould_be_50_proba();
+        	HashMap<String, Integer> entries = probas.get(model_name);
+        	if (null == entries) entries = new HashMap<>();
+        	entries.put(query_index, ssqr.getProbability());
+        	probas.put(model_name, entries);
+        	confidencecard.setShould_be_50_proba(probas);
+        } else {
+        	LOGGER.error("Unknown question type: " + _type_of_question);
+        	SystemUtils.halt();
+        }
+        
+        return confidencecard;
+    }
+    
     /**
      * Merges two ensemble responses.
      * 
@@ -1331,19 +1349,11 @@ public class OllamaUtils {
 
     // ========== MORE BACKWARD COMPATIBILITY WRAPPERS ==========
 
-    /**
-     * @deprecated Use {@link #ask_generic_single_word_question} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static String askGenericSingleWordQuestion(
             OllamaAPI ollama_api, String model_name, Options options, String question) {
         return ask_generic_single_word_question(ollama_api, model_name, options, question);
     }
 
-    /**
-     * @deprecated Use {@link #ask_chat_question} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static ChatInteraction askChatQuestion(
             OllamaAPI ollama_api, String model_name, Options options,
             OllamaChatResult chat_result, String question, Integer retry_threshold, 
@@ -1352,10 +1362,6 @@ public class OllamaUtils {
                 chat_result, question, retry_threshold, timeout);
     }
 
-    /**
-     * @deprecated Use {@link #ask_chat_question} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static ChatInteraction askChatQuestion(
             OllamaAPI ollama_api, String model_name, Options options,
             OllamaChatResult chat_result, String question, long timeout) {
@@ -1363,44 +1369,24 @@ public class OllamaUtils {
                 chat_result, question, timeout);
     }
 
-    /**
-     * @deprecated Use {@link #apply_response_sanity} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static SingleStringQuestionResponse applyResponseSanity(
             SingleStringQuestionResponse response, String model_name, 
             boolean hide_llm_reply_if_uncertain) {
         return apply_response_sanity(response, model_name, hide_llm_reply_if_uncertain);
     }
 
-    /**
-     * @deprecated Use {@link #cleanup_string} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static Object cleanupSTRING(String str) {
         return cleanup_string(str);
     }
 
-    /**
-     * @deprecated Use {@link #single_val_score} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static HashMap<String, Integer> singleValScore(String str, int score) {
         return new HashMap<>(single_val_score(str, score));
     }
 
-    /**
-     * @deprecated Use {@link #print_chat_history} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static void printChatHistory(OllamaSession session) {
         print_chat_history(session);
     }
 
-    /**
-     * @deprecated Use {@link #update_score_card} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static ModelsScoreCard updateScoreCard(
             ModelsScoreCard scorecard, String model_name, String query_index,
             String question, HashMap<String, Integer> acceptable_answers,
@@ -1409,20 +1395,12 @@ public class OllamaUtils {
                 question, acceptable_answers, response);
     }
 
-    /**
-     * @deprecated Use {@link #strict_ensemble_run} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static SingleStringEnsembleResponse strictEnsembleRun(
             String query, OllamaDramaSettings settings, 
             boolean hide_llm_reply_if_uncertain, boolean use_random_seed) {
         return strict_ensemble_run(query, settings, hide_llm_reply_if_uncertain, use_random_seed);
     }
 
-    /**
-     * @deprecated Use {@link #strict_ensemble_run} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static SingleStringEnsembleResponse strictEnsembleRun(
             String query, String models, OllamaDramaSettings settings,
             boolean hide_llm_reply_if_uncertain, boolean use_random_seed) {
@@ -1430,36 +1408,20 @@ public class OllamaUtils {
                 hide_llm_reply_if_uncertain, use_random_seed);
     }
 
-    /**
-     * @deprecated Use {@link #strict_ensemble_run} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static SingleStringEnsembleResponse strictEnsembleRun(String query, String models) {
         return strict_ensemble_run(query, models);
     }
 
-    /**
-     * @deprecated Use {@link #strict_ensemble_run} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static SingleStringEnsembleResponse strictEnsembleRun(
             String query, boolean hide_llm_reply_if_uncertain) {
         return strict_ensemble_run(query, hide_llm_reply_if_uncertain);
     }
 
-    /**
-     * @deprecated Use {@link #strict_ensemble_run} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static SingleStringEnsembleResponse strictEnsembleRun(
             String query, boolean hide_llm_reply_if_uncertain, boolean use_random_seed) {
         return strict_ensemble_run(query, hide_llm_reply_if_uncertain, use_random_seed);
     }
 
-    /**
-     * @deprecated Use {@link #strict_ensemble_run} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static SingleStringEnsembleResponse strictEnsembleRun(
             String query, String models, boolean hide_llm_reply_if_uncertain, 
             boolean use_random_seed) {
@@ -1643,40 +1605,24 @@ public class OllamaUtils {
         llmKnowledgeShootout1v1(prompt, model_name1, model_name2);
     }
 
-    // Deprecated wrappers for new methods
+    // wrappers for new methods
     
-    /**
-     * @deprecated Use {@link #creative_ensemble_run_early_exit_on_first} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static String creativeEnsembleRunEarlyExitOnFirst(String query, String models, OllamaDramaSettings settings) {
         return creative_ensemble_run_early_exit_on_first(query, models, settings);
     }
 
-    /**
-     * @deprecated Use {@link #strict_ensemble_run_early_exit_on_first_confident} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static SingleStringQuestionResponse strictEnsembleRunEarlyExitOnFirstConfident(
             String query, String models, OllamaDramaSettings settings,
             boolean hide_llm_reply_if_uncertain, boolean use_random_seed) {
         return strict_ensemble_run_early_exit_on_first_confident(query, models, settings, hide_llm_reply_if_uncertain, use_random_seed);
     }
 
-    /**
-     * @deprecated Use {@link #strict_ensemble_run_early_exit_on_first_confident} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static SingleStringQuestionResponse strictEnsembleRunEarlyExitOnFirstConfident(
             String query, String models, OllamaDramaSettings settings,
             boolean hide_llm_reply_if_uncertain, Integer proba_threshold, boolean use_random_seed) {
         return strict_ensemble_run_early_exit_on_first_confident(query, models, settings, hide_llm_reply_if_uncertain, proba_threshold, use_random_seed);
     }
 
-    /**
-     * @deprecated Use {@link #collective_full_ensemble_run} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static SingleStringEnsembleResponse collectiveFullEnsembleRun(
             String query, String ollama_model_names, String openai_model_names,
             OllamaDramaSettings ollama_settings, boolean print_first_run,
@@ -1684,19 +1630,11 @@ public class OllamaUtils {
         return collective_full_ensemble_run(query, ollama_model_names, openai_model_names, ollama_settings, print_first_run, hide_llm_reply_if_uncertain, use_random_seed);
     }
 
-    /**
-     * @deprecated Use {@link #single_run} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static void singleRun(String model_name, String query,
             boolean hide_llm_reply_if_uncertain, boolean use_random_seed) {
         single_run(model_name, query, hide_llm_reply_if_uncertain, use_random_seed);
     }
 
-    /**
-     * @deprecated Use {@link #llm_knowledge_shootout_1v1} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static void llmKnowledgeShootout1v1(String prompt, String model_name1, String model_name2) {
         // Original implementation from the document - keeping it as is for now
         // This is a complex method that would need the full implementation
