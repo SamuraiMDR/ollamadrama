@@ -284,7 +284,7 @@ public class Globals {
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_DIVERSE_TEXTONELINESUMMARY = ""	
-			+ "llama3.1:70b,"
+			+ "tulu3:70b,"
 			+ "athene-v2:72b,"
 			+ "cogito:70b,"
 			+ "qwen2.5:72b"

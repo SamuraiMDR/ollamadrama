@@ -166,7 +166,7 @@ public class OllamaEnsemble {
      */
     private void log_ensemble_results(HashMap<String, HashMap<String, Boolean>> unique_replies,
                                      HashMap<String, HashMap<String, Boolean>> unique_confident_replies) {
-        LOGGER.info("Ensemble results: {} unique replies, {} confident replies", 
+        LOGGER.info("Ensemble results: {} unique reply values, {} confident reply values", 
                 unique_replies.size(), 
                 unique_confident_replies.size());
 
