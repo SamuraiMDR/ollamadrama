@@ -30,12 +30,6 @@ public class InteractUtils {
 	public static boolean getYNResponse(String _q, OllamaDramaSettings _settings) {
 	    System.out.println(_q);
 
-	    if (_settings.getElevenlabs_apikey().length() > 0) {
-	        String elevenlabsapikey = _settings.getElevenlabs_apikey();
-	        String voice1 = _settings.getElevenlabs_voice1();
-	        SpeechUtils.justPlayAudioClipWithDefaults(_q, elevenlabsapikey, voice1);
-	    }
-
 	    BufferedReader reader = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
 
 	    while (true) {

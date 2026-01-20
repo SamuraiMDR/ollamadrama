@@ -24,7 +24,7 @@ public class OllamaDramaSettings {
 	
 	// Constants
 	private static final int DEFAULT_OLLAMA_PORT = 11434;
-	private static final long DEFAULT_OLLAMA_TIMEOUT = 1200L; // 20 minutes in seconds
+	private static final long DEFAULT_OLLAMA_TIMEOUT = 120; // 2 min
 	private static final int DEFAULT_THREAD_POOL_COUNT = 20;
 	private static final int MAX_PORT_NUMBER = 65535;
 	private static final int MIN_PORT_NUMBER = 1;

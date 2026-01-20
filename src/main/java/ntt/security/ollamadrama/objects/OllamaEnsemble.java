@@ -259,70 +259,36 @@ public class OllamaEnsemble {
         return java.util.Collections.unmodifiableSet(sessions.keySet());
     }
 
-    // ========== BACKWARD COMPATIBILITY WRAPPERS (DEPRECATED) ==========
-
-    /**
-     * @deprecated Use {@link #add_wrapped_session(OllamaWrappedSession)} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public void addWrappedSession(OllamaWrappedSession wrapped_session) {
         add_wrapped_session(wrapped_session);
     }
 
-    /**
-     * @deprecated Use {@link #ask_chat_question(String, boolean, long)} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public SingleStringEnsembleResponse askChatQuestion(String question, 
                                                         boolean hide_llm_reply_if_uncertain,
                                                         long timeout_ms) {
         return ask_chat_question(question, hide_llm_reply_if_uncertain, timeout_ms);
     }
 
-    /**
-     * @deprecated Use {@link #get_session_count()} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public int getSessionCount() {
         return get_session_count();
     }
 
-    /**
-     * @deprecated Use {@link #has_sessions()} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public boolean hasSessions() {
         return has_sessions();
     }
 
-    /**
-     * @deprecated Use {@link #get_session(String)} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public OllamaWrappedSession getSession(String uuid) {
         return get_session(uuid);
     }
 
-    /**
-     * @deprecated Use {@link #remove_session(String)} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public OllamaWrappedSession removeSession(String uuid) {
         return remove_session(uuid);
     }
 
-    /**
-     * @deprecated Use {@link #clear_sessions()} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public void clearSessions() {
         clear_sessions();
     }
 
-    /**
-     * @deprecated Use {@link #get_session_uuids()} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public java.util.Set<String> getSessionUuids() {
         return get_session_uuids();
     }

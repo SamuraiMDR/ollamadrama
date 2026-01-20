@@ -7,6 +7,7 @@ import java.util.Map.Entry;
 import ntt.security.ollamadrama.objects.response.SingleStringQuestionResponse;
 import ntt.security.ollamadrama.utils.FilesUtils;
 import ntt.security.ollamadrama.utils.NumUtils;
+import ntt.security.ollamadrama.utils.OllamaUtils;
 import ntt.security.ollamadrama.utils.StringsUtils;
 
 public class ModelsScoreCard {
@@ -118,6 +119,7 @@ public class ModelsScoreCard {
 		System.out.println("");  // initial blank line
 
 		// 1. Print models with positive scores
+		System.out.println("POSITIVE:");
 		HashMap<String, Boolean> reported = new HashMap<>();
 		for (int threshold = 10; threshold > 0; threshold--) {
 			int matches = 0;
@@ -132,6 +134,7 @@ public class ModelsScoreCard {
 								StringsUtils.cutAndPadStringToN(model_name, 40)
 								+ " pos: " + StringsUtils.cutAndPadStringToN("" + pos, 3)
 								+ " neg: " + StringsUtils.cutAndPadStringToN("" + neg, 3)
+								+ " [" + StringsUtils.cutAndPadStringToN(OllamaUtils.resolve_size(model_name).toString(),3) + "] [" + StringsUtils.cutAndPadStringToN(OllamaUtils.resolve_tier(model_name).toString(), 5) + "]"
 								);
 						reported.put(model_name, true);
 						matches++;
@@ -145,6 +148,7 @@ public class ModelsScoreCard {
 		}
 
 		// 3. Print models that are negative (<= 0 or null)
+		System.out.println("NEGATIVE:");
 		for (String model_name : this.getScorecard().keySet()) {
 			Integer pos = pos_scores.get(model_name);
 			Integer neg = neg_scores.get(model_name);
@@ -155,6 +159,7 @@ public class ModelsScoreCard {
 						StringsUtils.cutAndPadStringToN(model_name, 40)
 						+ " pos: " + StringsUtils.cutAndPadStringToN("" + pos, 3)
 						+ " neg: " + StringsUtils.cutAndPadStringToN("" + neg, 3)
+						+ " [" + StringsUtils.cutAndPadStringToN(OllamaUtils.resolve_size(model_name).toString(),3) + "] [" + StringsUtils.cutAndPadStringToN(OllamaUtils.resolve_tier(model_name).toString(), 5) + "]"
 						);
 			}
 		}

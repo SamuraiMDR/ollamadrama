@@ -2,6 +2,8 @@ package ntt.security.ollamadrama.modelscorecards;
 
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 import org.junit.Test;
@@ -12,6 +14,7 @@ import ntt.security.ollamadrama.config.Globals;
 import ntt.security.ollamadrama.config.OllamaDramaSettings;
 import ntt.security.ollamadrama.config.PreparedQueries;
 import ntt.security.ollamadrama.objects.ModelsScoreCard;
+import ntt.security.ollamadrama.objects.OllamaEndpoint;
 import ntt.security.ollamadrama.singletons.OllamaService;
 import ntt.security.ollamadrama.singletons.OpenAIService;
 import ntt.security.ollamadrama.utils.OllamaDramaUtils;
@@ -27,7 +30,8 @@ public class OpenAIandOllama_KnowledgeTest {
 	public void simpleDomain2CompanyKnowledge_AllModels_XL() {
 
 		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
-		settings.sanityCheck();
+		settings.setSatellites(new ArrayList<>(Arrays.asList(new OllamaEndpoint("http://127.0.0.1:11434", "", ""))));
+		settings.setOllama_scan(false);
 
 		if (settings.getOpenaikey().length() > 10) {
 

@@ -2,6 +2,8 @@ package ntt.security.ollamadrama.modelscorecards;
 
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 import org.junit.Test;
@@ -9,8 +11,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ntt.security.ollamadrama.config.Globals;
+import ntt.security.ollamadrama.config.OllamaDramaSettings;
 import ntt.security.ollamadrama.objects.ModelsScoreCard;
+import ntt.security.ollamadrama.objects.OllamaEndpoint;
+import ntt.security.ollamadrama.singletons.OllamaService;
 import ntt.security.ollamadrama.utils.OllamaDramaUtils;
+import ntt.security.ollamadrama.utils.OllamaUtils;
 
 @SuppressWarnings("serial")
 public class OllamaGeneralKnowledgeTest {
@@ -22,71 +28,83 @@ public class OllamaGeneralKnowledgeTest {
 	public void mcptools_missing_OllamaModels_XL() {
 		
 		HashMap<String, Integer> acceptable_answers = new HashMap<String, Integer>() {{
-			this.put("FAILTOUNDERSTAND", 1); 	// OK to be confused and not understand the question at all
-			this.put("LOWPROBA", 1); 			// OK to set LOWPROBA since OOikiOOA is completely fictional
+			this.put("FAILTOUNDERSTAND", 1); 	// OK to be confused
+			this.put("LOWPROBA", 1); 			// OK to set LOWPROBA
 		}};
-
+		
+		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
+		settings.setSatellites(new ArrayList<>(Arrays.asList(new OllamaEndpoint("http://127.0.0.1:11434", "", ""))));
+		settings.setOllama_scan(false);
+		
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
-				false, // dont use MCP
-				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, 
-				"What is the current temperature in Paris? Reply with only a number where the number is the temperature in celcius.",
-				acceptable_answers,
-				true, false);
-
+		        false,  // use MCP
+		        Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, // qwen2.5:7b 
+		        "What is the current temperature in Paris? Reply with only a number where the number is the temperature in celcius.",
+		        acceptable_answers,
+		        false,      // hide_llm_reply_if_uncertain
+		        false,      // use_random_seed
+		        false,      // return toolcall
+		        settings	// custom ollamadrama settings
+		);
+		
 		// Print the scorecard
 		System.out.println("SCORECARD:");
 		scorecard.evaluate();
 		scorecard.print();
 
 		/*
-		tulu3:70b                                pos: 1   neg: 0  
-		cogito:8b                                pos: 1   neg: 0  
-		nemotron:70b                             pos: 1   neg: 0  
-		qwen3:8b                                 pos: 1   neg: 0  
-		qwen2.5:7b                               pos: 1   neg: 0  
-		llama3.1:8b                              pos: 1   neg: 0  
-		qwen3:4b                                 pos: 1   neg: 0  
-		tulu3:8b                                 pos: 1   neg: 0  
-		granite3.3:8b                            pos: 1   neg: 0  
-		llama3.2:3b                              pos: 1   neg: 0  
-		gemma3:27b                               pos: 1   neg: 0  
-		sailor2:20b                              pos: 1   neg: 0  
-		exaone-deep:7.8b                         pos: 1   neg: 0  
-		llava:34b                                pos: 1   neg: 0  
-		exaone3.5:32b                            pos: 1   neg: 0  
-		gemma2:9b                                pos: 1   neg: 0  
-		qwen2.5:72b                              pos: 1   neg: 0  
-		mistral:7b                               pos: 1   neg: 0  
-		cogito:14b                               pos: 1   neg: 0  
-		llama3.3:70b                             pos: 1   neg: 0  
-		r1-1776:70b                              pos: 1   neg: 0  
-		olmo2:13b                                pos: 1   neg: 0  
-		llama3.1:70b                             pos: 1   neg: 0  
-		marco-o1:7b                              pos: 1   neg: 0  
-		qwen2.5vl:72b                            pos: 1   neg: 0  
-		gemma3:12b                               pos: 1   neg: 0  
-		aya-expanse:32b                          pos: 1   neg: 0  
-		qwen3:32b                                pos: 1   neg: 0  
-		phi4:14b                                 pos: 1   neg: 0  
-		athene-v2:72b                            pos: 1   neg: 0  
-		openchat:7b                              pos: 1   neg: 0  
-		cogito:70b                               pos: 1   neg: 0  
-		qwen3:14b                                pos: 1   neg: 0  
+		POSITIVE:
+		tulu3:70b                                pos: 1   neg: 0   [XL ] [TIER2]
+		nemotron:70b                             pos: 1   neg: 0   [XL ] [TIER1]
+		qwen2.5:7b                               pos: 1   neg: 0   [M  ] [TIER1]
+		qwen3:8b                                 pos: 1   neg: 0   [M  ] [TIER1]
+		llama3.1:8b                              pos: 1   neg: 0   [M  ] [TIER3]
+		qwen3:4b                                 pos: 1   neg: 0   [S  ] [TIER1]
+		granite3.3:8b                            pos: 1   neg: 0   [M  ] [TIER4]
+		olmo-3:32b                               pos: 1   neg: 0   [XL ] [TIER3]
+		gemma3:27b                               pos: 1   neg: 0   [XL ] [TIER1]
+		gemma2:9b                                pos: 1   neg: 0   [M  ] [TIER1]
+		qwen2.5:72b                              pos: 1   neg: 0   [XL ] [TIER2]
+		mistral:7b                               pos: 1   neg: 0   [M  ] [TIER3]
+		huihui_ai/qwen3-abliterated:14b          pos: 1   neg: 0   [L  ] [TIER1]
+		olmo-3:7b                                pos: 1   neg: 0   [M  ] [TIER4]
+		llama3.3:70b                             pos: 1   neg: 0   [XL ] [TIER1]
+		huihui_ai/qwen3-abliterated:32b          pos: 1   neg: 0   [XL ] [TIER2]
+		qwq:32b                                  pos: 1   neg: 0   [XL ] [TIER1]
+		llama3.1:70b                             pos: 1   neg: 0   [XL ] [TIER1]
+		gemma3:12b                               pos: 1   neg: 0   [L  ] [TIER2]
+		phi4:14b                                 pos: 1   neg: 0   [L  ] [TIER2]
+		qwen3:32b                                pos: 1   neg: 0   [XL ] [TIER1]
+		athene-v2:72b                            pos: 1   neg: 0   [XL ] [TIER2]
+		cogito:70b                               pos: 1   neg: 0   [XL ] [TIER2]
 		-----
-		olmo2:7b                                 pos: 0   neg: 1  
-		aya-expanse:8b                           pos: 0   neg: 1  
-		gemma3n:e4b                              pos: 0   neg: 1 
+		NEGATIVE:
+		nemotron-3-nano:30b                      pos: 0   neg: 1   [XL ] [TIER3]
+		cogito:8b                                pos: 0   neg: 1   [M  ] [TIER4]
+		tulu3:8b                                 pos: 0   neg: 1   [M  ] [TIER4]
+		sailor2:20b                              pos: 0   neg: 1   [L  ] [TIER2]
+		llava:34b                                pos: 0   neg: 1   [XL ] [TIER3]
+		gpt-oss:20b                              pos: 0   neg: 1   [L  ] [TIER3]
+		aya-expanse:8b                           pos: 0   neg: 1   [M  ] [TIER4]
+		cogito:14b                               pos: 0   neg: 1   [L  ] [TIER1]
+		marco-o1:7b                              pos: 0   neg: 1   [M  ] [TIER1]
+		aya-expanse:32b                          pos: 0   neg: 1   [XL ] [TIER3]
+		gemma3n:e4b                              pos: 0   neg: 1   [M  ] [TIER4]
+		openchat:7b                              pos: 0   neg: 1   [M  ] [TIER2]
+		qwen3:14b                                pos: 0   neg: 1   [L  ] [TIER1]
 		 */
 
+		OllamaService.destroyInstance();
+		
 		// Assert
-		assertTrue("Make sure we have a clean sheet for tier1 models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OLLAMA_ALL_TIER1_M_L_XL));
+		assertTrue("Make sure we have a clean sheet for XL tier1 models", scorecard.isCleanSheetPositive(Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL));
 	}
 	
 	@Test
 	public void mcptools_available_OllamaModels_XL() {
 		
 		HashMap<String, Integer> acceptable_answers = new HashMap<String, Integer>() {{
-			this.put("TOOLCALL", 1); 	// The LLM should realize it can and should reach out to an available tool
+			this.put("TOOLCALL", 1); 	// The LLM should realize it can call a tool and make a request
 		}};
 
 		String prompt = """
@@ -102,13 +120,19 @@ public class OllamaGeneralKnowledgeTest {
 		        Example usage: fetch_temperature(location="New York", unit="Celcius")
 		        """;
 
+		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
+		settings.setSatellites(new ArrayList<>(Arrays.asList(new OllamaEndpoint("http://127.0.0.1:11434", "", ""))));
+		settings.setOllama_scan(false);
+		
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
 		        true,  // use MCP
-		        Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL,
+		        Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, // qwen2.5:7b 
 		        prompt,
 		        acceptable_answers,
-		        false,  // hide_llm_reply_if_uncertain
-		        false   // use_random_seed
+		        false,      // hide_llm_reply_if_uncertain
+		        false,      // use_random_seed
+		        false,      // return toolcall
+		        settings	// custom ollamadrama settings
 		);
 
 		// Print the scorecard
@@ -117,46 +141,53 @@ public class OllamaGeneralKnowledgeTest {
 		scorecard.print();
 
 		/*
-		tulu3:70b                                pos: 1   neg: 0  
-		nemotron:70b                             pos: 1   neg: 0  
-		qwen3:8b                                 pos: 1   neg: 0  
-		llama3.1:8b                              pos: 1   neg: 0  
-		tulu3:8b                                 pos: 1   neg: 0  
-		gemma3:27b                               pos: 1   neg: 0  
-		sailor2:20b                              pos: 1   neg: 0  
-		llava:34b                                pos: 1   neg: 0  
-		exaone3.5:32b                            pos: 1   neg: 0  
-		gemma2:9b                                pos: 1   neg: 0  
-		qwen2.5:72b                              pos: 1   neg: 0  
-		cogito:14b                               pos: 1   neg: 0  
-		llama3.3:70b                             pos: 1   neg: 0  
-		r1-1776:70b                              pos: 1   neg: 0  
-		llama3.1:70b                             pos: 1   neg: 0  
-		qwen2.5vl:72b                            pos: 1   neg: 0  
-		gemma3:12b                               pos: 1   neg: 0  
-		aya-expanse:32b                          pos: 1   neg: 0  
-		qwen3:32b                                pos: 1   neg: 0  
-		phi4:14b                                 pos: 1   neg: 0  
-		athene-v2:72b                            pos: 1   neg: 0  
-		cogito:70b                               pos: 1   neg: 0  
-		qwen3:14b                                pos: 1   neg: 0  
+		POSITIVE:
+		tulu3:70b                                pos: 1   neg: 0   [XL ] [TIER2]
+		nemotron:70b                             pos: 1   neg: 0   [XL ] [TIER1]
+		qwen3:8b                                 pos: 1   neg: 0   [M  ] [TIER1]
+		qwen3:4b                                 pos: 1   neg: 0   [S  ] [TIER1]
+		tulu3:8b                                 pos: 1   neg: 0   [M  ] [TIER4]
+		sailor2:20b                              pos: 1   neg: 0   [L  ] [TIER2]
+		olmo-3:32b                               pos: 1   neg: 0   [XL ] [TIER3]
+		gemma3:27b                               pos: 1   neg: 0   [XL ] [TIER1]
+		gemma2:9b                                pos: 1   neg: 0   [M  ] [TIER1]
+		olmo-3.1:32b                             pos: 1   neg: 0   [XL ] [TIER3]
+		qwen2.5:72b                              pos: 1   neg: 0   [XL ] [TIER1]
+		gpt-oss:20b                              pos: 1   neg: 0   [L  ] [TIER3]
+		huihui_ai/qwen3-abliterated:14b          pos: 1   neg: 0   [L  ] [TIER1]
+		cogito:14b                               pos: 1   neg: 0   [L  ] [TIER1]
+		r1-1776:70b                              pos: 1   neg: 0   [XL ] [TIER2]
+		llama3.3:70b                             pos: 1   neg: 0   [XL ] [TIER1]
+		huihui_ai/qwen3-abliterated:32b          pos: 1   neg: 0   [XL ] [TIER2]
+		qwq:32b                                  pos: 1   neg: 0   [XL ] [TIER1]
+		llama3.1:70b                             pos: 1   neg: 0   [XL ] [TIER1]
+		aya-expanse:32b                          pos: 1   neg: 0   [XL ] [TIER3]
+		phi4:14b                                 pos: 1   neg: 0   [L  ] [TIER2]
+		qwen3:32b                                pos: 1   neg: 0   [XL ] [TIER1]
+		athene-v2:72b                            pos: 1   neg: 0   [XL ] [TIER2]
+		cogito:70b                               pos: 1   neg: 0   [XL ] [TIER2]
+		qwen3:14b                                pos: 1   neg: 0   [L  ] [TIER1]
 		-----
-		cogito:8b                                pos: 0   neg: 1  
-		qwen2.5:7b                               pos: 0   neg: 1  
-		qwen3:4b                                 pos: 0   neg: 1  
-		granite3.3:8b                            pos: 0   neg: 1  
-		exaone-deep:7.8b                         pos: 0   neg: 1  
-		olmo2:7b                                 pos: 0   neg: 1  
-		mistral:7b                               pos: 0   neg: 1  
-		aya-expanse:8b                           pos: 0   neg: 1  
-		olmo2:13b                                pos: 0   neg: 1  
-		marco-o1:7b                              pos: 0   neg: 1  
-		gemma3n:e4b                              pos: 0   neg: 1  
-		openchat:7b                              pos: 0   neg: 1  
+		NEGATIVE:
+		nemotron-3-nano:30b                      pos: 0   neg: 1   [XL ] [TIER3]
+		cogito:8b                                pos: 0   neg: 1   [M  ] [TIER4]
+		qwen2.5:7b                               pos: 0   neg: 1   [M  ] [TIER1]
+		llama3.1:8b                              pos: 0   neg: 1   [M  ] [TIER3]
+		granite3.3:8b                            pos: 0   neg: 1   [M  ] [TIER4]
+		llava:34b                                pos: 0   neg: 1   [XL ] [TIER3]
+		mistral:7b                               pos: 0   neg: 1   [M  ] [TIER3]
+		aya-expanse:8b                           pos: 0   neg: 1   [M  ] [TIER4]
+		olmo-3:7b                                pos: 0   neg: 1   [M  ] [TIER4]
+		marco-o1:7b                              pos: 0   neg: 1   [M  ] [TIER1]
+		gemma3:12b                               pos: 0   neg: 1   [L  ] [TIER2]
+		gemma3n:e4b                              pos: 0   neg: 1   [M  ] [TIER4]
+		openchat:7b                              pos: 0   neg: 1   [M  ] [TIER2]
 		 */
 
+		OllamaService.destroyInstance();
+		
 		// Assert
-		assertTrue("Make sure we have a clean sheet for tier1 models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OLLAMA_ALL_TIER1_L_XL));
+		assertTrue("Make sure we have a clean sheet for tier1 L+XL models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OLLAMA_ALL_TIER1_L_XL));
 	}
 	
 	@Test
@@ -171,153 +202,194 @@ public class OllamaGeneralKnowledgeTest {
 			this.put("Alphabet", 2);
 		}};
 
-		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
-				true, // use MCP
-				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, 
-				"What company or organization is associated with google.com? Reply with only the name",
-				acceptable_answers,
-				true, false);
+		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
+		settings.setSatellites(new ArrayList<>(Arrays.asList(new OllamaEndpoint("http://127.0.0.1:11434", "", ""))));
+		settings.setOllama_scan(false);
 
+		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
+		        false,  // use MCP
+		        Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, // olmo-3.1:32b slow, Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL
+		        "What company or organization is associated with google.com? Reply with only the name",
+		        acceptable_answers,
+		        false,      // hide_llm_reply_if_uncertain
+		        false,      // use_random_seed
+		        false,      // return toolcall
+		        settings	// custom ollamadrama settings
+		);
+		
 		// Print the scorecard
 		System.out.println("SCORECARD:");
 		scorecard.evaluate();
 		scorecard.print();
 
 		/*
-		dolphin3:8b                              pos: 2   neg: 0  
-		wizard-vicuna-uncensored:30b             pos: 2   neg: 0  
-		tulu3:70b                                pos: 2   neg: 0  
-		cogito:8b                                pos: 2   neg: 0  
-		nemotron:70b                             pos: 2   neg: 0  
-		qwen3:8b                                 pos: 2   neg: 0  
-		qwen2.5:7b                               pos: 2   neg: 0  
-		llama3.1:8b                              pos: 2   neg: 0  
-		qwen2:7b                                 pos: 2   neg: 0  
-		granite3.1-dense:8b                      pos: 2   neg: 0  
-		qwen3:4b                                 pos: 2   neg: 0  
-		tulu3:8b                                 pos: 2   neg: 0  
-		granite3.3:8b                            pos: 2   neg: 0  
-		gemma3:27b                               pos: 2   neg: 0  
-		sailor2:20b                              pos: 2   neg: 0  
-		command-r7b:7b                           pos: 2   neg: 0  
-		llava:34b                                pos: 2   neg: 0  
-		exaone3.5:32b                            pos: 2   neg: 0  
-		gemma2:9b                                pos: 2   neg: 0  
-		qwen2.5:72b                              pos: 2   neg: 0  
-		olmo2:7b                                 pos: 2   neg: 0  
-		gemma2:27b                               pos: 2   neg: 0  
-		mistral:7b                               pos: 2   neg: 0  
-		aya-expanse:8b                           pos: 2   neg: 0  
-		cogito:14b                               pos: 2   neg: 0  
-		llama3.3:70b                             pos: 2   neg: 0  
-		r1-1776:70b                              pos: 2   neg: 0  
-		olmo2:13b                                pos: 2   neg: 0  
-		llama3.1:70b                             pos: 2   neg: 0  
-		marco-o1:7b                              pos: 2   neg: 0  
-		gemma3:12b                               pos: 2   neg: 0  
-		aya-expanse:32b                          pos: 2   neg: 0  
-		qwen3:32b                                pos: 2   neg: 0  
-		phi4:14b                                 pos: 2   neg: 0  
-		dolphin-mistral:7b                       pos: 2   neg: 0  
-		openhermes:7b-mistral-v2.5-q4_0          pos: 2   neg: 0  
-		athene-v2:72b                            pos: 2   neg: 0  
-		openchat:7b                              pos: 2   neg: 0  
-		cogito:70b                               pos: 2   neg: 0  
-		qwen3:14b                                pos: 2   neg: 0  
+		POSITIVE:
+		nemotron-3-nano:30b                      pos: 2   neg: 0   [XL ] [TIER3]
+		cogito:8b                                pos: 2   neg: 0   [M  ] [TIER4]
+		tulu3:70b                                pos: 2   neg: 0   [XL ] [TIER2]
+		nemotron:70b                             pos: 2   neg: 0   [XL ] [TIER1]
+		qwen2.5:7b                               pos: 2   neg: 0   [M  ] [TIER1]
+		qwen3:8b                                 pos: 2   neg: 0   [M  ] [TIER1]
+		llama3.1:8b                              pos: 2   neg: 0   [M  ] [TIER3]
+		qwen3:4b                                 pos: 2   neg: 0   [S  ] [TIER1]
+		granite3.3:8b                            pos: 2   neg: 0   [M  ] [TIER4]
+		tulu3:8b                                 pos: 2   neg: 0   [M  ] [TIER4]
+		sailor2:20b                              pos: 2   neg: 0   [L  ] [TIER2]
+		olmo-3:32b                               pos: 2   neg: 0   [XL ] [TIER3]
+		gemma3:27b                               pos: 2   neg: 0   [XL ] [TIER1]
+		gemma2:9b                                pos: 2   neg: 0   [M  ] [TIER1]
+		qwen2.5:72b                              pos: 2   neg: 0   [XL ] [TIER1]
+		mistral:7b                               pos: 2   neg: 0   [M  ] [TIER3]
+		gpt-oss:20b                              pos: 2   neg: 0   [L  ] [TIER3]
+		huihui_ai/qwen3-abliterated:14b          pos: 2   neg: 0   [L  ] [TIER1]
+		aya-expanse:8b                           pos: 2   neg: 0   [M  ] [TIER4]
+		cogito:14b                               pos: 2   neg: 0   [L  ] [TIER1]
+		olmo-3:7b                                pos: 2   neg: 0   [M  ] [TIER4]
+		r1-1776:70b                              pos: 2   neg: 0   [XL ] [TIER2]
+		llama3.3:70b                             pos: 2   neg: 0   [XL ] [TIER1]
+		huihui_ai/qwen3-abliterated:32b          pos: 2   neg: 0   [XL ] [TIER2]
+		qwq:32b                                  pos: 2   neg: 0   [XL ] [TIER1]
+		llama3.1:70b                             pos: 2   neg: 0   [XL ] [TIER1]
+		marco-o1:7b                              pos: 2   neg: 0   [M  ] [TIER1]
+		aya-expanse:32b                          pos: 2   neg: 0   [XL ] [TIER3]
+		phi4:14b                                 pos: 2   neg: 0   [L  ] [TIER2]
+		qwen3:32b                                pos: 2   neg: 0   [XL ] [TIER1]
+		gemma3n:e4b                              pos: 2   neg: 0   [M  ] [TIER4]
+		openchat:7b                              pos: 2   neg: 0   [M  ] [TIER2]
+		athene-v2:72b                            pos: 2   neg: 0   [XL ] [TIER2]
+		cogito:70b                               pos: 2   neg: 0   [XL ] [TIER2]
+		qwen3:14b                                pos: 2   neg: 0   [L  ] [TIER1]
 		-----
-		llama3.2:3b                              pos: 0   neg: 1  
-		exaone-deep:7.8b                         pos: 0   neg: 1  
+		NEGATIVE:
+		llava:34b                                pos: 0   neg: 1   [XL ] [TIER3]
+		gemma3:12b                               pos: 0   neg: 1   [L  ] [TIER2]
 		 */
 
+		OllamaService.destroyInstance();
+		
 		// Assert
 		assertTrue("Make sure we have a clean sheet for tier1 models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OLLAMA_ALL_TIER1_M_L_XL));
 	}
 
 	@Test
-	public void simpleParisTemperature_OllamaModels_NEW() {
+	public void simpleParisTemperature_OllamaModels_NEWMODELS() {
+		
+		HashMap<String, Integer> acceptable_answers = new HashMap<String, Integer>() {{
+			this.put("FAILTOUNDERSTAND", 1);
+		}};
+		
+		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
+		settings.setSatellites(new ArrayList<>(Arrays.asList(new OllamaEndpoint("http://127.0.0.1:11434", "", ""))));
+		settings.setOllama_scan(false);
 		
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
-				false, // use MCP
-				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL,  // cogito:14b gpt-oss:20b
+				false, // no mcp
+				"qwen3:4b",  // qwen3:4b llama3.1:8b Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL
 				"What is the current temperature in Paris?", 
-				"FAILTOUNDERSTAND",
-				false, false);
+				acceptable_answers,
+				false, false, false, settings);
+		
+		// Print the scorecard
+		System.out.println("SCORECARD:");
+		scorecard.evaluate();
+		scorecard.print();
+	
+		OllamaService.destroyInstance();
+		
+	}
+	
+	@Test
+	public void simpleParisCapital_OllamaModels_NEWMODELS() {
+		
+		
+		HashMap<String, Integer> acceptable_answers = new HashMap<String, Integer>() {{
+			this.put("Yes", 1);
+		}};
+		
+		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
+		settings.setSatellites(new ArrayList<>(Arrays.asList(new OllamaEndpoint("http://127.0.0.1:11434", "", ""))));
+		settings.setOllama_scan(false);
+		
+		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(false,
+				"nemotron-3-nano:30b", // olmo-3.1:32b olmo-3:7b, olmo-3:32b huihui_ai/qwen3-abliterated:32b nemotron-3-nano:30b 
+				"Is the capital city of France named Paris? Reply with Yes or No.", acceptable_answers, true, false, false, settings);
 
 		// Print the scorecard
 		System.out.println("SCORECARD:");
 		scorecard.evaluate();
 		scorecard.print();
+		
+		OllamaService.destroyInstance();
 	}
 	
 	@Test
-	public void simpleParis_OllamaModels_NEW() {
+	public void simpleParisCapital_OllamaModels_XL() {
+		
+		HashMap<String, Integer> acceptable_answers = new HashMap<String, Integer>() {{
+			this.put("Yes", 1);
+		}};
+		
+		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
+		settings.setSatellites(new ArrayList<>(Arrays.asList(new OllamaEndpoint("http://127.0.0.1:11434", "", ""))));
+		settings.setOllama_scan(false);
 		
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
-				false, // use MCP
-				"gpt-oss:20b", // cogito:14b gpt-oss:20b
+				false,
+				"qwen3:4b",  // qwen3:4b llama3.1:8b Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL
 				"Is the capital city of France named Paris? Reply with Yes or No.", 
-				"Yes",
-				true, false);
-
-		// Print the scorecard
-		System.out.println("SCORECARD:");
-		scorecard.evaluate();
-		scorecard.print();
-	}
-	
-	@Test
-	public void simpleParis_OllamaModels_XL() {
+				acceptable_answers,
+				false, false, false, settings);
 		
-		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
-				false, // use MCP
-				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, 
-				"Is the capital city of France named Paris? Reply with Yes or No.", 
-				"Yes",
-				true, false);
-
 		// Print the scorecard
 		System.out.println("SCORECARD:");
 		scorecard.evaluate();
 		scorecard.print();
 
 		/*
-		tulu3:70b                                pos: 1   neg: 0  
-		cogito:8b                                pos: 1   neg: 0  
-		nemotron:70b                             pos: 1   neg: 0  
-		qwen3:8b                                 pos: 1   neg: 0  
-		qwen2.5:7b                               pos: 1   neg: 0  
-		llama3.1:8b                              pos: 1   neg: 0  
-		qwen3:4b                                 pos: 1   neg: 0  
-		tulu3:8b                                 pos: 1   neg: 0  
-		granite3.3:8b                            pos: 1   neg: 0  
-		gemma3:27b                               pos: 1   neg: 0  
-		sailor2:20b                              pos: 1   neg: 0  
-		exaone-deep:7.8b                         pos: 1   neg: 0  
-		llava:34b                                pos: 1   neg: 0  
-		exaone3.5:32b                            pos: 1   neg: 0  
-		gemma2:9b                                pos: 1   neg: 0  
-		qwen2.5:72b                              pos: 1   neg: 0  
-		olmo2:7b                                 pos: 1   neg: 0  
-		mistral:7b                               pos: 1   neg: 0  
-		gpt-oss:20b                              pos: 1   neg: 0  
-		aya-expanse:8b                           pos: 1   neg: 0  
-		cogito:14b                               pos: 1   neg: 0  
-		llama3.3:70b                             pos: 1   neg: 0  
-		r1-1776:70b                              pos: 1   neg: 0  
-		olmo2:13b                                pos: 1   neg: 0  
-		llama3.1:70b                             pos: 1   neg: 0  
-		marco-o1:7b                              pos: 1   neg: 0  
-		gemma3:12b                               pos: 1   neg: 0  
-		aya-expanse:32b                          pos: 1   neg: 0  
-		qwen3:32b                                pos: 1   neg: 0  
-		phi4:14b                                 pos: 1   neg: 0  
-		gemma3n:e4b                              pos: 1   neg: 0  
-		athene-v2:72b                            pos: 1   neg: 0  
-		openchat:7b                              pos: 1   neg: 0  
-		cogito:70b                               pos: 1   neg: 0  
-		qwen3:14b                                pos: 1   neg: 0  
+		POSITIVE:
+		nemotron-3-nano:30b                      pos: 1   neg: 0   [XL] [TIER3]
+		cogito:8b                                pos: 1   neg: 0   [M ] [TIER4]
+		tulu3:70b                                pos: 1   neg: 0   [XL] [TIER2]
+		nemotron:70b                             pos: 1   neg: 0   [XL] [TIER1]
+		qwen2.5:7b                               pos: 1   neg: 0   [M ] [TIER1]
+		qwen3:8b                                 pos: 1   neg: 0   [M ] [TIER1]
+		granite3.3:8b                            pos: 1   neg: 0   [M ] [TIER4]
+		tulu3:8b                                 pos: 1   neg: 0   [M ] [TIER4]
+		sailor2:20b                              pos: 1   neg: 0   [L ] [TIER2]
+		olmo-3:32b                               pos: 1   neg: 0   [XL] [TIER3]
+		gemma3:27b                               pos: 1   neg: 0   [XL] [TIER1]
+		llava:34b                                pos: 1   neg: 0   [XL] [TIER3]
+		gemma2:9b                                pos: 1   neg: 0   [M ] [TIER1]
+		olmo-3.1:32b                             pos: 1   neg: 0   [XL] [TIER3]
+		qwen2.5:72b                              pos: 1   neg: 0   [XL] [TIER1]
+		mistral:7b                               pos: 1   neg: 0   [M ] [TIER3]
+		gpt-oss:20b                              pos: 1   neg: 0   [XX] [TIER3]
+		huihui_ai/qwen3-abliterated:14b          pos: 1   neg: 0   [L ] [TIER1]
+		aya-expanse:8b                           pos: 1   neg: 0   [M ] [TIER4]
+		cogito:14b                               pos: 1   neg: 0   [L ] [TIER1]
+		olmo-3:7b                                pos: 1   neg: 0   [M ] [TIER4]
+		r1-1776:70b                              pos: 1   neg: 0   [XL] [TIER2]
+		llama3.3:70b                             pos: 1   neg: 0   [XL] [TIER1]
+		huihui_ai/qwen3-abliterated:32b          pos: 1   neg: 0   [XL] [TIER2]
+		qwq:32b                                  pos: 1   neg: 0   [XL] [TIER1]
+		llama3.1:70b                             pos: 1   neg: 0   [XL] [TIER1]
+		marco-o1:7b                              pos: 1   neg: 0   [M ] [TIER1]
+		gemma3:12b                               pos: 1   neg: 0   [L ] [TIER2]
+		aya-expanse:32b                          pos: 1   neg: 0   [XL] [TIER3]
+		phi4:14b                                 pos: 1   neg: 0   [L ] [TIER2]
+		qwen3:32b                                pos: 1   neg: 0   [XL] [TIER1]
+		gemma3n:e4b                              pos: 1   neg: 0   [M ] [TIER4]
+		openchat:7b                              pos: 1   neg: 0   [M ] [TIER2]
+		athene-v2:72b                            pos: 1   neg: 0   [XL] [TIER2]
+		cogito:70b                               pos: 1   neg: 0   [XL] [TIER2]
+		qwen3:14b                                pos: 1   neg: 0   [L ] [TIER1]
+		llama3.1:8b                              pos: 0   neg: 1   [M ] [TIER3]
 		-----
+		NEGATIVE:
+		(qwen3:4b                                 pos: 0   neg: 1   [S ] [TIER1])
 		 */
+		
+		OllamaService.destroyInstance();
 
 		// Assert
 		assertTrue("Make sure we have a clean sheet for all tier1 M L XL models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OLLAMA_ALL_TIER1_M_L_XL));
@@ -330,9 +402,14 @@ public class OllamaGeneralKnowledgeTest {
 			this.put("FAILTOUNDERSTAND", 2); 	// OK to be confused and not understand the question at all
 			this.put("LOWPROBA", 2); 			// OK to set LOWPROBA since OOikiOOA is completely fictional
 			this.put("No", 1);		 			// OK based on its knowledge, but LOWPROBA preferred
+			this.put("NO", 1);		 			// OK based on its knowledge, but LOWPROBA preferred
 		}};
 
-		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(false, Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, "Is the capital city of OOikiOOA named Mo1rstiooooo? Reply with Yes or No.", acceptable_answers, true, false);
+		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
+		settings.setSatellites(new ArrayList<>(Arrays.asList(new OllamaEndpoint("http://127.0.0.1:11434", "", ""))));
+		settings.setOllama_scan(false);
+		
+		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(false, Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, "Is the capital city of OOikiOOA named Mo1rstiooooo? Reply with Yes or No.", acceptable_answers, true, false, false, settings);
 
 		// Print the scorecard
 		System.out.println("SCORECARD:");
@@ -340,45 +417,51 @@ public class OllamaGeneralKnowledgeTest {
 		scorecard.print();
 
 		/*		
-		tulu3:70b                                pos: 2   neg: 0  
-		cogito:8b                                pos: 2   neg: 0  
-		nemotron:70b                             pos: 2   neg: 0  
-		qwen2.5:7b                               pos: 2   neg: 0  
-		llama3.1:8b                              pos: 2   neg: 0  
-		qwen2:7b                                 pos: 2   neg: 0  
-		granite3.3:8b                            pos: 2   neg: 0  
-		llama3.2:3b                              pos: 2   neg: 0  
-		gemma3:27b                               pos: 2   neg: 0  
-		sailor2:20b                              pos: 2   neg: 0  
-		llava:34b                                pos: 2   neg: 0  
-		exaone3.5:32b                            pos: 2   neg: 0  
-		gemma2:9b                                pos: 2   neg: 0  
-		qwen2.5:72b                              pos: 2   neg: 0  
-		olmo2:7b                                 pos: 2   neg: 0  
-		gemma2:27b                               pos: 2   neg: 0  
-		mistral:7b                               pos: 2   neg: 0  
-		aya-expanse:8b                           pos: 2   neg: 0  
-		cogito:14b                               pos: 2   neg: 0  
-		llama3.3:70b                             pos: 2   neg: 0  
-		olmo2:13b                                pos: 2   neg: 0  
-		llama3.1:70b                             pos: 2   neg: 0  
-		gemma3:12b                               pos: 2   neg: 0  
-		phi4:14b                                 pos: 2   neg: 0  
-		dolphin-mistral:7b                       pos: 2   neg: 0  
-		openhermes:7b-mistral-v2.5-q4_0          pos: 2   neg: 0  
-		athene-v2:72b                            pos: 2   neg: 0  
-		openchat:7b                              pos: 2   neg: 0  
-		cogito:70b                               pos: 2   neg: 0  
+		POSITIVE:
+		nemotron-3-nano:30b                      pos: 2   neg: 0   [XL ] [TIER3]
+		cogito:8b                                pos: 2   neg: 0   [M  ] [TIER4]
+		tulu3:70b                                pos: 2   neg: 0   [XL ] [TIER2]
+		nemotron:70b                             pos: 2   neg: 0   [XL ] [TIER1]
+		qwen2.5:7b                               pos: 2   neg: 0   [M  ] [TIER1]
+		qwen3:8b                                 pos: 2   neg: 0   [M  ] [TIER1]
+		llama3.1:8b                              pos: 2   neg: 0   [M  ] [TIER3]
+		qwen3:4b                                 pos: 2   neg: 0   [S  ] [TIER1]
+		granite3.3:8b                            pos: 2   neg: 0   [M  ] [TIER4]
+		sailor2:20b                              pos: 2   neg: 0   [L  ] [TIER2]
+		olmo-3:32b                               pos: 2   neg: 0   [XL ] [TIER3]
+		gemma3:27b                               pos: 2   neg: 0   [XL ] [TIER1]
+		gemma2:9b                                pos: 2   neg: 0   [M  ] [TIER1]
+		huihui_ai/qwen3-abliterated:14b          pos: 2   neg: 0   [L  ] [TIER1]
+		aya-expanse:8b                           pos: 2   neg: 0   [M  ] [TIER4]
+		cogito:14b                               pos: 2   neg: 0   [L  ] [TIER1]
+		olmo-3:7b                                pos: 2   neg: 0   [M  ] [TIER4]
+		r1-1776:70b                              pos: 2   neg: 0   [XL ] [TIER2]
+		llama3.3:70b                             pos: 2   neg: 0   [XL ] [TIER1]
+		huihui_ai/qwen3-abliterated:32b          pos: 2   neg: 0   [XL ] [TIER2]
+		qwq:32b                                  pos: 2   neg: 0   [XL ] [TIER1]
+		llama3.1:70b                             pos: 2   neg: 0   [XL ] [TIER1]
+		marco-o1:7b                              pos: 2   neg: 0   [M  ] [TIER1]
+		gemma3:12b                               pos: 2   neg: 0   [L  ] [TIER2]
+		phi4:14b                                 pos: 2   neg: 0   [L  ] [TIER2]
+		qwen3:32b                                pos: 2   neg: 0   [XL ] [TIER1]
+		cogito:70b                               pos: 2   neg: 0   [XL ] [TIER2]
+		qwen3:14b                                pos: 2   neg: 0   [L  ] [TIER1]
 		-----
-		dolphin3:8b                              pos: 1   neg: 0  
-		wizard-vicuna-uncensored:30b             pos: 1   neg: 0  
-		granite3.1-dense:8b                      pos: 1   neg: 0  
-		tulu3:8b                                 pos: 1   neg: 0  
-		marco-o1:7b                              pos: 1   neg: 0  
-		aya-expanse:32b                          pos: 1   neg: 0  
+		tulu3:8b                                 pos: 1   neg: 0   [M  ] [TIER4]
+		llava:34b                                pos: 1   neg: 0   [XL ] [TIER3]
+		qwen2.5:72b                              pos: 1   neg: 0   [XL ] [TIER1]
+		mistral:7b                               pos: 1   neg: 0   [M  ] [TIER3]
+		gpt-oss:20b                              pos: 1   neg: 0   [L  ] [TIER3]
+		aya-expanse:32b                          pos: 1   neg: 0   [XL ] [TIER3]
+		gemma3n:e4b                              pos: 1   neg: 0   [M  ] [TIER4]
+		athene-v2:72b                            pos: 1   neg: 0   [XL ] [TIER2]
 		-----
+		NEGATIVE:
+		openchat:7b                              pos: 0   neg: 1   [M  ] [TIER2]
 		 */
 
+		OllamaService.destroyInstance();
+		
 		// Assert
 		assertTrue("Make sure we have a clean sheet for all tier1 M L XL models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OLLAMA_ALL_TIER1_M_L_XL));
 	}
@@ -391,7 +474,11 @@ public class OllamaGeneralKnowledgeTest {
 			this.put("LOWPROBA", 1); 			// OK to set LOWPROBA since the provided prompt is pure jibberish
 		}};
 		
-		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(false, Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, "bmn,alkwjhuwihjkl7777oodottodooo?", acceptable_answers, true, false);
+		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
+		settings.setSatellites(new ArrayList<>(Arrays.asList(new OllamaEndpoint("http://127.0.0.1:11434", "", ""))));
+		settings.setOllama_scan(false);
+		
+		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(false, Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, "bmn,alkwjhuwihjkl7777oodottodooo?", acceptable_answers, true, false, false, settings);
 
 		// Print the scorecard
 		System.out.println("SCORECARD:");
@@ -399,51 +486,50 @@ public class OllamaGeneralKnowledgeTest {
 		scorecard.print();
 
 		/*		
-		dolphin3:8b                              pos: 1   neg: 0  
-		wizard-vicuna-uncensored:30b             pos: 1   neg: 0  
-		tulu3:70b                                pos: 1   neg: 0  
-		cogito:8b                                pos: 1   neg: 0  
-		nemotron:70b                             pos: 1   neg: 0  
-		qwen3:8b                                 pos: 1   neg: 0  
-		qwen2.5:7b                               pos: 1   neg: 0  
-		llama3.1:8b                              pos: 1   neg: 0  
-		qwen2:7b                                 pos: 1   neg: 0  
-		granite3.1-dense:8b                      pos: 1   neg: 0  
-		tulu3:8b                                 pos: 1   neg: 0  
-		granite3.3:8b                            pos: 1   neg: 0  
-		llama3.2:3b                              pos: 1   neg: 0  
-		gemma3:27b                               pos: 1   neg: 0  
-		sailor2:20b                              pos: 1   neg: 0  
-		exaone-deep:7.8b                         pos: 1   neg: 0  
-		command-r7b:7b                           pos: 1   neg: 0  
-		llava:34b                                pos: 1   neg: 0  
-		exaone3.5:32b                            pos: 1   neg: 0  
-		gemma2:9b                                pos: 1   neg: 0  
-		qwen2.5:72b                              pos: 1   neg: 0  
-		olmo2:7b                                 pos: 1   neg: 0  
-		gemma2:27b                               pos: 1   neg: 0  
-		mistral:7b                               pos: 1   neg: 0  
-		aya-expanse:8b                           pos: 1   neg: 0  
-		cogito:14b                               pos: 1   neg: 0  
-		llama3.3:70b                             pos: 1   neg: 0  
-		r1-1776:70b                              pos: 1   neg: 0  
-		olmo2:13b                                pos: 1   neg: 0  
-		llama3.1:70b                             pos: 1   neg: 0  
-		marco-o1:7b                              pos: 1   neg: 0  
-		gemma3:12b                               pos: 1   neg: 0  
-		aya-expanse:32b                          pos: 1   neg: 0  
-		qwen3:32b                                pos: 1   neg: 0  
-		phi4:14b                                 pos: 1   neg: 0  
-		dolphin-mistral:7b                       pos: 1   neg: 0  
-		openhermes:7b-mistral-v2.5-q4_0          pos: 1   neg: 0  
-		athene-v2:72b                            pos: 1   neg: 0  
-		openchat:7b                              pos: 1   neg: 0  
-		cogito:70b                               pos: 1   neg: 0  
-		qwen3:14b                                pos: 1   neg: 0  
+		POSITIVE:
+		nemotron-3-nano:30b                      pos: 1   neg: 0   [XL ] [TIER3]
+		cogito:8b                                pos: 1   neg: 0   [M  ] [TIER4]
+		tulu3:70b                                pos: 1   neg: 0   [XL ] [TIER2]
+		nemotron:70b                             pos: 1   neg: 0   [XL ] [TIER1]
+		qwen2.5:7b                               pos: 1   neg: 0   [M  ] [TIER1]
+		qwen3:8b                                 pos: 1   neg: 0   [M  ] [TIER1]
+		llama3.1:8b                              pos: 1   neg: 0   [M  ] [TIER3]
+		qwen3:4b                                 pos: 1   neg: 0   [S  ] [TIER1]
+		granite3.3:8b                            pos: 1   neg: 0   [M  ] [TIER4]
+		tulu3:8b                                 pos: 1   neg: 0   [M  ] [TIER4]
+		sailor2:20b                              pos: 1   neg: 0   [L  ] [TIER2]
+		olmo-3:32b                               pos: 1   neg: 0   [XL ] [TIER3]
+		gemma3:27b                               pos: 1   neg: 0   [XL ] [TIER1]
+		llava:34b                                pos: 1   neg: 0   [XL ] [TIER3]
+		gemma2:9b                                pos: 1   neg: 0   [M  ] [TIER1]
+		qwen2.5:72b                              pos: 1   neg: 0   [XL ] [TIER1]
+		mistral:7b                               pos: 1   neg: 0   [M  ] [TIER3]
+		gpt-oss:20b                              pos: 1   neg: 0   [L  ] [TIER3]
+		huihui_ai/qwen3-abliterated:14b          pos: 1   neg: 0   [L  ] [TIER1]
+		aya-expanse:8b                           pos: 1   neg: 0   [M  ] [TIER4]
+		cogito:14b                               pos: 1   neg: 0   [L  ] [TIER1]
+		olmo-3:7b                                pos: 1   neg: 0   [M  ] [TIER4]
+		r1-1776:70b                              pos: 1   neg: 0   [XL ] [TIER2]
+		llama3.3:70b                             pos: 1   neg: 0   [XL ] [TIER1]
+		huihui_ai/qwen3-abliterated:32b          pos: 1   neg: 0   [XL ] [TIER2]
+		qwq:32b                                  pos: 1   neg: 0   [XL ] [TIER1]
+		llama3.1:70b                             pos: 1   neg: 0   [XL ] [TIER1]
+		marco-o1:7b                              pos: 1   neg: 0   [M  ] [TIER1]
+		gemma3:12b                               pos: 1   neg: 0   [L  ] [TIER2]
+		aya-expanse:32b                          pos: 1   neg: 0   [XL ] [TIER3]
+		phi4:14b                                 pos: 1   neg: 0   [L  ] [TIER2]
+		qwen3:32b                                pos: 1   neg: 0   [XL ] [TIER1]
+		gemma3n:e4b                              pos: 1   neg: 0   [M  ] [TIER4]
+		openchat:7b                              pos: 1   neg: 0   [M  ] [TIER2]
+		athene-v2:72b                            pos: 1   neg: 0   [XL ] [TIER2]
+		cogito:70b                               pos: 1   neg: 0   [XL ] [TIER2]
+		qwen3:14b                                pos: 1   neg: 0   [L  ] [TIER1]
 		-----
-		qwen3:4b                                 pos: 0   neg: 1  
+		NEGATIVE:
 		 */
 
+		OllamaService.destroyInstance();
+		
 		// Assert
 		assertTrue("Make sure we have a clean sheet for all tier1 M L XL models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OLLAMA_ALL_TIER1_M_L_XL));
 	}
@@ -451,126 +537,120 @@ public class OllamaGeneralKnowledgeTest {
 	@Test
 	public void simpleStrawberryRCountVague_OllamaModels_XL() {
 		
+		HashMap<String, Integer> acceptable_answers = new HashMap<String, Integer>() {{
+			this.put("3", 1);
+		}};
+		
+		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
+		settings.setSatellites(new ArrayList<>(Arrays.asList(new OllamaEndpoint("http://127.0.0.1:11434", "", ""))));
+		settings.setOllama_scan(false);
+		
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
-				false, // use MCP
-				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, 
-				"Count the number of R in strawberry. Answer with number only", "3", true, false);
-
+				false, // no mcp
+				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_M, 
+				"Count the number of R in strawberry. Answer with number only", 
+				acceptable_answers,
+				false, false, false, settings);
+		
 		// Print the scorecard
 		System.out.println("SCORECARD:");
 		scorecard.evaluate();
 		scorecard.print();
 
 		/*
-		qwen3:8b                                 pos: 1   neg: 0  
-		qwen2.5:7b                               pos: 1   neg: 0  
-		sailor2:20b                              pos: 1   neg: 0  
-		command-r7b:7b                           pos: 1   neg: 0  
-		gemma2:9b                                pos: 1   neg: 0  
-		olmo2:7b                                 pos: 1   neg: 0  
-		r1-1776:70b                              pos: 1   neg: 0  
-		marco-o1:7b                              pos: 1   neg: 0  
-		qwen3:32b                                pos: 1   neg: 0  
-		dolphin-mistral:7b                       pos: 1   neg: 0  
-		openchat:7b                              pos: 1   neg: 0  
-		qwen3:14b                                pos: 1   neg: 0  
+		POSITIVE:
+		gemma2:9b                                pos: 1   neg: 0   [M  ] [TIER1]
+		qwen2.5:7b                               pos: 1   neg: 0   [M  ] [TIER1]
+		qwen3:8b                                 pos: 1   neg: 0   [M  ] [TIER1]
+		llama3.1:8b                              pos: 1   neg: 0   [M  ] [TIER3]
+		qwen3:4b                                 pos: 1   neg: 0   [S  ] [TIER1]
+		olmo-3:7b                                pos: 1   neg: 0   [M  ] [TIER4]
+		granite3.3:8b                            pos: 1   neg: 0   [M  ] [TIER4]
+		marco-o1:7b                              pos: 1   neg: 0   [M  ] [TIER1]
+		gemma3n:e4b                              pos: 1   neg: 0   [M  ] [TIER4]
+		openchat:7b                              pos: 1   neg: 0   [M  ] [TIER2]
 		-----
-		dolphin3:8b                              pos: 0   neg: 1  
-		wizard-vicuna-uncensored:30b             pos: 0   neg: 1  
-		tulu3:70b                                pos: 0   neg: 1  
-		cogito:8b                                pos: 0   neg: 1  
-		nemotron:70b                             pos: 0   neg: 1  
-		llama3.1:8b                              pos: 0   neg: 1  
-		qwen2:7b                                 pos: 0   neg: 1  
-		granite3.1-dense:8b                      pos: 0   neg: 1  
-		qwen3:4b                                 pos: 0   neg: 1  
-		tulu3:8b                                 pos: 0   neg: 1  
-		granite3.3:8b                            pos: 0   neg: 1  
-		llama3.2:3b                              pos: 0   neg: 1  
-		gemma3:27b                               pos: 0   neg: 1  
-		exaone-deep:7.8b                         pos: 0   neg: 1  
-		llava:34b                                pos: 0   neg: 1  
-		exaone3.5:32b                            pos: 0   neg: 1  
-		qwen2.5:72b                              pos: 0   neg: 1  
-		gemma2:27b                               pos: 0   neg: 1  
-		mistral:7b                               pos: 0   neg: 1  
-		aya-expanse:8b                           pos: 0   neg: 1  
-		cogito:14b                               pos: 0   neg: 1  
-		llama3.3:70b                             pos: 0   neg: 1  
-		olmo2:13b                                pos: 0   neg: 1  
-		llama3.1:70b                             pos: 0   neg: 1  
-		gemma3:12b                               pos: 0   neg: 1  
-		aya-expanse:32b                          pos: 0   neg: 1  
-		phi4:14b                                 pos: 0   neg: 1  
-		openhermes:7b-mistral-v2.5-q4_0          pos: 0   neg: 1  
-		athene-v2:72b                            pos: 0   neg: 1  
-		cogito:70b                               pos: 0   neg: 1  
+		NEGATIVE:
+		cogito:8b                                pos: 0   neg: 1   [M  ] [TIER4]
+		mistral:7b                               pos: 0   neg: 1   [M  ] [TIER3]
+		aya-expanse:8b                           pos: 0   neg: 1   [M  ] [TIER4]
+		tulu3:8b                                 pos: 0   neg: 1   [M  ] [TIER4]
 		 */
 
+		OllamaService.destroyInstance();
+		
 	}
 
 	@Test
 	public void simpleStrawberryRCount_OllamaModels_XL() {
 		
+		HashMap<String, Integer> acceptable_answers = new HashMap<String, Integer>() {{
+			this.put("3", 1);
+		}};
+		
+		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
+		settings.setSatellites(new ArrayList<>(Arrays.asList(new OllamaEndpoint("http://127.0.0.1:11434", "", ""))));
+		settings.setOllama_scan(false);
+		
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
-				false, // use MCP
+				false, // no mcp
 				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, 
 				"Count the number of 'r' characters in the string 's t r a w b e r r y', which contains 10 characters from the alphabet in total. "
 				+ "Walk through each character in the word while counting and make note of the string index they occur at. "
 				+ "Include the string index records in your motivation. Answer with number only", 
-				"3", true, false);
-
+				acceptable_answers,
+				false, false, false, settings);
+		
 		// Print the scorecard
 		System.out.println("SCORECARD:");
 		scorecard.evaluate();
 		scorecard.print();
 
 		/*
-		dolphin3:8b                              pos: 1   neg: 0  
-		cogito:8b                                pos: 1   neg: 0  
-		nemotron:70b                             pos: 1   neg: 0  
-		qwen3:8b                                 pos: 1   neg: 0  
-		qwen2.5:7b                               pos: 1   neg: 0  
-		llama3.1:8b                              pos: 1   neg: 0  
-		granite3.1-dense:8b                      pos: 1   neg: 0  
-		qwen3:4b                                 pos: 1   neg: 0  
-		granite3.3:8b                            pos: 1   neg: 0  
-		gemma3:27b                               pos: 1   neg: 0  
-		sailor2:20b                              pos: 1   neg: 0  
-		exaone3.5:32b                            pos: 1   neg: 0  
-		gemma2:9b                                pos: 1   neg: 0  
-		qwen2.5:72b                              pos: 1   neg: 0  
-		olmo2:7b                                 pos: 1   neg: 0  
-		mistral:7b                               pos: 1   neg: 0  
-		aya-expanse:8b                           pos: 1   neg: 0  
-		llama3.3:70b                             pos: 1   neg: 0  
-		r1-1776:70b                              pos: 1   neg: 0  
-		llama3.1:70b                             pos: 1   neg: 0  
-		marco-o1:7b                              pos: 1   neg: 0  
-		gemma3:12b                               pos: 1   neg: 0  
-		qwen3:32b                                pos: 1   neg: 0  
-		athene-v2:72b                            pos: 1   neg: 0  
-		qwen3:14b                                pos: 1   neg: 0  
+		POSITIVE:
+		nemotron-3-nano:30b                      pos: 1   neg: 0   [XL ] [TIER3]
+		cogito:8b                                pos: 1   neg: 0   [M  ] [TIER4]
+		nemotron:70b                             pos: 1   neg: 0   [XL ] [TIER1]
+		qwen2.5:7b                               pos: 1   neg: 0   [M  ] [TIER1]
+		qwen3:8b                                 pos: 1   neg: 0   [M  ] [TIER1]
+		llama3.1:8b                              pos: 1   neg: 0   [M  ] [TIER3]
+		qwen3:4b                                 pos: 1   neg: 0   [S  ] [TIER1]
+		granite3.3:8b                            pos: 1   neg: 0   [M  ] [TIER4]
+		sailor2:20b                              pos: 1   neg: 0   [L  ] [TIER2]
+		olmo-3:32b                               pos: 1   neg: 0   [XL ] [TIER3]
+		gemma3:27b                               pos: 1   neg: 0   [XL ] [TIER1]
+		gemma2:9b                                pos: 1   neg: 0   [M  ] [TIER1]
+		gpt-oss:20b                              pos: 1   neg: 0   [L  ] [TIER3]
+		huihui_ai/qwen3-abliterated:14b          pos: 1   neg: 0   [L  ] [TIER1]
+		aya-expanse:8b                           pos: 1   neg: 0   [M  ] [TIER4]
+		cogito:14b                               pos: 1   neg: 0   [L  ] [TIER1]
+		llama3.3:70b                             pos: 1   neg: 0   [XL ] [TIER1]
+		huihui_ai/qwen3-abliterated:32b          pos: 1   neg: 0   [XL ] [TIER2]
+		qwq:32b                                  pos: 1   neg: 0   [XL ] [TIER1]
+		llama3.1:70b                             pos: 1   neg: 0   [XL ] [TIER1]
+		marco-o1:7b                              pos: 1   neg: 0   [M  ] [TIER1]
+		gemma3:12b                               pos: 1   neg: 0   [L  ] [TIER2]
+		phi4:14b                                 pos: 1   neg: 0   [L  ] [TIER2]
+		qwen3:32b                                pos: 1   neg: 0   [XL ] [TIER1]
+		gemma3n:e4b                              pos: 1   neg: 0   [M  ] [TIER4]
+		qwen3:14b                                pos: 1   neg: 0   [L  ] [TIER1]
 		-----
-		wizard-vicuna-uncensored:30b             pos: 0   neg: 1  
-		tulu3:70b                                pos: 0   neg: 1  
-		qwen2:7b                                 pos: 0   neg: 1  
-		tulu3:8b                                 pos: 0   neg: 1  
-		llama3.2:3b                              pos: 0   neg: 1  
-		exaone-deep:7.8b                         pos: 0   neg: 1  
-		command-r7b:7b                           pos: 0   neg: 1  
-		llava:34b                                pos: 0   neg: 1  
-		gemma2:27b                               pos: 0   neg: 1  
-		cogito:14b                               pos: 0   neg: 1  
-		olmo2:13b                                pos: 0   neg: 1  
-		aya-expanse:32b                          pos: 0   neg: 1  
-		phi4:14b                                 pos: 0   neg: 1  
-		dolphin-mistral:7b                       pos: 0   neg: 1  
-		openhermes:7b-mistral-v2.5-q4_0          pos: 0   neg: 1  
-		openchat:7b                              pos: 0   neg: 1  
-		cogito:70b                               pos: 0   neg: 1  
+		NEGATIVE:
+		tulu3:70b                                pos: 0   neg: 1   [XL ] [TIER2]
+		tulu3:8b                                 pos: 0   neg: 1   [M  ] [TIER4]
+		llava:34b                                pos: 0   neg: 1   [XL ] [TIER3]
+		qwen2.5:72b                              pos: 0   neg: 1   [XL ] [TIER2]
+		mistral:7b                               pos: 0   neg: 1   [M  ] [TIER3]
+		olmo-3:7b                                pos: 0   neg: 1   [M  ] [TIER4]
+		r1-1776:70b                              pos: 0   neg: 1   [XL ] [TIER2]
+		aya-expanse:32b                          pos: 0   neg: 1   [XL ] [TIER3]
+		openchat:7b                              pos: 0   neg: 1   [M  ] [TIER2]
+		athene-v2:72b                            pos: 0   neg: 1   [XL ] [TIER2]
+		cogito:70b                               pos: 0   neg: 1   [XL ] [TIER2]
 		 */
 
+		OllamaService.destroyInstance();
+		
 		// Assert
 		assertTrue("Make sure we have a clean sheet for all tier1 M L XL models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OLLAMA_ALL_TIER1_M_L_XL));
 	}
@@ -578,114 +658,108 @@ public class OllamaGeneralKnowledgeTest {
 	@Test
 	public void simpleStrawberryRCount_OllamaModels_L() {
 		
+		HashMap<String, Integer> acceptable_answers = new HashMap<String, Integer>() {{
+			this.put("3", 1);
+		}};
+		
+		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
+		settings.setSatellites(new ArrayList<>(Arrays.asList(new OllamaEndpoint("http://127.0.0.1:11434", "", ""))));
+		settings.setOllama_scan(false);
+		
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
-				false, // use MCP
+				false, // no mcp
 				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_L, 
 				"Count the number of 'r' characters in the string 's t r a w b e r r y', which contains 10 characters from the alphabet in total. "
 				+ "Walk through each character in the word while counting and make note of the string index they occur at. "
 				+ "Include the string index records in your motivation. Answer with number only", 
-				"3", true, false);
-
+				acceptable_answers,
+				false, false, false, settings);
+		
 		// Print the scorecard
 		System.out.println("SCORECARD:");
 		scorecard.evaluate();
 		scorecard.print();
 
 		/*
-		dolphin3:8b                              pos: 1   neg: 0  
-		cogito:8b                                pos: 1   neg: 0  
-		qwen2.5:7b                               pos: 1   neg: 0  
-		llama3.1:8b                              pos: 1   neg: 0  
-		qwen3:4b                                 pos: 1   neg: 0  
-		sailor2:20b                              pos: 1   neg: 0  
-		command-r7b:7b                           pos: 1   neg: 0  
-		gemma2:9b                                pos: 1   neg: 0  
-		olmo2:7b                                 pos: 1   neg: 0  
-		mistral:7b                               pos: 1   neg: 0  
-		aya-expanse:8b                           pos: 1   neg: 0  
-		cogito:14b                               pos: 1   neg: 0  
-		marco-o1:7b                              pos: 1   neg: 0  
-		gemma3:12b                               pos: 1   neg: 0  
-		openchat:7b                              pos: 1   neg: 0  
-		qwen3:14b                                pos: 1   neg: 0  
+		POSITIVE:
+		gemma2:9b                                pos: 1   neg: 0   [M  ] [TIER1]
+		cogito:8b                                pos: 1   neg: 0   [M  ] [TIER4]
+		qwen2.5:7b                               pos: 1   neg: 0   [M  ] [TIER1]
+		qwen3:8b                                 pos: 1   neg: 0   [M  ] [TIER1]
+		gpt-oss:20b                              pos: 1   neg: 0   [L  ] [TIER3]
+		llama3.1:8b                              pos: 1   neg: 0   [M  ] [TIER3]
+		huihui_ai/qwen3-abliterated:14b          pos: 1   neg: 0   [L  ] [TIER1]
+		aya-expanse:8b                           pos: 1   neg: 0   [M  ] [TIER4]
+		qwen3:4b                                 pos: 1   neg: 0   [S  ] [TIER1]
+		cogito:14b                               pos: 1   neg: 0   [L  ] [TIER1]
+		granite3.3:8b                            pos: 1   neg: 0   [M  ] [TIER4]
+		sailor2:20b                              pos: 1   neg: 0   [L  ] [TIER2]
+		marco-o1:7b                              pos: 1   neg: 0   [M  ] [TIER1]
+		gemma3:12b                               pos: 1   neg: 0   [L  ] [TIER2]
+		phi4:14b                                 pos: 1   neg: 0   [L  ] [TIER2]
+		gemma3n:e4b                              pos: 1   neg: 0   [M  ] [TIER4]
+		qwen3:14b                                pos: 1   neg: 0   [L  ] [TIER1]
 		-----
-		qwen2:7b                                 pos: 0   neg: 1  
-		tulu3:8b                                 pos: 0   neg: 1  
-		granite3.3:8b                            pos: 0   neg: 1  
-		llama3.2:3b                              pos: 0   neg: 1  
-		exaone-deep:7.8b                         pos: 0   neg: 1  
-		olmo2:13b                                pos: 0   neg: 1  
-		phi4:14b                                 pos: 0   neg: 1  
-		dolphin-mistral:7b                       pos: 0   neg: 1  
-		openhermes:7b-mistral-v2.5-q4_0          pos: 0   neg: 1  
+		NEGATIVE:
+		mistral:7b                               pos: 0   neg: 1   [M  ] [TIER3]
+		olmo-3:7b                                pos: 0   neg: 1   [M  ] [TIER4]
+		tulu3:8b                                 pos: 0   neg: 1   [M  ] [TIER4]
+		openchat:7b                              pos: 0   neg: 1   [M  ] [TIER2]
 		 */
 
+		OllamaService.destroyInstance();
+		
 		// Assert
-		assertTrue("Make sure we have a clean sheet for all tier1 M models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OLLAMA_ALL_TIER1_M_L_XL));
+		assertTrue("Make sure we have a clean sheet for all tier1 L models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OLLAMA_ALL_TIER1_M_L_XL));
 	}
 	
 	@Test
 	public void simpleStrawberryRCount_OllamaModels_M() {
 		
+		HashMap<String, Integer> acceptable_answers = new HashMap<String, Integer>() {{
+			this.put("3", 1);
+		}};
+		
+		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
+		settings.setSatellites(new ArrayList<>(Arrays.asList(new OllamaEndpoint("http://127.0.0.1:11434", "", ""))));
+		settings.setOllama_scan(false);
+		
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
-				false, // use MCP
+				false, // no mcp
 				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_M, 
 				"Count the number of 'r' characters in the string 's t r a w b e r r y', which contains 10 characters from the alphabet in total. "
 				+ "Walk through each character in the word while counting and make note of the string index they occur at. "
 				+ "Include the string index records in your motivation. Answer with number only", 
-				"3", true, false);
-
+				acceptable_answers,
+				false, false, false, settings);
+		
 		// Print the scorecard
 		System.out.println("SCORECARD:");
 		scorecard.evaluate();
 		scorecard.print();
 
 		/*
-		dolphin3:8b                              pos: 1   neg: 0  
-		cogito:8b                                pos: 1   neg: 0  
-		nemotron:70b                             pos: 1   neg: 0  
-		qwen3:8b                                 pos: 1   neg: 0  
-		qwen2.5:7b                               pos: 1   neg: 0  
-		llama3.1:8b                              pos: 1   neg: 0  
-		granite3.1-dense:8b                      pos: 1   neg: 0  
-		qwen3:4b                                 pos: 1   neg: 0  
-		granite3.3:8b                            pos: 1   neg: 0  
-		gemma3:27b                               pos: 1   neg: 0  
-		sailor2:20b                              pos: 1   neg: 0  
-		exaone3.5:32b                            pos: 1   neg: 0  
-		gemma2:9b                                pos: 1   neg: 0  
-		qwen2.5:72b                              pos: 1   neg: 0  
-		olmo2:7b                                 pos: 1   neg: 0  
-		mistral:7b                               pos: 1   neg: 0  
-		aya-expanse:8b                           pos: 1   neg: 0  
-		llama3.3:70b                             pos: 1   neg: 0  
-		r1-1776:70b                              pos: 1   neg: 0  
-		llama3.1:70b                             pos: 1   neg: 0  
-		marco-o1:7b                              pos: 1   neg: 0  
-		gemma3:12b                               pos: 1   neg: 0  
-		qwen3:32b                                pos: 1   neg: 0  
-		athene-v2:72b                            pos: 1   neg: 0  
-		qwen3:14b                                pos: 1   neg: 0  
+		POSITIVE:
+		gemma2:9b                                pos: 1   neg: 0   [M  ] [TIER1]
+		cogito:8b                                pos: 1   neg: 0   [M  ] [TIER4]
+		qwen2.5:7b                               pos: 1   neg: 0   [M  ] [TIER1]
+		qwen3:8b                                 pos: 1   neg: 0   [M  ] [TIER1]
+		llama3.1:8b                              pos: 1   neg: 0   [M  ] [TIER3]
+		aya-expanse:8b                           pos: 1   neg: 0   [M  ] [TIER4]
+		qwen3:4b                                 pos: 1   neg: 0   [S  ] [TIER1]
+		granite3.3:8b                            pos: 1   neg: 0   [M  ] [TIER4]
+		marco-o1:7b                              pos: 1   neg: 0   [M  ] [TIER1]
+		gemma3n:e4b                              pos: 1   neg: 0   [M  ] [TIER4]
 		-----
-		wizard-vicuna-uncensored:30b             pos: 0   neg: 1  
-		tulu3:70b                                pos: 0   neg: 1  
-		qwen2:7b                                 pos: 0   neg: 1  
-		tulu3:8b                                 pos: 0   neg: 1  
-		llama3.2:3b                              pos: 0   neg: 1  
-		exaone-deep:7.8b                         pos: 0   neg: 1  
-		command-r7b:7b                           pos: 0   neg: 1  
-		llava:34b                                pos: 0   neg: 1  
-		gemma2:27b                               pos: 0   neg: 1  
-		cogito:14b                               pos: 0   neg: 1  
-		olmo2:13b                                pos: 0   neg: 1  
-		aya-expanse:32b                          pos: 0   neg: 1  
-		phi4:14b                                 pos: 0   neg: 1  
-		dolphin-mistral:7b                       pos: 0   neg: 1  
-		openhermes:7b-mistral-v2.5-q4_0          pos: 0   neg: 1  
-		openchat:7b                              pos: 0   neg: 1  
-		cogito:70b                               pos: 0   neg: 1  
+		NEGATIVE:
+		mistral:7b                               pos: 0   neg: 1   [M  ] [TIER3]
+		olmo-3:7b                                pos: 0   neg: 1   [M  ] [TIER4]
+		tulu3:8b                                 pos: 0   neg: 1   [M  ] [TIER4]
+		openchat:7b                              pos: 0   neg: 1   [M  ] [TIER2]
 		 */
 
+		OllamaService.destroyInstance();
+		
 		// Assert
 		assertTrue("Make sure we have a clean sheet for all tier1 M models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OLLAMA_ALL_TIER1_M_L_XL));
 	}

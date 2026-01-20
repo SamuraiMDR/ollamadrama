@@ -52,11 +52,11 @@ public class ConfidenceThresholdCard {
 		// Print profile 100 replies for all models
 		HashMap<String, HashMap<String, Integer>> results100 = getShould_be_100_proba();
 		for (String model: results100.keySet()) {
-			System.out.print(model + ":");
+			System.out.print(StringsUtils.cutAndPadStringToN(model, 30) + ":");
 			HashMap<String, Integer> entries = results100.get(model);
 			for (String q: entries.keySet()) {
 				Integer val = entries.get(q);
-				System.out.print(" " + val);
+				System.out.print(" " + StringsUtils.cutAndPadStringToN("" + val, 3));
 			}
 			System.out.println("");
 		}
@@ -66,11 +66,11 @@ public class ConfidenceThresholdCard {
 		// Print profile 50 replies for all models
 		HashMap<String, HashMap<String, Integer>> results50 = getShould_be_50_proba();
 		for (String model: results50.keySet()) {
-			System.out.print(model + ":");
+			System.out.print(StringsUtils.cutAndPadStringToN(model, 30) + ":");
 			HashMap<String, Integer> entries = results50.get(model);
 			for (String q: entries.keySet()) {
 				Integer val = entries.get(q);
-				System.out.print(" " + val);
+				System.out.print(" " + StringsUtils.cutAndPadStringToN("" + val, 3));
 			}
 			System.out.println("");
 		}
@@ -80,11 +80,11 @@ public class ConfidenceThresholdCard {
 		// Print profile 0 replies for all models
 		HashMap<String, HashMap<String, Integer>> results0 = getShould_be_0_proba();
 		for (String model: results0.keySet()) {
-			System.out.print(model + ":");
+			System.out.print(StringsUtils.cutAndPadStringToN(model, 30) + ":");
 			HashMap<String, Integer> entries = results0.get(model);
 			for (String q: entries.keySet()) {
 				Integer val = entries.get(q);
-				System.out.print(" " + val);
+				System.out.print(" " + StringsUtils.cutAndPadStringToN("" + val, 3));
 			}
 			System.out.println("");
 		}

@@ -153,28 +153,14 @@ public class OpenAIService {
         settings = Objects.requireNonNull(new_settings, "Settings cannot be null");
     }
 
-    // ========== BACKWARD COMPATIBILITY WRAPPERS (DEPRECATED) ==========
-
-    /**
-     * @deprecated Use {@link #get_strict_session(String, OllamaDramaSettings)} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static OpenAISession getStrictSession(String model_name, OllamaDramaSettings settings_param) {
         return get_strict_session(model_name, settings_param);
     }
 
-    /**
-     * @deprecated Use {@link #get_strict_session(String)} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static OpenAISession getStrictSession(String model_name) {
         return get_strict_session(model_name);
     }
 
-    /**
-     * @deprecated Use {@link #get_settings()} instead.
-     */
-    @Deprecated(since = "1.0", forRemoval = false)
     public static OllamaDramaSettings getSettings() {
         return get_settings();
     }

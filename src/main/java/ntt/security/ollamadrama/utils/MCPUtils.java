@@ -58,7 +58,7 @@ public class MCPUtils {
 				client.initialize();
 				success = true;
 			} catch (Exception e) {
-				LOGGER.info("Unable to initialize client: " + e.getMessage());
+				LOGGER.info("MCP communication attempt failed. Unable to initialize client: " + e.getMessage());
 			}
 			retrycounter++;
 		}
@@ -73,7 +73,7 @@ public class MCPUtils {
 		return tools;
 	}
 
-	public static CallToolResult callToolUsingMCPEndpoint(String _mcp_endpoint, String _mcp_endpoint_path, String _toolname, HashMap<String, Object> _arguments, long _timeout) {
+	public static CallToolResult callToolUsingMCPEndpoint(String _mcp_endpoint, String _mcp_endpoint_path, String _toolname, HashMap<String, Object> _arguments, long _timeout, boolean _halt_on_tool_error) {
 
 		CallToolResult result = null;
 		boolean success = false;
@@ -104,15 +104,28 @@ public class MCPUtils {
 						if (!result.isError()) {
 							success = true;
 						} else {
-							LOGGER.info("Caught error when calling " +_toolname + " trycounter: " + trycounter + " result: " + result.toString());
+							if (_halt_on_tool_error) {
+								LOGGER.error("FATAL, instructed to halt on tool error." + " result: " + result.toString());
+								SystemUtils.halt();
+							} else {
+								LOGGER.warn("Tool failure, trycounter: " + trycounter + ", sleeping 10 seconds and will try again." + " result: " + result.toString());
+								SystemUtils.sleepInSeconds(10);
+							}
+							
 						}
 					}
 				}
 				trycounter++;
 			} catch (Exception e) {
 				LOGGER.warn("Caught Exception in callToolUsingMCPEndpoint(): " + e.getMessage());
-				LOGGER.info("trycounter: " + trycounter);
-				SystemUtils.sleepInSeconds(10);
+				
+				if (_halt_on_tool_error) {
+					LOGGER.error("FATAL, instructed to halt on tool error.");
+					SystemUtils.halt();
+				} else {
+					LOGGER.warn("Tool failure, trycounter: " + trycounter + ", sleeping 10 seconds and will try again");
+					SystemUtils.sleepInSeconds(10);
+				}
 			}
 		}
 

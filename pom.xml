@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>ntt.security</groupId>
   <artifactId>ollamadrama</artifactId>
-  <version>1.0.3</version>
+  <version>1.0.4</version>
   <name>ollamadrama</name>
 
 	<properties>
@@ -108,17 +108,17 @@
 		<dependency>
 		    <groupId>io.github.ollama4j</groupId>
 		    <artifactId>ollama4j</artifactId>
-		    <version>1.1.0</version>
+		    <version>1.1.6</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-text</artifactId>
-			<version>1.14.0</version>
+			<version>1.15.0</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-io</groupId>
 			<artifactId>commons-io</artifactId>
-			<version>2.20.0</version>
+			<version>2.21.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.alibaba</groupId>
@@ -128,12 +128,12 @@
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
-			<version>2.20.0</version>
+			<version>2.20.1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-core</artifactId>
-			<version>2.20.0</version>
+			<version>2.20.1</version>
 		</dependency>
 		
 		<!-- OpenAI -->
@@ -147,33 +147,19 @@
 		<dependency>
 		    <groupId>io.modelcontextprotocol.sdk</groupId>
 		    <artifactId>mcp</artifactId>
-		    <version>0.14.1</version>
+		    <version>0.17.0</version>
 		</dependency>
 		<dependency>
 		    <groupId>io.modelcontextprotocol.sdk</groupId>
 		    <artifactId>mcp-spring-webflux</artifactId>
-		    <version>0.14.1</version>
+		    <version>0.17.0</version>
 		</dependency>
 		<dependency>
 		    <groupId>io.modelcontextprotocol.sdk</groupId>
 		    <artifactId>mcp-spring-webmvc</artifactId>
-		    <version>0.14.1</version>
-		</dependency>
-
-		<!-- ElevenLabs -->
-		<dependency>
-		    <groupId>net.andrewcpu</groupId>
-		    <artifactId>elevenlabs-api</artifactId>
-		    <version>2.7.8</version>
+		    <version>0.17.0</version>
 		</dependency>
 		
-		<!-- Audio -->
-	    <dependency>
-		    <groupId>javazoom</groupId>
-		    <artifactId>jlayer</artifactId>
-		    <version>1.0.1</version>
-		</dependency>
-
 		<!-- Test -->
 		<dependency>
 			<groupId>junit</groupId>

@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import io.github.ollama4j.utils.Options;
 import io.github.ollama4j.utils.OptionsBuilder;
+import ntt.security.ollamadrama.utils.NumUtils;
 
 public class Globals {
 
@@ -76,6 +77,10 @@ public class Globals {
 			Map.entry("llama3.3:70b", 32768), // train 131072
 			Map.entry("nemotron:70b", 32768), // train 131072
 			Map.entry("qwen3:32b", 32768), // train 40960
+			Map.entry("huihui_ai/qwen3-abliterated:32b", 32768), // train 40960
+			Map.entry("huihui_ai/qwen3-abliterated:14b", 32768), // train 40960
+			Map.entry("huihui_ai/qwen3-abliterated:16b", 32768), // train 40960
+			Map.entry("huihui_ai/qwen3-abliterated:8b", 32768), // train 40960
 			Map.entry("qwen2.5:72b", 32768), // train 32768
 			Map.entry("gemma3:27b", 32768), // train 126976 but wont load
 			Map.entry("cogito:70b", 32768), // train 131072
@@ -123,7 +128,12 @@ public class Globals {
 			Map.entry("opencoder:8b", 32768), // train 131072
 			Map.entry("gpt-oss:20b", 32768), // train 131072
 			Map.entry("gpt-oss:120b", 32768), // train 131072
-			Map.entry("codestral:22b", 32768) // train 131072
+			Map.entry("codestral:22b", 32768), // train 131072
+			Map.entry("olmo-3:7b", 32768), // train 65536
+			Map.entry("olmo-3:32b", 32768), // train 65536
+			Map.entry("olmo-3.1:32b", 32768), // train 65536
+			Map.entry("qwq:32b", 32768), // train 131072
+			Map.entry("nemotron-3-nano:30b", 32768) // train 1048576 (1M)
 			);
 
 
@@ -178,7 +188,7 @@ public class Globals {
 		return new OptionsBuilder().build();
 	}
 
-	public static Options createCreativeOptionsBuilder(String _modelname, int _n_ctx_override) {
+	public static Options createCreativeOptionsBuilder(String _modelname, int _n_ctx_override, int _seed) {
 		Integer n_ctx = null;
 		if (_n_ctx_override == -1) {
 			n_ctx = n_ctx_defaults.get(_modelname);
@@ -197,6 +207,7 @@ public class Globals {
 				.setTopP(1.0f)						// 0.0-1.0, higher = more creative (default 0.9)
 				.setNumCtx(n_ctx) 					// Size of the context window (default 2048), https://github.com/ollama/ollama/blob/main/docs/faq.md#how-can-i-specify-the-context-window-size
 				// num_ctx does not seem to work over api, use https://www.reddit.com/r/ollama/comments/1e4hklk/how_does_num_predict_and_num_ctx_work/
+				.setSeed(_seed)
 				.build();
 	}
 
@@ -215,41 +226,46 @@ public class Globals {
 			+ "";
 
 	/**
-	 * XL (<48GB)
+	 * XL (16GB+ <48GB)
 	 */
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL = ""
-			+ "llama3.1:70b," 	// 43 GB
-			+ "llama3.3:70b," 	// 43 GB
-			+ "nemotron:70b,"	// 43 GB
-			+ "qwen3:32b,"		// 20 GB
-			+ "qwen2.5:72b,"	// 47 GB
-			+ "gemma3:27b"		// 16 GB
+			+ "llama3.1:70b," 				 	 		// 43 GB
+			+ "llama3.3:70b," 					 		// 43 GB
+			+ "nemotron:70b,"					 		// 43 GB
+			+ "qwen3:32b,"						 		// 20 GB
+			+ "qwq:32b,"	    				 		// 20 GB
+			+ "gemma3:27b"						 		// 16 GB
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_MINIDIVERSE_XL = ""
 			+ "llama3.1:70b,"	// 43 GB
-			+ "qwen2.5:72b,"	// 47 GB
+			+ "qwq:32b,"	    // 20 GB
 			+ "gemma3:27b"		// 16 GB
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_XL = ""
-			+ "cogito:70b,"			// 43 GB
-			+ "athene-v2:72b,"		// 47 GB
-			+ "tulu3:70b,"		    // 43 GB
-			+ "r1-1776:70b"			// 43 GB
+			+ "qwen2.5:72b,"					    // 47 GB, fails strawberry test
+			+ "cogito:70b,"							// 43 GB
+			+ "athene-v2:72b,"						// 47 GB
+			+ "tulu3:70b,"		    				// 43 GB
+			+ "huihui_ai/qwen3-abliterated:32b" 	// 20 GB, uncensored
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_XL = ""
-			+ "aya-expanse:32b"	// 20 GB
+			+ "aya-expanse:32b,"		// 20 GB
+			+ "nemotron-3-nano:30b,"	// 24 GB
+			+ "olmo-3:32b,"				// 19 GB
+			+ "llava:34b"				// 20 GB
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_DIVERSE_XL = ""
-			+ "llama3.3:70b," 	// 43 GB
-			+ "qwen2.5:72b,"	// 47 GB
-			+ "tulu3:70b,"		// 43 GB
-			+ "qwen3:32b,"		// 20 GB
-			+ "gemma3:27b"		// 16 GB
+			+ "llama3.3:70b," 		// 43 GB
+			+ "qwen2.5:72b,"		// 47 GB
+			+ "tulu3:70b,"			// 43 GB
+			+ "qwen3:32b,"			// 20 GB
+			+ "nemotron-3-nano:30b,"// 24 GB
+			+ "gemma3:27b"			// 16 GB
 			+ "";
 
 	// task specific
@@ -259,7 +275,8 @@ public class Globals {
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_UNCENSORED_XL = ""
-			+ "dolphin-llama3:70b"		// 39 GB
+			+ "huihui_ai/qwen3-abliterated:32b," 		// 20 GB
+			+ "dolphin-llama3:70b"						// 39 GB
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_VISION_XL = ""
@@ -271,10 +288,9 @@ public class Globals {
 			+ "shieldgemma:27b"		// 17 GB, 'Yes'/'No' if safe replies only
 			+ "";
 
-
 	// task specific
 
-	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_DIVERSE_SECURITY_XL = ""
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_DIVERSE_SECURITY_XL = ""
 			+ "llama3.3:70b," 		
 			+ "tulu3:70b,"	
 			+ "llama3.1:70b,"
@@ -283,7 +299,7 @@ public class Globals {
 			+ "qwen2.5:72b"
 			+ "";
 
-	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_DIVERSE_TEXTONELINESUMMARY = ""	
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_DIVERSE_TEXTONELINESUMMARY = ""	
 			+ "tulu3:70b,"
 			+ "athene-v2:72b,"
 			+ "cogito:70b,"
@@ -292,22 +308,23 @@ public class Globals {
 
 
 	/**
-	 * L (<16GB)
+	 * L (8GB+ <16GB)
 	 */
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L = ""
-			+ "cogito:14b,"		// 9 GB
-			+ "qwen3:14b"		// 9.3 GB
+			+ "cogito:14b,"							// 9 GB
+			+ "huihui_ai/qwen3-abliterated:14b," 	// 9 GB, uncensored
+			+ "qwen3:14b"							// 9.3 GB
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_L = ""
-			+ "gpt-oss:20b,"		// 14 GB
-			+ "gemma3:12b,"			// 8.1 GB
-			+ "sailor2:20b,"		// 12 GB
-			+ "phi4:14b"			// 9 GB
+			+ "gemma3:12b,"							// 8.1 GB
+			+ "sailor2:20b,"						// 12 GB
+			+ "phi4:14b"							// 9 GB
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_L = ""
+			+ "gpt-oss:20b"							// 14 GB
 			+ "";
 
 	// task specific
@@ -336,7 +353,7 @@ public class Globals {
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_DIVERSE_L_XL = ""
 			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_MINIDIVERSE_XL + ","
-			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L + ","
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L
 			+ "";
 
 	/**
@@ -370,7 +387,8 @@ public class Globals {
 			+ "cogito:8b,"				// 4.1 GB, fails to trigger obvious tools
 			+ "aya-expanse:8b,"			// 5.1 GB, assumes its knowledge is 'now'
 			+ "gemma3n:e4b,"			// 7.5 GB, wings random guesses at times
-			+ "granite3.3:8b"			// 4.9 GB, fails to follow more detailed instructions
+			+ "granite3.3:8b,"			// 4.9 GB, fails to follow more detailed instructions
+			+ "olmo-3:7b"				// 4.5 GB, ??
 			+"";
 
 	// task specific
@@ -462,6 +480,7 @@ public class Globals {
 			+ MODEL_NAMES_OLLAMA_ALL_UP_TO_L
 
 			// broken uncensored
+			// + "huihui_ai/qwen3-abliterated:16b," 	// 9.8 GB, uncensored, refuses to respond with Yes to Paris (Okey)
 			// + "wizard-vicuna-uncensored:30b"		// Fails
 			// + "wizard-vicuna-uncensored:7b,"		// Fails to produce valid JSON
 			// + "llama2-uncensored:7b,"			// fails with empty replies
@@ -469,8 +488,11 @@ public class Globals {
 			// + "wizard-vicuna-uncensored:13b,"	// always 0% prob
 
 			// broken/unsupported in ollama
-			//+ "olmo2:13b"			// 8.4 GB, tool call limitations
-			//+ "olmo2:7b,"				// 4.1 GB, wings random guesses at times, refuses to call tools
+			
+			// + "r1-1776:70b"					    // 43 GB, unreliable performance
+			// + "olmo-3.1:32b,"					// 19 GB, often times out setting system profile
+			// + "olmo2:13b"			            // 8.4 GB, tool call limitations
+			// + "olmo2:7b,"				        // 4.1 GB, wings random guesses at times, refuses to call tools
 			// + "exaone3.5:32b"					// 19 GB, model skips the duration key?
 			// + "exaone-deep:7.8b,"				// 4.8 GB, fails to call tools for fresh data
 			// + "codellama:70b"					// ??
@@ -559,7 +581,7 @@ public class Globals {
 		this.put("llama3.3:70b", 14);
 		this.put("nemotron:70b", 14);
 		this.put("cogito:14b", 14);
-		this.put("qwen2.5:70b", 14);
+		this.put("qwen2.5:72b", 14);
 		this.put("qwen2.5:7b", 14);
 		this.put("qwen3:32b", 14);
 		this.put("qwen3:14b", 14);
@@ -575,6 +597,10 @@ public class Globals {
 		this.put("dolphin-llama3:70b", 14);
 		this.put("devstral:24b", 14);
 		this.put("gemma3n:e4b", 14);
+		
+		
+		this.put("nemotron-3-nano:30b", 14);
+		
 
 		// openai llms - too humble
 		this.put("gpt-4o", 19);

@@ -89,29 +89,40 @@ public class OllamaDramaUtils {
 			if (model_name.length()>=3) {
 				int querysubindex = 1;
 
-				// Launch strict session
-				OllamaSession a1 = OllamaService.get_strict_protocol_session(model_name, false, true, _use_mcp);
-				if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
+				try {
 
-				// Make query
-				String q1 = _question;
-				System.out.println("Question: " + q1);
-				SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(q1, false, settings.getOllama_timeout());
-				
-				// we need to have an acceptable answer
-				if (null ==_acceptable_answers.get(ssr1.getResponse())) {
-					LOGGER.error("The model " + model_name + " got this wrong and replied with " + ssr1.getResponse() + ", should it even be part of this test?");
-					SystemUtils.halt();
+					// Launch strict session
+					OllamaSession a1 = OllamaService.get_strict_protocol_session(model_name, false, true, _use_mcp);
+					if (a1.getOllama().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
+
+					// Make query
+					String q1 = _question;
+					System.out.println("Question: " + q1);
+					SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(q1, false, settings.getOllama_timeout());
+
+					// we need to have an acceptable answer
+					if (null ==_acceptable_answers.get(ssr1.getResponse())) {
+						LOGGER.error("The model " + model_name + " got this wrong and replied with " + ssr1.getResponse() + ", should it even be part of this test?");
+						SystemUtils.halt();
+					}
+					confidencecard = OllamaUtils.update_confidence_card(confidencecard, model_name, _queryid + "_" + querysubindex, q1, _type_of_question, _acceptable_answers, ssr1);
+
+				} catch (Exception e) {
+					LOGGER.error("Caught exception: " + e.getMessage());
 				}
-				confidencecard = OllamaUtils.update_confidence_card(confidencecard, model_name, _queryid + "_" + querysubindex, q1, _type_of_question, _acceptable_answers, ssr1);
 			}
 		}
 		return confidencecard;
 	}
-	
-	public static ModelsScoreCard populateScorecardsForOllamaModels(boolean _use_mcp, String _models, String _question, HashMap<String, Integer> _acceptable_answers, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
+
+	public static ModelsScoreCard populateScorecardsForOllamaModels(boolean _use_mcp, String _models, String _question, HashMap<String, Integer> _acceptable_answers, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed, boolean _return_toolcall, OllamaDramaSettings _settings) {
 		ModelsScoreCard scorecard = new ModelsScoreCard();
-		OllamaDramaSettings settings = OllamaUtils.parse_ollama_drama_config_env();
+		OllamaDramaSettings settings = null;
+		if (null != _settings) {
+			settings = _settings;
+		} else {
+			settings = OllamaUtils.parse_ollama_drama_config_env();
+		}
 		if (_use_mcp) {
 			settings.setMcp_scan(true);
 		} else {
@@ -124,24 +135,36 @@ public class OllamaDramaUtils {
 			if (model_name.length()>=3) {
 				int queryindex = 1;
 
-				// Launch strict session
-				OllamaSession a1 = OllamaService.get_strict_protocol_session(model_name, _hide_llm_reply_if_uncertain, _use_random_seed, _use_mcp);
-				if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
+				try {
 
-				// Make query
-				String q1 = _question;
-				System.out.println("Question: " + q1);
-				SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(q1, _hide_llm_reply_if_uncertain, settings.getOllama_timeout());
-				ssr1 = OllamaUtils.apply_response_sanity(ssr1, model_name, _hide_llm_reply_if_uncertain);
-				scorecard = OllamaUtils.update_score_card(scorecard, model_name, "q" + queryindex, q1, _acceptable_answers, ssr1);
+					// Launch strict session
+					OllamaSession a1 = OllamaService.get_strict_protocol_session(model_name, _hide_llm_reply_if_uncertain, _use_random_seed, _use_mcp);
+					if (a1.getOllama().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
+					
+					// Make query
+					String q1 = _question;
+					System.out.println("Question: " + q1);
+					SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(q1, _hide_llm_reply_if_uncertain, settings.getOllama_timeout(), 10, _return_toolcall);
+					ssr1 = OllamaUtils.apply_response_sanity(ssr1, model_name, _hide_llm_reply_if_uncertain);
+					scorecard = OllamaUtils.update_score_card(scorecard, model_name, "q" + queryindex, q1, _acceptable_answers, ssr1, false);
+
+				} catch (Exception e) {
+					LOGGER.error("Caught exception: " + e.getMessage());
+				}
+
 			}
 		}
 		return scorecard;
 	}
 
-	public static ModelsScoreCard populateProbabilityForOllamaModels(String _models, String _question, HashMap<String, Integer> _acceptable_answers, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed, long _timeout) {
+	public static ModelsScoreCard populateProbabilityForOllamaModels(String _models, String _question, HashMap<String, Integer> _acceptable_answers, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed, long _timeout, boolean _return_toolcall, OllamaDramaSettings _settings) {
 		ModelsScoreCard scorecard = new ModelsScoreCard();
-		OllamaDramaSettings settings = OllamaUtils.parse_ollama_drama_config_env();
+		OllamaDramaSettings settings = null;
+		if (null != _settings) {
+			settings = _settings;
+		} else {
+			settings = OllamaUtils.parse_ollama_drama_config_env();
+		}
 		settings.setOllama_models(_models);
 		settings.sanityCheck();
 		OllamaService.getInstance(settings);
@@ -149,16 +172,23 @@ public class OllamaDramaUtils {
 			if (model_name.length()>=3) {
 				int queryindex = 1;
 
-				// Launch strict session
-				OllamaSession a1 = OllamaService.get_strict_protocol_session(model_name, _hide_llm_reply_if_uncertain, _use_random_seed, false);
-				if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
+				try {
 
-				// Make query
-				String q1 = _question;
-				System.out.println("Question: " + q1);
-				SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(q1, _hide_llm_reply_if_uncertain, _timeout);
-				ssr1 = OllamaUtils.apply_response_sanity(ssr1, model_name, _hide_llm_reply_if_uncertain);
-				scorecard = OllamaUtils.update_score_card(scorecard, model_name, "q" + queryindex, q1, _acceptable_answers, ssr1);
+					// Launch strict session
+					OllamaSession a1 = OllamaService.get_strict_protocol_session(model_name, _hide_llm_reply_if_uncertain, _use_random_seed, false);
+					if (a1.getOllama().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
+
+					// Make query
+					String q1 = _question;
+					System.out.println("Question: " + q1);
+					SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(q1, _hide_llm_reply_if_uncertain, _timeout, 10, _return_toolcall);
+					ssr1 = OllamaUtils.apply_response_sanity(ssr1, model_name, _hide_llm_reply_if_uncertain);
+					scorecard = OllamaUtils.update_score_card(scorecard, model_name, "q" + queryindex, q1, _acceptable_answers, ssr1, false);
+
+				} catch (Exception e) {
+					LOGGER.error("Caught exception: " + e.getMessage());
+				}
+
 			}
 		}
 		return scorecard;
@@ -189,8 +219,8 @@ public class OllamaDramaUtils {
 		return scorecard;
 	}
 
-	public static ModelsScoreCard populateScorecardsForOllamaModels(boolean _use_mcp, String _models, String _question, String _expectedresponse, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
-		return populateScorecardsForOllamaModels(_use_mcp, _models, _question, OllamaUtils.singleValScore(_expectedresponse, 1), _hide_llm_reply_if_uncertain, _use_random_seed);
+	public static ModelsScoreCard populateScorecardsForOllamaModels(boolean _use_mcp, String _models, String _question, String _expectedresponse, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed, boolean _return_toolcall) {
+		return populateScorecardsForOllamaModels(_use_mcp, _models, _question, OllamaUtils.singleValScore(_expectedresponse, 1), _hide_llm_reply_if_uncertain, _use_random_seed, _return_toolcall, null);
 	}
 
 
@@ -204,16 +234,23 @@ public class OllamaDramaUtils {
 
 	public static ModelsScoreCard populateScorecardsForOpenAIAndOllamaModels(boolean _use_mcp, String _models, String _openaimodels, OllamaDramaSettings _settings, String _question, HashMap<String, Integer> _acceptable_answers, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
 		ModelsScoreCard scorecard = new ModelsScoreCard();
-		OllamaService.getInstance(_models);
+		_settings.setOllama_models(_models);
+		OllamaService.getInstance(_settings);
 		for (String model_name: _models.split(",")) {
 			int queryindex = 1;
-			OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, _hide_llm_reply_if_uncertain, _use_random_seed, false);
-			if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
-			String q1 = _question;
-			System.out.println("Question: " + q1);
-			SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(q1, _hide_llm_reply_if_uncertain, _settings.getOllama_timeout());
-			ssr1 = OllamaUtils.applyResponseSanity(ssr1, model_name, _hide_llm_reply_if_uncertain);
-			scorecard = OllamaUtils.updateScoreCard(scorecard, model_name, "q" + queryindex, q1, _acceptable_answers, ssr1);
+
+			try {
+				OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, _hide_llm_reply_if_uncertain, _use_random_seed, false);
+				if (a1.getOllama().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
+				String q1 = _question;
+				System.out.println("Question: " + q1);
+				SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(q1, _hide_llm_reply_if_uncertain, _settings.getOllama_timeout());
+				ssr1 = OllamaUtils.applyResponseSanity(ssr1, model_name, _hide_llm_reply_if_uncertain);
+				scorecard = OllamaUtils.updateScoreCard(scorecard, model_name, "q" + queryindex, q1, _acceptable_answers, ssr1);
+
+			} catch (Exception e) {
+				LOGGER.error("Caught exception: " + e.getMessage());
+			}
 		}
 		OpenAIService.getInstance(_settings);
 		for (String model_name: _openaimodels.split(",")) {
@@ -262,7 +299,7 @@ public class OllamaDramaUtils {
 			int errorcounter = 0;
 			String bagOfWords = "";
 			for (int x=1000; x<=200000; x+=1000) {
-				
+
 				// only go to next x if sucessful
 				boolean passed_x_level = false;
 				int trycounter = 0;
@@ -272,64 +309,70 @@ public class OllamaDramaUtils {
 							(apply_earlyexit_after_errorthreshold && (errorcounter <= _nrErrorsToAllow)) ||
 							!apply_earlyexit_after_errorthreshold ||
 							false) {
-						OllamaSession a1 = OllamaService.get_strict_protocol_session(model_name, false, _use_random_seed, false);
-						if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama agent [" + model_name + "] is operational\n");
 
-						int needle_pos = NumUtils.randomNumWithinRangeAsInt(20, x-20);
+						try {
+							OllamaSession a1 = OllamaService.get_strict_protocol_session(model_name, false, _use_random_seed, false);
+							if (a1.getOllama().ping()) System.out.println(" - STRICT ollama agent [" + model_name + "] is operational\n");
 
-						String firstWord =  generateRandomWord(len_random_word);
-						bagOfWords = firstWord;
-						String lastWord = "";
-						for (int i=2; i<=(x+2); i++) {
-							String newWord = generateRandomWord(len_random_word);
-							if (i == needle_pos) {
-								bagOfWords = bagOfWords + " " + needle_word;
-							} else {
-								bagOfWords = bagOfWords + " " + newWord;
-							}
-							lastWord = newWord;
-						}
+							int needle_pos = NumUtils.randomNumWithinRangeAsInt(20, x-20);
 
-						System.out.println("** Will test the LLM by placing the needle at word #" + needle_pos + " (bagsize: " + x + ")");
-						String qx = bagOfWords + "\n" + "Above is a list of individual words separated by space and ordered from left to right. The first word is " + firstWord + " and the last word is " + lastWord 
-								+ ". Your task is to find a lowercase English word from this list with length " + needle_word.length() + " characters. Make sure to walk through and "
-								+ "evaluate each candidate word and make sure your answer only consists of the single word. You will be punished if you answer with a word which is not " + needle_word.length() + " characters long and exists in the list."
-								+ " The list is complete and contains no typos so do not make any excuses about the list being too long to process manually. "
-								+ "I promise that you will find one of the following words in the list if you really put your mind to it: 'breeze', '" + needle_word + "', 'puzzle', 'glance' and 'borrow'";
-						System.out.println("Question: " + StringsUtils.cutAndPadStringToN(qx, len_random_word*16) + "..." + StringsUtils.getLastNCharacters(qx, 400));
-						
-						SingleStringQuestionResponse rx = a1.askStrictChatQuestion(qx, false, 1, 120000L); // 1 try, 2 min timeout
-						if (rx != null) {
-							System.out.println("Current bagsize: " + x);
-							System.out.println("Current needle word location: " + needle_pos);
-							System.out.println("Response: " + rx.getResponse());
-							System.out.println("Response proba: " + rx.getProbability() + "%");
-							System.out.println("Response motivation: " + rx.getMotivation());
-							System.out.println("Response assumptions: " + rx.getAssumptions_made());
-							System.out.println("Previous errorcount: " + errorcounter);
-							if (rx.getResponse().equals("JSONERROR")) {
-								// likely LLM restart due to mem starvation
-								errorcounter = Integer.MAX_VALUE;
-							} else {
-								if (rx.getResponse().equals("" + needle_word)) {
-									passed_x_level = true;
-									if (errorcounter <= _nrErrorsToAllow) {
-										try {
-											if (x > maxCharsCounted) maxCharsCounted = x;
-										} catch (Exception e) {
-											// ignore
-										}
-									}
+							String firstWord =  generateRandomWord(len_random_word);
+							bagOfWords = firstWord;
+							String lastWord = "";
+							for (int i=2; i<=(x+2); i++) {
+								String newWord = generateRandomWord(len_random_word);
+								if (i == needle_pos) {
+									bagOfWords = bagOfWords + " " + needle_word;
 								} else {
-									errorcounter++;
+									bagOfWords = bagOfWords + " " + newWord;
 								}
+								lastWord = newWord;
 							}
-							int chatsize_charcount = a1.getChatSizeCharCount();
-							int chatsize_wordcount = a1.getChatSizeWordCount();
-							FilesUtils.appendToFileUNIXNoException(_tag + "," + model_name + "," + n_ctx + "," + x + "," + maxCharsCounted + "," + chatsize_wordcount + "," + chatsize_charcount + "," + errorcounter, maxcapFilePath);;
-						} else {
-							// likely LLM restart due to mem starvasion
-							errorcounter = Integer.MAX_VALUE;
+
+							System.out.println("** Will test the LLM by placing the needle at word #" + needle_pos + " (bagsize: " + x + ")");
+							String qx = bagOfWords + "\n" + "Above is a list of individual words separated by space and ordered from left to right. The first word is " + firstWord + " and the last word is " + lastWord 
+									+ ". Your task is to find a lowercase English word from this list with length " + needle_word.length() + " characters. Make sure to walk through and "
+									+ "evaluate each candidate word and make sure your answer only consists of the single word. You will be punished if you answer with a word which is not " + needle_word.length() + " characters long and exists in the list."
+									+ " The list is complete and contains no typos so do not make any excuses about the list being too long to process manually. "
+									+ "I promise that you will find one of the following words in the list if you really put your mind to it: 'breeze', '" + needle_word + "', 'puzzle', 'glance' and 'borrow'";
+							System.out.println("Question: " + StringsUtils.cutAndPadStringToN(qx, len_random_word*16) + "..." + StringsUtils.getLastNCharacters(qx, 400));
+
+							SingleStringQuestionResponse rx = a1.askStrictChatQuestion(qx, false, 1, 120000L); // 1 try, 2 min timeout
+							if (rx != null) {
+								System.out.println("Current bagsize: " + x);
+								System.out.println("Current needle word location: " + needle_pos);
+								System.out.println("Response: " + rx.getResponse());
+								System.out.println("Response proba: " + rx.getProbability() + "%");
+								System.out.println("Response motivation: " + rx.getMotivation());
+								System.out.println("Response assumptions: " + rx.getAssumptions_made());
+								System.out.println("Previous errorcount: " + errorcounter);
+								if (rx.getResponse().equals("JSONERROR")) {
+									// likely LLM restart due to mem starvation
+									errorcounter = Integer.MAX_VALUE;
+								} else {
+									if (rx.getResponse().equals("" + needle_word)) {
+										passed_x_level = true;
+										if (errorcounter <= _nrErrorsToAllow) {
+											try {
+												if (x > maxCharsCounted) maxCharsCounted = x;
+											} catch (Exception e) {
+												// ignore
+											}
+										}
+									} else {
+										errorcounter++;
+									}
+								}
+								int chatsize_charcount = a1.getChatSizeCharCount();
+								int chatsize_wordcount = a1.getChatSizeWordCount();
+								FilesUtils.appendToFileUNIXNoException(_tag + "," + model_name + "," + n_ctx + "," + x + "," + maxCharsCounted + "," + chatsize_wordcount + "," + chatsize_charcount + "," + errorcounter, maxcapFilePath);;
+							} else {
+								// likely LLM restart due to mem starvasion
+								errorcounter = Integer.MAX_VALUE;
+							}
+
+						} catch (Exception e) {
+							LOGGER.error("Caught exception: " + e.getMessage());
 						}
 					}
 				}
@@ -363,52 +406,57 @@ public class OllamaDramaUtils {
 						(apply_earlyexit_after_errorthreshold && (errorcounter <= _nrErrorsToAllow)) ||
 						!apply_earlyexit_after_errorthreshold ||
 						false) {
-					OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, false, _use_random_seed, false);
-					if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama agent [" + model_name + "] is operational\n");
-					String firstWord = generateRandomWord(len_random_word);
-					bagOfWords = firstWord;
-					String lastWord = "";
-					for (int i=0; i<=x; i++) {
-						String newWord = generateRandomWord(len_random_word);
-						lastWord = newWord;
-						bagOfWords = bagOfWords + " " + newWord;
-					}
-					String qx = bagOfWords + "\n" + "In the list of ordered (from left to right) random words above the last word is " + lastWord 
-							+ ". As you can see each word consists of " + len_random_word + " uppercase letters. What is the first word? Make sure to walk through and "
-							+ "evaluate each candidate word and make sure answer consists of " + len_random_word + " uppercase letters.";
-					System.out.println("Question: " + StringsUtils.cutAndPadStringToN(qx, len_random_word) + " ... " + StringsUtils.getLastNCharacters(qx, 400));
-					SingleStringQuestionResponse rx = a1.askStrictChatQuestion(qx, false, 5); // dont retry
-					if (rx != null) {
-						System.out.println("Current bagsize: " + x);
-						System.out.println("Current firstWord: " + firstWord);
-						System.out.println("Response: " + rx.getResponse());
-						System.out.println("Response motivation: " + rx.getMotivation());
-						System.out.println("Response assumptions: " + rx.getAssumptions_made());
-						System.out.println("Previous errorcount: " + errorcounter);
-						if (rx.getResponse().equals("JSONERROR")) {
-							// likely LLM restart due to mem starvation
-							errorcounter = Integer.MAX_VALUE;
-						} else {
-							if (rx.getResponse().equals(firstWord)) {
-								if (errorcounter <= _nrErrorsToAllow) {
-									try {
-										if (x > maxCharsCounted) {
-											maxCharsCounted = x;
-										}
-									} catch (Exception e) {
-										// ignore
-									}
-								}
-							} else {
-								errorcounter++;
-							}
+					try {
+						OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, false, _use_random_seed, false);
+						if (a1.getOllama().ping()) System.out.println(" - STRICT ollama agent [" + model_name + "] is operational\n");
+						String firstWord = generateRandomWord(len_random_word);
+						bagOfWords = firstWord;
+						String lastWord = "";
+						for (int i=0; i<=x; i++) {
+							String newWord = generateRandomWord(len_random_word);
+							lastWord = newWord;
+							bagOfWords = bagOfWords + " " + newWord;
 						}
-						int chatsize_charcount = a1.getChatSizeCharCount();
-						int chatsize_wordcount = a1.getChatSizeWordCount();
-						FilesUtils.appendToFileUNIXNoException(_tag + "," + model_name + "," + n_ctx + "," + x + "," + maxCharsCounted + "," + chatsize_wordcount + "," + chatsize_charcount + "," + errorcounter, maxcapFilePath);;
-					} else {
-						// likely LLM restart due to mem starvasion
-						errorcounter = Integer.MAX_VALUE;
+						String qx = bagOfWords + "\n" + "In the list of ordered (from left to right) random words above the last word is " + lastWord 
+								+ ". As you can see each word consists of " + len_random_word + " uppercase letters. What is the first word? Make sure to walk through and "
+								+ "evaluate each candidate word and make sure answer consists of " + len_random_word + " uppercase letters.";
+						System.out.println("Question: " + StringsUtils.cutAndPadStringToN(qx, len_random_word) + " ... " + StringsUtils.getLastNCharacters(qx, 400));
+						SingleStringQuestionResponse rx = a1.askStrictChatQuestion(qx, false, 5); // dont retry
+						if (rx != null) {
+							System.out.println("Current bagsize: " + x);
+							System.out.println("Current firstWord: " + firstWord);
+							System.out.println("Response: " + rx.getResponse());
+							System.out.println("Response motivation: " + rx.getMotivation());
+							System.out.println("Response assumptions: " + rx.getAssumptions_made());
+							System.out.println("Previous errorcount: " + errorcounter);
+							if (rx.getResponse().equals("JSONERROR")) {
+								// likely LLM restart due to mem starvation
+								errorcounter = Integer.MAX_VALUE;
+							} else {
+								if (rx.getResponse().equals(firstWord)) {
+									if (errorcounter <= _nrErrorsToAllow) {
+										try {
+											if (x > maxCharsCounted) {
+												maxCharsCounted = x;
+											}
+										} catch (Exception e) {
+											// ignore
+										}
+									}
+								} else {
+									errorcounter++;
+								}
+							}
+							int chatsize_charcount = a1.getChatSizeCharCount();
+							int chatsize_wordcount = a1.getChatSizeWordCount();
+							FilesUtils.appendToFileUNIXNoException(_tag + "," + model_name + "," + n_ctx + "," + x + "," + maxCharsCounted + "," + chatsize_wordcount + "," + chatsize_charcount + "," + errorcounter, maxcapFilePath);;
+						} else {
+							// likely LLM restart due to mem starvasion
+							errorcounter = Integer.MAX_VALUE;
+						}
+
+					} catch (Exception e) {
+						LOGGER.error("Caught exception: " + e.getMessage());
 					}
 				}
 			}
@@ -452,9 +500,11 @@ public class OllamaDramaUtils {
 			String bagOfCharacters = "";
 			for (int x=20; x<=30000; x+=20) {
 
+				try {
+				
 				// Launch strict agent per test
 				OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name, true, _use_random_seed, false);
-				if (a1.getOllamaAPI().ping()) System.out.println(" - STRICT ollama agent [" + model_name + "] is operational\n");
+				if (a1.getOllama().ping()) System.out.println(" - STRICT ollama agent [" + model_name + "] is operational\n");
 
 				bagOfCharacters = "";
 				for (int i=firstnum; i<=x; i++) {
@@ -504,6 +554,10 @@ public class OllamaDramaUtils {
 
 					FilesUtils.appendToFileUNIXNoException(model_name + "," + x + "," + maxCharsCounted + "," + chatsize_wordcount + "," + chatsize_charcount + "," + errorcounter, maxcapFilePath);;
 
+				}
+				
+				} catch (Exception e) {
+					LOGGER.error("Caught exception: " + e.getMessage());
 				}
 			}
 			String maxCharsCountedSTR = maxCharsCounted + "";

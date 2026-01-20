@@ -213,6 +213,7 @@ public final class MCPServerForExamples {
                 result = create_error_result("Unknown method: " + method);
             }
 
+            // Change: add() still exists in Jackson 2.20+
             responses.add(create_success_response(id, result));
         }
         send_response(exchange, responses, sse);

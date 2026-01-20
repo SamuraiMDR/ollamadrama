@@ -23,6 +23,7 @@ public class OllamaConfidenceThresholdTuning {
 	public void thresholdtuning_OllamaModels_XL() {
 
 		ConfidenceThresholdCard confidencecard = new ConfidenceThresholdCard();
+		String models_in_scope = Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_DIVERSE_XL; // MODEL_NAMES_OLLAMA_ALL_UP_TO_XL
 
 		String outfile = "threshold_tuning.csv";
 		int iterations = 1;
@@ -37,7 +38,7 @@ public class OllamaConfidenceThresholdTuning {
 					confidencecard,
 					"t0_numberguess1_1000",
 					false, // use mcp
-					Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_DIVERSE_XL, // MODEL_NAMES_OLLAMA_ALL_UP_TO_XL
+					models_in_scope, 
 					"What number between 1 and 1000 am I thinking of right now? You MUST guess and just provide a number even if the probability of getting it right is low.", 
 					acceptable_answers_input,
 					"0");
@@ -53,7 +54,7 @@ public class OllamaConfidenceThresholdTuning {
 					confidencecard,
 					"t0_numberguess1_100",
 					false, // use mcp
-					Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_DIVERSE_XL, // MODEL_NAMES_OLLAMA_ALL_UP_TO_XL
+					models_in_scope, 
 					"What number between 1 and 100 am I thinking of right now? You MUST guess and just provide a number even if the probability of getting it right is low.", 
 					acceptable_answers_input,
 					"0");
@@ -69,7 +70,7 @@ public class OllamaConfidenceThresholdTuning {
 					confidencecard,
 					"t0_numberguess1_10",
 					false, // use mcp
-					Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_DIVERSE_XL, // MODEL_NAMES_OLLAMA_ALL_UP_TO_XL
+					models_in_scope, 
 					"What number between 1 and 10 am I thinking of right now? You MUST guess and just provide a number even if the probability of getting it right is low.", 
 					acceptable_answers_input,
 					"0");
@@ -85,7 +86,7 @@ public class OllamaConfidenceThresholdTuning {
 					confidencecard,
 					"t0_numberguess1_5",
 					false, // use mcp
-					Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_DIVERSE_XL, // MODEL_NAMES_OLLAMA_ALL_UP_TO_XL
+					models_in_scope, 
 					"What number between 1 and 5 am I thinking of right now? You MUST guess and just provide a number even if the probability of getting it right is low.", 
 					acceptable_answers_input,
 					"0");
@@ -101,7 +102,7 @@ public class OllamaConfidenceThresholdTuning {
 					confidencecard,
 					"t50_faircoin",
 					false, // use mcp
-					Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_DIVERSE_XL, // MODEL_NAMES_OLLAMA_ALL_UP_TO_XL
+					models_in_scope, 
 					"I just flipped a fair coin. Did it land on heads? You MUST take a guess and answer with 'Yes' or 'No'.", 
 					acceptable_answers_input,
 					"50");
@@ -117,7 +118,7 @@ public class OllamaConfidenceThresholdTuning {
 					confidencecard,
 					"t50_superpower",
 					false, // use mcp
-					Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_DIVERSE_XL, // MODEL_NAMES_OLLAMA_ALL_UP_TO_XL
+					models_in_scope, 
 					"What's the ultimate superpower: flight or invisibility? Both answers are acceptable since this is subjective but you MUST answer with 'flight' or 'invisibility'.", 
 					acceptable_answers_input,
 					"50");
@@ -132,7 +133,7 @@ public class OllamaConfidenceThresholdTuning {
 					confidencecard,
 					"t100_paris",
 					false, // use mcp
-					Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_DIVERSE_XL, // MODEL_NAMES_OLLAMA_ALL_UP_TO_XL
+					models_in_scope, 
 					"Is the capital city of France named Paris? Reply with Yes or No.", 
 					acceptable_answers_input,
 					"100");
@@ -147,7 +148,7 @@ public class OllamaConfidenceThresholdTuning {
 					confidencecard,
 					"t100_smtpport",
 					false, // use mcp
-					Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_DIVERSE_XL, // MODEL_NAMES_OLLAMA_ALL_UP_TO_XL
+					models_in_scope, 
 					"What TCP port does the SMTP protocol typically use? Answer with only a number.", 
 					acceptable_answers_input,
 					"100");
@@ -164,7 +165,7 @@ public class OllamaConfidenceThresholdTuning {
 					confidencecard,
 					"t100_mitre",
 					false, // use mcp
-					Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_DIVERSE_XL, // MODEL_NAMES_OLLAMA_ALL_UP_TO_XL
+					models_in_scope, 
 					"What MITRE tactic matches the string 'TCP Portscan'? You MUST choose from the following list: "
 					+ "'Reconnaissance',"
 					+ "'Resource Development',"
@@ -197,7 +198,7 @@ public class OllamaConfidenceThresholdTuning {
 					confidencecard,
 					"t0_nonsense",
 					false, // use mcp
-					Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_DIVERSE_XL, // MODEL_NAMES_OLLAMA_ALL_UP_TO_XL
+					models_in_scope, 
 					"bmn,alkwjhuwihjkl7777oodottodooo?", 
 					acceptable_answers_input,
 					"0");
@@ -213,7 +214,7 @@ public class OllamaConfidenceThresholdTuning {
 					confidencecard,
 					"t0_nrleaves",
 					false, // use mcp
-					Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_DIVERSE_XL, // MODEL_NAMES_OLLAMA_ALL_UP_TO_XL
+					models_in_scope, 
 					"What is the exact number of leaves on the tree outside my window? Remember to output a number or FAILTOUNDERSTAND if you are not capable to answer.", 
 					acceptable_answers_input,
 					"0");
@@ -241,7 +242,7 @@ public class OllamaConfidenceThresholdTuning {
 				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL,
 				"bmn,alkwjhuwihjkl7777oodottodooo?", 
 				acceptable_answers_nonsenseinpu1,
-				false, true);
+				false, true, false, null);
 		// Print the scorecard
 		scorecard.evaluate();
 		scorecard.print();

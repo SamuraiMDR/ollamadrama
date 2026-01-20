@@ -5,8 +5,9 @@ import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.github.ollama4j.OllamaAPI;
+import io.github.ollama4j.Ollama;
 import io.github.ollama4j.models.chat.OllamaChatMessage;
+import io.github.ollama4j.models.chat.OllamaChatResponseModel;
 import io.github.ollama4j.models.chat.OllamaChatResult;
 import io.github.ollama4j.utils.Options;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -18,7 +19,6 @@ import ntt.security.ollamadrama.objects.SessionType;
 import ntt.security.ollamadrama.objects.ToolCallRequest;
 import ntt.security.ollamadrama.objects.response.SingleStringQuestionResponse;
 import ntt.security.ollamadrama.singletons.OllamaService;
-import ntt.security.ollamadrama.utils.FilesUtils;
 import ntt.security.ollamadrama.utils.InteractUtils;
 import ntt.security.ollamadrama.utils.JSONUtils;
 import ntt.security.ollamadrama.utils.MCPUtils;
@@ -31,7 +31,7 @@ public class OllamaSession {
 
 	private String model_name;
 	private OllamaEndpoint endpoint;
-	private OllamaAPI ollamaAPI;
+	private Ollama Ollama;
 	private OllamaChatResult chatResult;
 	private Options options;
 	private OllamaDramaSettings settings;
@@ -47,12 +47,15 @@ public class OllamaSession {
 
 		this.model_name = _model_name;
 		this.endpoint = _endpoint;
-		this.ollamaAPI = OllamaUtils.createConnection(_endpoint, _settings.getOllama_timeout());
+		this.Ollama = OllamaUtils.createConnection(_endpoint, _settings.getOllama_timeout());
 		this.options = _options;
 		this.settings = _settings;
 		this.uuid = UUID.randomUUID().toString();
 		this.sessiontype = _sessiontype;
 		this.make_tools_available = _make_tools_available;
+		
+		// Wait for our turn
+		OllamaUtils.wait_for_our_turn(this.Ollama, model_name);
 
 		this.initialized = setChatSystemProfileStatement(_profilestatement, _settings.getAutopull_max_llm_size(), _settings.getOllama_timeout());		
 	}
@@ -65,12 +68,12 @@ public class OllamaSession {
 		this.model_name = model_name;
 	}
 
-	public OllamaAPI getOllamaAPI() {
-		return ollamaAPI;
+	public Ollama getOllama() {
+		return Ollama;
 	}
 
-	public void setOllamaAPI(OllamaAPI ollamaAPI) {
-		this.ollamaAPI = ollamaAPI;
+	public void setOllama(Ollama Ollama) {
+		this.Ollama = Ollama;
 	}
 
 	public OllamaChatResult getChatResult() {
@@ -100,7 +103,7 @@ public class OllamaSession {
 	public String askGenericSingleWordQuestion(String _question) {
 		boolean success = false;
 		while (!success) {
-			String resp = OllamaUtils.askGenericSingleWordQuestion(this.ollamaAPI, this.model_name, this.options, _question);
+			String resp = OllamaUtils.askGenericSingleWordQuestion(this.Ollama, this.model_name, this.options, _question);
 			if (null != resp) {
 				SingleStringQuestionResponse swr = JSONUtils.createPOJOFromJSONOpportunistic(resp, SingleStringQuestionResponse.class);
 				if (null != swr) return swr.getResponse();
@@ -112,11 +115,27 @@ public class OllamaSession {
 
 	public boolean setChatSystemProfileStatement(String _profile_statement, String _autopull_max_llm_size, long _timeout) {
 		int errorCount = 0;
+
 		if (null == this.chatResult) {
 			while (null == this.chatResult) {
-				OllamaChatResult res = OllamaUtils.setChatSystemProfile(this.ollamaAPI, this.model_name, this.options, _profile_statement, _autopull_max_llm_size, _timeout);
+				OllamaChatResult res = OllamaUtils.setChatSystemProfile(this.Ollama, this.model_name, this.options, _profile_statement, _autopull_max_llm_size, _timeout);
 				if (null != res) {
-					this.chatResult = res;
+					//this.chatResult = res;
+					// Lets not store the initial prompt reply as part of the session
+
+					/*
+					System.out.println("here you go...");
+					System.out.println(res);
+					System.exit(1);
+					 */
+
+					OllamaChatResponseModel res_model = res.getResponseModel();
+					String raw_result = OllamaUtils.preprocess_llm_response(res.getResponseModel().getMessage().getResponse());
+					OllamaChatMessage message = res_model.getMessage();
+					message.setResponse(raw_result);
+					res_model.setMessage(message);
+
+					this.chatResult = new OllamaChatResult(res_model, res.getChatHistory());
 					return true;
 				}
 				SystemUtils.sleepInSeconds(2); // throttle
@@ -136,13 +155,13 @@ public class OllamaSession {
 			LOGGER.warn("You need to initialize a chat session with a profile statement first");
 		} else {
 			if (this.getSessiontype() == SessionType.CREATIVE) {
-				ChatInteraction ci = OllamaUtils.addCreativeStatementToExistingChat(this.ollamaAPI, this.model_name, this.options, this.chatResult, _statement, _timeout);
+				ChatInteraction ci = OllamaUtils.addCreativeStatementToExistingChat(this.Ollama, this.model_name, this.options, this.chatResult, _statement, _timeout);
 				if (null != ci) {
 					LOGGER.debug("Successfully extended chat session with results from STATEMENT interaction");
 					this.chatResult = ci.getChatResult();
 				}
 			} else {
-				ChatInteraction ci = OllamaUtils.addStrictStatementToExistingChat(this.ollamaAPI, this.model_name, this.options, this.chatResult, _statement, _timeout);
+				ChatInteraction ci = OllamaUtils.addStrictStatementToExistingChat(this.Ollama, this.model_name, this.options, this.chatResult, _statement, _timeout);
 				if (null != ci) {
 					LOGGER.debug("Successfully extended chat session with results from STATEMENT interaction");
 					this.chatResult = ci.getChatResult();
@@ -150,40 +169,44 @@ public class OllamaSession {
 			}
 		}
 	}
-	
+
 	public SingleStringQuestionResponse askStrictChatQuestion(String _question) {
-		return askStrictChatQuestion(_question, false, 60000, 3000L, 5, 30);
+		return askStrictChatQuestion(_question, false, 60000, 3000L, 5, 30, false);
 	}
-	
+
+	public SingleStringQuestionResponse askStrictChatQuestion(String _question, long _timeout, boolean _return_toolcall) {
+		return askStrictChatQuestion(_question, false, 60000,_timeout, 5, 30, _return_toolcall);
+	}
+
 	public SingleStringQuestionResponse askStrictChatQuestion(String _question, long _timeout) {
-		return askStrictChatQuestion(_question, false, 60000,_timeout, 5, 30);
+		return askStrictChatQuestion(_question, false, 60000,_timeout, 5, 30, false);
 	}
-	
+
 	public SingleStringQuestionResponse askStrictChatQuestion(String _question, int session_tokens_maxlen, int _max_recursive_toolcall_depth, int _toolcall_pausetime_in_seconds) {
-		return askStrictChatQuestion(_question, false, 60000, 3000L, _max_recursive_toolcall_depth, _toolcall_pausetime_in_seconds);
+		return askStrictChatQuestion(_question, false, 60000, 3000L, _max_recursive_toolcall_depth, _toolcall_pausetime_in_seconds, false);
 	}
 
 	public SingleStringQuestionResponse askStrictChatQuestion(String _question, int _max_recursive_toolcall_depth) {
-		return askStrictChatQuestion(_question, 60000, false, 30, 120, 0, _max_recursive_toolcall_depth, 30);
+		return askStrictChatQuestion(_question, 60000, false, 30, 120, 0, _max_recursive_toolcall_depth, 30, false, false);
 	}
 
 	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, long _timeout_in_ms) {
-		return askStrictChatQuestion(_question, _hide_llm_reply_if_uncertain, 60000, _timeout_in_ms, 5, 30);
+		return askStrictChatQuestion(_question, _hide_llm_reply_if_uncertain, 60000, _timeout_in_ms, 5, 30, false);
 	}
-	
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, long _timeout_in_ms, int _toolcall_pausetime_in_seconds) {
-		return askStrictChatQuestion(_question, _hide_llm_reply_if_uncertain, 60000, _timeout_in_ms, 5, _toolcall_pausetime_in_seconds);
+
+	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, long _timeout_in_ms, int _toolcall_pausetime_in_seconds, boolean _return_toolcall) {
+		return askStrictChatQuestion(_question, _hide_llm_reply_if_uncertain, 60000, _timeout_in_ms, 5, _toolcall_pausetime_in_seconds, _return_toolcall);
 	}
 
 	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, int _retryThreshold, long _timeout_in_ms) {
-		return askStrictChatQuestion(_question, 60000, _hide_llm_reply_if_uncertain, _retryThreshold, _timeout_in_ms, 0, 5, 30);
+		return askStrictChatQuestion(_question, 60000, _hide_llm_reply_if_uncertain, _retryThreshold, _timeout_in_ms, 0, 5, 30, false, false);
 	}
 
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, int _session_tokens_maxlen, long _timeout_in_ms, int _max_recursive_toolcall_depth, int _toolcall_pausetime_in_seconds) {
-		return askStrictChatQuestion(_question, _session_tokens_maxlen, _hide_llm_reply_if_uncertain, 30, _timeout_in_ms, 0, _max_recursive_toolcall_depth, _toolcall_pausetime_in_seconds);
+	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, int _session_tokens_maxlen, long _timeout_in_ms, int _max_recursive_toolcall_depth, int _toolcall_pausetime_in_seconds, boolean _return_toolcall) {
+		return askStrictChatQuestion(_question, _session_tokens_maxlen, _hide_llm_reply_if_uncertain, 30, _timeout_in_ms, 0, _max_recursive_toolcall_depth, _toolcall_pausetime_in_seconds, _return_toolcall, false);
 	}
 
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question, int session_tokens_maxlen, boolean _hide_llm_reply_if_uncertain, int _retryThreshold, long _timeout_in_ms, int _exec_depth_counter, int _max_recursive_toolcall_depth, int _toolcall_pausetime_in_seconds) {
+	public SingleStringQuestionResponse askStrictChatQuestion(String _question, int session_tokens_maxlen, boolean _hide_llm_reply_if_uncertain, int _retryThreshold, long _timeout_in_ms, int _exec_depth_counter, int _max_recursive_toolcall_depth, int _toolcall_pausetime_in_seconds, boolean _return_toolcall, boolean _halt_on_tool_error) {
 		if (_max_recursive_toolcall_depth < 0) LOGGER.warn("No tools will be called if value of_max_recursive_toolcall_depth is not 1 or more");
 		boolean debug = false;
 		if (debug) System.out.println("interactcounter: " + interactcounter);
@@ -199,7 +222,7 @@ public class OllamaSession {
 			} else {
 				int retryCounter = 0;
 				while (true) {
-					ChatInteraction ci =  OllamaUtils.askChatQuestion(this.ollamaAPI, this.model_name, this.options, this.chatResult, _question, _timeout_in_ms);
+					ChatInteraction ci =  OllamaUtils.askChatQuestion(this.Ollama, this.model_name, this.options, this.chatResult, _question, _timeout_in_ms);
 					if (null != ci) {
 						String json = "";
 
@@ -232,6 +255,11 @@ public class OllamaSession {
 							if (null != swr.getResponse()) {
 								// PROTOCOL hack
 								if (swr.getResponse().equals("FAILTOUNDERSTAND")) {
+									swr.setProbability(0); // we are not 100% sure on not understanding
+								}
+								if (swr.getResponse().equals("TOOLCALL") && swr.getTool_calls().equals("")) {
+									// seen as: fictional non-existent tool required to provide a response, failtounderstand what to do without this tool
+									swr.setResponse("FAILTOUNDERSTAND");
 									swr.setProbability(0);
 								}
 
@@ -245,6 +273,9 @@ public class OllamaSession {
 									for (ToolCallRequest tcr: tool_calls) {
 										MCPTool mcpTool = OllamaService.getMCPURLForTool(tcr.getToolname());
 										if (null == mcpTool) {
+											LOGGER.warn(tcr.getToolname() + " is not a valid tool name");
+											//System.out.println("DEBUG");
+											//SystemUtils.sleepInSeconds(600);
 											valid_tool_calls = false;
 										}
 									}
@@ -257,6 +288,10 @@ public class OllamaSession {
 								System.out.println(this.model_name);
 								swr.print();
 								System.out.println("");
+
+								if (_return_toolcall && swr.getResponse().startsWith("TOOLCALL")) {
+									return swr;
+								}
 
 								if ("TOOLCALL_AFTER_PAUSE".equals(swr.getResponse()) && valid_tool_calls) {
 									LOGGER.info("Pausing )" + _toolcall_pausetime_in_seconds + " before next round of toolcalls");
@@ -318,7 +353,7 @@ public class OllamaSession {
 
 													// Call tool
 													if (make_call) {
-														CallToolResult result = MCPUtils.callToolUsingMCPEndpoint(mcpURL, mcpPATH, tcr.getToolname(), tcr.getArguments(), 30L);
+														CallToolResult result = MCPUtils.callToolUsingMCPEndpoint(mcpURL, mcpPATH, tcr.getToolname(), tcr.getArguments(), 30L, _halt_on_tool_error);
 														String tool_response = "\nResponse from running tool_call " + tcr.getRawrequest() + ":\n\n" + MCPUtils.prettyPrint(result);
 														System.out.println("tool_response: " + tool_response);
 														if (null != tool_response) {
@@ -355,7 +390,7 @@ public class OllamaSession {
 
 										_exec_depth_counter++;
 										//System.out.println("new query:\n\n" + _question + sb.toString());
-										return askStrictChatQuestion(_question+ "\n\n" + sb.toString() , session_tokens_maxlen, _hide_llm_reply_if_uncertain, _retryThreshold, _timeout_in_ms, _exec_depth_counter, _max_recursive_toolcall_depth, _toolcall_pausetime_in_seconds);
+										return askStrictChatQuestion(_question+ "\n\n" + sb.toString() , session_tokens_maxlen, _hide_llm_reply_if_uncertain, _retryThreshold, _timeout_in_ms, _exec_depth_counter, _max_recursive_toolcall_depth, _toolcall_pausetime_in_seconds, _return_toolcall, _halt_on_tool_error);
 									}
 								}
 
@@ -394,7 +429,7 @@ public class OllamaSession {
 		} else {
 			int retryCounter = 0;
 			while (true) {
-				ChatInteraction ci =  OllamaUtils.askRawChatQuestion(this.ollamaAPI, this.model_name, this.options, this.chatResult, _question, _timeout);
+				ChatInteraction ci =  OllamaUtils.askRawChatQuestion(this.Ollama, this.model_name, this.options, this.chatResult, _question, _timeout);
 				if (null != ci) return ci.getResponse();
 				retryCounter++;
 				if (retryCounter > 5) LOGGER.warn("Having problems getting a valid reply using this question: " + _question);
@@ -403,7 +438,7 @@ public class OllamaSession {
 		}
 	}
 
-	public String askRawChatQuestionWithCustomChatHistory(String _question, List<OllamaChatMessage> _customChatHistory, long _timeout) {
+	public String askRawChatQuestionWithCustomChatHistory(String _question, List<OllamaChatMessage> _customChatHistory, long _timeout_in_seconds) {
 		if (!_question.endsWith("?")) _question = _question + "?";
 		if (null == this.chatResult) {
 			LOGGER.warn("chatResult is null!");
@@ -411,7 +446,7 @@ public class OllamaSession {
 		} else {
 			int retryCounter = 0;
 			while (true) {
-				ChatInteraction ci =  OllamaUtils.askRawChatQuestionWithCustomChatHistory(this.ollamaAPI, this.model_name, this.options, this.chatResult, _question, _customChatHistory, _timeout);
+				ChatInteraction ci =  OllamaUtils.askRawChatQuestionWithCustomChatHistory(this.Ollama, this.model_name, this.options, this.chatResult, _question, _customChatHistory, _timeout_in_seconds);
 				if (null != ci) return ci.getResponse();
 				retryCounter++;
 				if (retryCounter > 5) LOGGER.warn("Having problems getting a valid reply using this question: " + _question);
@@ -464,7 +499,7 @@ public class OllamaSession {
 		try {
 			StringBuffer sb = new StringBuffer();
 			for (OllamaChatMessage cm: this.getChatResult().getChatHistory()) {
-				sb.append(cm.getContent());
+				sb.append(cm.getResponse());
 			}
 			return sb.toString().length();
 		} catch (Exception e) {
@@ -477,7 +512,7 @@ public class OllamaSession {
 		try {
 			for (OllamaChatMessage cm: this.getChatResult().getChatHistory()) {
 				// Split the input into tokens based on whitespace and basic punctuation.
-				String[] tokens = cm.getContent().split("\\s+|(?=[.,!?;:])|(?<=[.,!?;:])");
+				String[] tokens = cm.getResponse().split("\\s+|(?=[.,!?;:])|(?<=[.,!?;:])");
 				tokenCount = tokenCount + tokens.length;
 			}
 			return tokenCount;
@@ -490,7 +525,7 @@ public class OllamaSession {
 		StringBuffer sb = new StringBuffer();
 		try {
 			for (OllamaChatMessage cm: this.getChatResult().getChatHistory()) {
-				sb.append(cm.getContent());
+				sb.append(cm.getResponse());
 			}
 			return sb.toString();
 		} catch (Exception e) {
