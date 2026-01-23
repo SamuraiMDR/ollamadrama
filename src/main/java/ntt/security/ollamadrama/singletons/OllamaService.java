@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.github.ollama4j.Ollama;
-
+import io.github.ollama4j.exceptions.OllamaException;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 
 import io.modelcontextprotocol.spec.McpSchema.Tool;
@@ -781,7 +781,6 @@ public class OllamaService {
     }
 
     private static boolean validate_single_ollama_endpoint(OllamaEndpoint endpoint,
-
                                                           Map<String, OllamaEndpoint> abandoned_ollamas,
                                                           Set<String> seen_fingerprints) {
 
@@ -885,24 +884,15 @@ public class OllamaService {
     }
 
     private static boolean validate_model(Ollama api,
-
                                          OllamaEndpoint endpoint,
-
                                          String model_name,
-
                                          Map<String, OllamaEndpoint> abandoned_ollamas) {
 
         String url = endpoint.getOllama_url();
-
         if (!OllamaUtils.verifyModelAvailable(api, model_name)) {
-
             return handle_missing_model(api, endpoint, model_name, abandoned_ollamas);
-
         }
-
         LOGGER.info("Performing sanity check on model {} at {}", model_name, url);
-
-        
 
         boolean passes_sanity_check = OllamaUtils.verifyModelSanityUsingSingleWordResponse(
 
@@ -937,6 +927,14 @@ public class OllamaService {
         }
 
         LOGGER.info("Successfully verified model {} at {}", model_name, url);
+        
+        // This was just for validation, lets suggest to unload the model
+        try {
+        	LOGGER.info("Suggested unload of model " + model_name);
+			api.unloadModel(model_name);
+		} catch (OllamaException e) {
+			// silent
+		}
 
         return true;
 
@@ -997,41 +995,28 @@ public class OllamaService {
      */
 
     public static OllamaService getInstance(OllamaDramaSettings settings_param) {
-
         if (settings_param != null) {
-
             settings_param.sanityCheck();
-
         }
 
-        
 
         if (single_instance == null) {
-
             synchronized (OllamaService.class) {
-
                 if (single_instance == null) {
-
                     single_instance = new OllamaService(settings_param);
-
                     LOGGER.info("Created new OllamaService with models: {}", 
-
                             settings.getOllama_models());
-
                 }
-
             }
 
         } else {
 
             LOGGER.info("Returning existing OllamaService with models: {}", 
-
                     settings.getOllama_models());
 
         }
 
-        
-
+       
         return single_instance;
 
     }
