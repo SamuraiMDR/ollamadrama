@@ -19,10 +19,10 @@ import ntt.security.ollamadrama.utils.OllamaDramaUtils;
 import ntt.security.ollamadrama.utils.OllamaUtils;
 
 @SuppressWarnings("serial")
-public class OllamaGeneralKnowledgeTest {
+public class OllamaStandardTest {
 
 	@SuppressWarnings("unused")
-	private static final Logger LOGGER = LoggerFactory.getLogger(OllamaGeneralKnowledgeTest.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(OllamaStandardTest.class);
 
 	@Test
 	public void mcptools_missing_OllamaModels_XL() {
@@ -311,7 +311,7 @@ public class OllamaGeneralKnowledgeTest {
 		settings.setOllama_scan(false);
 		
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(false,
-				"nemotron-3-nano:30b", // olmo-3.1:32b olmo-3:7b, olmo-3:32b huihui_ai/qwen3-abliterated:32b nemotron-3-nano:30b 
+				"glm-4.7-flash:q4_K_M", //glm-4.7-flash:q8_0 glm-4.7-flash:bf16 // olmo-3.1:32b olmo-3:7b, olmo-3:32b huihui_ai/qwen3-abliterated:32b nemotron-3-nano:30b 
 				"Is the capital city of France named Paris? Reply with Yes or No.", acceptable_answers, true, false, false, settings);
 
 		// Print the scorecard

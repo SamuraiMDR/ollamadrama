@@ -133,7 +133,10 @@ public class Globals {
 			Map.entry("olmo-3:32b", 32768), // train 65536
 			Map.entry("olmo-3.1:32b", 32768), // train 65536
 			Map.entry("qwq:32b", 32768), // train 131072
-			Map.entry("nemotron-3-nano:30b", 32768) // train 1048576 (1M)
+			Map.entry("nemotron-3-nano:30b", 32768), // train 1048576 (1M)
+			Map.entry("glm-4.7-flash:q4_K_M",32768), // train 198k
+			Map.entry("glm-4.7-flash:q8_0",32768), // train 198k
+			Map.entry("glm-4.7-flash:bf16",32768) // train 198k
 			);
 
 
@@ -212,11 +215,18 @@ public class Globals {
 	}
 
 	/**
-	 * XXL (<256GB)
+	 * XXXL (<256GB)
+	 */
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XXXL = ""
+			+ "llama3.1:405b"		// 243 GB
+			+ "";
+	
+	/**
+	 * XXL (<64GB)
 	 */
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XXL = ""
-			+ "gpt-oss:120b,"	// 65 GB
-			+ "llama3.1:405b"	// 243 GB
+			+ "gpt-oss:120b,"		// 65 GB
+			+ "glm-4.7-flash:bf16"	// 60 GB
 			+ "";
 
 	// task specific
@@ -235,6 +245,8 @@ public class Globals {
 			+ "nemotron:70b,"					 		// 43 GB
 			+ "qwen3:32b,"						 		// 20 GB
 			+ "qwq:32b,"	    				 		// 20 GB
+			+ "glm-4.7-flash:q4_K_M,"					// 19 GB
+			+ "glm-4.7-flash:q8_0,"						// 32 GB
 			+ "gemma3:27b"						 		// 16 GB
 			+ "";
 
@@ -618,6 +630,14 @@ public class Globals {
 		this.put("marco-o1:7b", 44);
 		this.put("athene-v2:72b", 44);
 		this.put("exaone3.5:32b", 44);
+		
+		this.put("marco-o1:7b", 44);
+		this.put("athene-v2:72b", 44);
+		this.put("exaone3.5:32b", 44);
+		
+		this.put("glm-4.7-flash:q4_K_M",44);
+		this.put("glm-4.7-flash:q8_0",44);
+		this.put("glm-4.7-flash:bf16",44);
 
 		this.put("openhermes:7b-mistral-v2.5-q4_0", 44);
 		this.put("falcon3:10b", 44);
