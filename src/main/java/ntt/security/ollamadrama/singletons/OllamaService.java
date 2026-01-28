@@ -94,15 +94,10 @@ public class OllamaService {
     private OllamaService(OllamaDramaSettings settings_param) {
 
         if (settings_param == null) {
-
             LOGGER.info("Getting Ollama settings from environment");
-
             settings_param = ConfigUtils.parseConfigENV();
-
         }
-
         settings = settings_param;
-
         rescan(true);
 
     }
@@ -1005,7 +1000,7 @@ public class OllamaService {
                 if (single_instance == null) {
                     single_instance = new OllamaService(settings_param);
                     LOGGER.info("Created new OllamaService with models: {}", 
-                            settings.getOllama_models());
+                    		settings_param.getOllama_models());
                 }
             }
 

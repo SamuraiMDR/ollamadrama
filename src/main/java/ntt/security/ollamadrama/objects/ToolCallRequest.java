@@ -66,5 +66,15 @@ public class ToolCallRequest {
 		return true;
 	}
 	
-
+	@Override
+	public String toString() {
+	    return "ToolCallRequest{" +
+	            "toolname='" + toolname + '\'' +
+	            ", calltype='" + calltype + '\'' +
+	            ", arguments=" + arguments +
+	            ", rawrequest='" + (rawrequest != null && rawrequest.length() > 50 
+	                    ? rawrequest.substring(0, 50) + "..." 
+	                    : rawrequest) + '\'' +
+	            '}';
+	}
 }

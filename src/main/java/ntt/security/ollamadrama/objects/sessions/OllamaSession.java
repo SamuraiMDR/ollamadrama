@@ -271,6 +271,7 @@ public class OllamaSession {
 								if (!swr.getTool_calls().equals("")) {
 									ArrayList<ToolCallRequest> tool_calls = MCPUtils.parseToolCalls(swr.getTool_calls());
 									for (ToolCallRequest tcr: tool_calls) {
+										System.out.println("tcr: " + tcr.toString());
 										MCPTool mcpTool = OllamaService.getMCPURLForTool(tcr.getToolname());
 										if (null == mcpTool) {
 											LOGGER.warn(tcr.getToolname() + " is not a valid tool name");
@@ -317,7 +318,7 @@ public class OllamaSession {
 
 										StringBuffer sb = new StringBuffer();
 
-										LOGGER.debug("Tool Call Request: " + swr.getTool_calls());
+										LOGGER.info("Tool Call Request: " + swr.getTool_calls());
 										ArrayList<ToolCallRequest> tool_calls = MCPUtils.parseToolCalls(swr.getTool_calls());
 
 										for (ToolCallRequest tcr: tool_calls) {
@@ -346,7 +347,7 @@ public class OllamaSession {
 														LOGGER.info("Blindly allowing agent to run the tool call " + tcr.getToolname());
 													} else if (OllamaService.isMatchingMCPTool(tcr.getToolname(), settings.getTrusted_mcp_toolnames_csv())) {
 														make_call = true;
-														LOGGER.debug("Trusted mcp toolname so allowing agent to run the tool call " + tcr.getToolname() + " arguments:" + tcr.getArguments().toString());
+														LOGGER.info("Trusted mcp toolname so allowing agent to run the tool call " + tcr.getToolname() + " arguments:" + tcr.getArguments().toString());
 													} else {
 														make_call = InteractUtils.getYNResponse("The agent is requesting to run the tool call " + tcr.getToolname() + " arguments:" + tcr.getArguments().toString() + ", press Y to allow and N to abort.", settings);
 													}
