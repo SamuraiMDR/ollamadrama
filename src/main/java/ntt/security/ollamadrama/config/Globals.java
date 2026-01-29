@@ -83,6 +83,7 @@ public class Globals {
 			Map.entry("huihui_ai/qwen3-abliterated:8b", 32768), // train 40960
 			Map.entry("qwen2.5:72b", 32768), // train 32768
 			Map.entry("gemma3:27b", 32768), // train 126976 but wont load
+			Map.entry("translategemma:27b", 32768),
 			Map.entry("cogito:70b", 32768), // train 131072
 			Map.entry("athene-v2:72b", 32768), // train 32768
 			Map.entry("r1-1776:70b", 32768), // train 131072
@@ -282,6 +283,10 @@ public class Globals {
 
 	// task specific
 
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TRANSLATE_XL = ""
+			+ "translategemma:27b"		// 19 GB
+			+ "";
+	
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_CODE_XL = ""
 			+ "qwen2.5-coder:32b"		// 20 GB
 			+ "";
