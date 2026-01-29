@@ -889,36 +889,27 @@ public class OllamaService {
         }
         LOGGER.info("Performing sanity check on model {} at {}", model_name, url);
 
+        HashMap<String, Boolean> expected_answers = new HashMap<String, Boolean>() {{
+        	this.put("Yes", true);
+        	this.put("YES", true);
+        }};
+        
         boolean passes_sanity_check = OllamaUtils.verifyModelSanityUsingSingleWordResponse(
-
                 url, 
-
                 api, 
-
                 model_name,
-
                 Globals.createStrictOptionsBuilder(model_name, true, settings.getN_ctx_override()),
-
                 "Is the capital city of France named Paris? Reply with only Yes or No." + 
-
                         Globals.THREAT_TEMPLATE,
-
-                "Yes",
-
+                expected_answers,
                 1,
-
                 settings.getAutopull_max_llm_size());
 
         if (!passes_sanity_check) {
-
             LOGGER.warn("Sanity check failed for model {} at {}. Abandoning endpoint.", 
-
                     model_name, url);
-
             abandoned_ollamas.put(url, endpoint);
-
             return false;
-
         }
 
         LOGGER.info("Successfully verified model {} at {}", model_name, url);

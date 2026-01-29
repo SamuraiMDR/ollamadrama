@@ -335,7 +335,7 @@ public class OllamaUtils {
 			String model_name,
 			Options options,
 			String question,
-			String expected_answer,
+			HashMap<String, Boolean> expected_answers,
 			int max_retries,
 			String autopull_max_llm_size) {
 
@@ -372,11 +372,11 @@ public class OllamaUtils {
 									.split(",")[0]
 											.replace(".", ""); 
 
-					if (expected_answer.equals(processed)) {
+					if (null != expected_answers.get(processed)) {
 						LOGGER.info("Sanity check passed for {}", model_name);
 						return true;
 					} else {
-						LOGGER.info("Got '{}', expected '{}'", processed, expected_answer);
+						LOGGER.info("Got '{}', expected one of '{}'", processed, expected_answers.keySet());
 					}
 				} else {
 					LOGGER.warn("No response from model {}", model_name);
@@ -622,9 +622,20 @@ public class OllamaUtils {
 			String ollama_url, Ollama ollama_api, String model_name,
 			Options options, String question, String expected_answer,
 			int max_retries, String autopull_max_llm_size) {
+		HashMap<String, Boolean> expected_answers = new HashMap<>();
+		expected_answers.put(expected_answer, true);
 		return verify_model_sanity_using_single_word_response(
 				ollama_url, ollama_api, model_name, options, question,
-				expected_answer, max_retries, autopull_max_llm_size);
+				expected_answers, max_retries, autopull_max_llm_size);
+	}
+	
+	public static boolean verifyModelSanityUsingSingleWordResponse(
+			String ollama_url, Ollama ollama_api, String model_name,
+			Options options, String question, HashMap<String, Boolean> expected_answers,
+			int max_retries, String autopull_max_llm_size) {
+		return verify_model_sanity_using_single_word_response(
+				ollama_url, ollama_api, model_name, options, question,
+				expected_answers, max_retries, autopull_max_llm_size);
 	}
 
 	public static OllamaDramaSettings parseOllamaDramaConfigENV() {
