@@ -889,7 +889,8 @@ public class OllamaService {
         }
         LOGGER.info("Performing sanity check on model {} at {}", model_name, url);
 
-        HashMap<String, Boolean> expected_answers = new HashMap<String, Boolean>() {{
+        @SuppressWarnings("serial")
+		HashMap<String, Boolean> expected_answers = new HashMap<String, Boolean>() {{
         	this.put("Yes", true);
         	this.put("YES", true);
         }};
@@ -1489,9 +1490,6 @@ public class OllamaService {
                 MCPTool tool = entry.getValue();
 
                 if (tool_name.equals(tool.getToolname())) {
-
-                	System.out.println("comparing " + tool_name + " against " + tool.getToolname());
-
                     return tool;
 
                 }

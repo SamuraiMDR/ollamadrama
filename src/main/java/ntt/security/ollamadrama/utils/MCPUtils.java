@@ -11,6 +11,14 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +86,7 @@ public class MCPUtils {
 		CallToolResult result = null;
 		boolean success = false;
 		int trycounter = 0;
-		while (!success && (trycounter <= 10)) {
+		while (!success && (trycounter <= 5)) {
 			try {
 				HttpClientSseClientTransport transport = HttpClientSseClientTransport.builder(_mcp_endpoint)
 						.sseEndpoint(_mcp_endpoint_path)
@@ -107,18 +115,24 @@ public class MCPUtils {
 							if (_halt_on_tool_error) {
 								LOGGER.error("FATAL, instructed to halt on tool error." + " result: " + result.toString());
 								SystemUtils.halt();
+							} else if (false ||
+									result.toString().toLowerCase().contains("invalid api key") ||
+									result.toString().toLowerCase().contains("api error") ||
+									result.toString().toLowerCase().contains("authentication required") ||
+									false) {
+								return result;
 							} else {
 								LOGGER.warn("Tool failure, trycounter: " + trycounter + ", sleeping 10 seconds and will try again." + " result: " + result.toString());
 								SystemUtils.sleepInSeconds(10);
 							}
-							
+
 						}
 					}
 				}
 				trycounter++;
 			} catch (Exception e) {
 				LOGGER.warn("Caught Exception in callToolUsingMCPEndpoint(): " + e.getMessage());
-				
+
 				if (_halt_on_tool_error) {
 					LOGGER.error("FATAL, instructed to halt on tool error.");
 					SystemUtils.halt();
@@ -303,92 +317,230 @@ public class MCPUtils {
 	}
 
 	public static ArrayList<ToolCallRequest> parseToolCalls(String tool_calls_csv) {
-		ArrayList<ToolCallRequest> toolCalls = new ArrayList<>();
+	    ArrayList<ToolCallRequest> toolCalls = new ArrayList<>();
 
-		if (tool_calls_csv == null || tool_calls_csv.trim().isEmpty()) {
-			return toolCalls;
-		}
+	    if (tool_calls_csv == null || tool_calls_csv.trim().isEmpty()) {
+	        return toolCalls;
+	    }
 
-		// Regex to split on commas outside of parentheses and quotes (your original magic)
-		String regex = ",\\s*(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)(?![^()]*\\))";
-		String[] entries = tool_calls_csv.split(regex);
+	    // Split entries using a state-aware parser
+	    List<String> entries = splitToolCallEntries(tool_calls_csv);
 
-		for (String entry : entries) {
-			String trimmedEntry = entry.trim();
-			if (trimmedEntry.isEmpty()) {
-				continue;
-			}
+	    for (String entry : entries) {
+	        String trimmedEntry = entry.trim();
+	        if (trimmedEntry.isEmpty()) {
+	            continue;
+	        }
 
-			// Split on the first space to separate calltype from the tool call
-			int firstSpaceIndex = trimmedEntry.indexOf(' ');
-			if (firstSpaceIndex == -1) {
-				// Invalid entry? Skip or handle error as needed, but for now, we'll assume well-formed
-				continue;
-			}
+	        int firstSpaceIndex = trimmedEntry.indexOf(' ');
+	        if (firstSpaceIndex == -1) {
+	            continue;
+	        }
 
-			String calltype = trimmedEntry.substring(0, firstSpaceIndex).trim();
-			String toolCall = trimmedEntry.substring(firstSpaceIndex + 1).trim();
+	        String calltype = trimmedEntry.substring(0, firstSpaceIndex).trim();
+	        String toolCall = trimmedEntry.substring(firstSpaceIndex + 1).trim();
 
-			// Extract toolname: everything before the '('
-			int parenIndex = toolCall.indexOf('(');
-			if (parenIndex == -1) {
-				continue; // Malformed, skip
-			}
-			String toolname = toolCall.substring(0, parenIndex).trim();
+	        int parenIndex = toolCall.indexOf('(');
+	        if (parenIndex == -1) {
+	            continue;
+	        }
+	        String toolname = toolCall.substring(0, parenIndex).trim();
 
-			// Parse arguments using your existing method (pass the full toolCall like "fetch(url=...)")
-			HashMap<String, Object> arguments = MCPUtils.parseArguments(toolCall);
+	        HashMap<String, Object> arguments = MCPUtils.parseArguments(toolCall);
 
-			// Create and add the request object
-			ToolCallRequest request = new ToolCallRequest(toolname, calltype, arguments, entry);
-			toolCalls.add(request);
-		}
+	        ToolCallRequest request = new ToolCallRequest(toolname, calltype, arguments, entry);
+	        toolCalls.add(request);
+	    }
 
-		return toolCalls;
+	    return toolCalls;
+	}
+
+	/**
+	 * Splits tool call entries on commas, but only when not inside quotes or parentheses.
+	 * Properly handles nested content including special characters in strings.
+	 */
+	private static List<String> splitToolCallEntries(String input) {
+	    List<String> entries = new ArrayList<>();
+	    StringBuilder current = new StringBuilder();
+	    
+	    boolean inQuotes = false;
+	    int parenDepth = 0;
+	    char prevChar = 0;
+	    
+	    for (int i = 0; i < input.length(); i++) {
+	        char c = input.charAt(i);
+	        
+	        // Handle quote toggling (but not escaped quotes)
+	        if (c == '"' && prevChar != '\\') {
+	            inQuotes = !inQuotes;
+	        }
+	        
+	        // Track parenthesis depth only when not in quotes
+	        if (!inQuotes) {
+	            if (c == '(') {
+	                parenDepth++;
+	            } else if (c == ')') {
+	                parenDepth--;
+	            }
+	        }
+	        
+	        // Split on comma only when outside quotes AND outside all parentheses
+	        if (c == ',' && !inQuotes && parenDepth == 0) {
+	            String entry = current.toString().trim();
+	            if (!entry.isEmpty()) {
+	                entries.add(entry);
+	            }
+	            current = new StringBuilder();
+	        } else {
+	            current.append(c);
+	        }
+	        
+	        prevChar = c;
+	    }
+	    
+	    // Don't forget the last entry
+	    String lastEntry = current.toString().trim();
+	    if (!lastEntry.isEmpty()) {
+	        entries.add(lastEntry);
+	    }
+	    
+	    return entries;
 	}
 
 	public static HashMap<String, Object> parseArguments(String _input) {
-		HashMap<String, Object> arguments = new HashMap<>();
+	    HashMap<String, Object> arguments = new HashMap<>();
 
-		// Extract everything inside the parentheses
-		Pattern pattern = Pattern.compile("\\w+\\((.*)\\)");
-		Matcher matcher = pattern.matcher(_input);
-		if (matcher.find()) {
-			String params = matcher.group(1);
+	    LOGGER.debug("_input: " + _input);
 
-			// Split by commas not inside quotes
-			String[] pairs = params.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
+	    // Extract everything inside the outermost parentheses
+	    int openParen = _input.indexOf('(');
+	    int closeParen = _input.lastIndexOf(')');
+	    
+	    if (openParen == -1 || closeParen == -1 || closeParen <= openParen) {
+	        return arguments;
+	    }
+	    
+	    String params = _input.substring(openParen + 1, closeParen);
+	    
+	    // Parse key=value pairs using state machine
+	    List<String> pairs = splitArgumentPairs(params);
 
-			for (String pair : pairs) {
-				String[] keyValue = pair.trim().split("=", 2);
-				if (keyValue.length == 2) {
-					String key = keyValue[0].trim();
-					String value = keyValue[1].trim();
+	    for (String pair : pairs) {
+	        int equalsIndex = findUnquotedEquals(pair);
+	        if (equalsIndex == -1) {
+	            continue;
+	        }
+	        
+	        String key = pair.substring(0, equalsIndex).trim();
+	        String value = pair.substring(equalsIndex + 1).trim();
 
-					// Try to convert the value to the right type
-					Object parsedValue;
-					if (value.startsWith("\"") && value.endsWith("\"")) {
-						parsedValue = value.substring(1, value.length() - 1);
-					} else if (value.equalsIgnoreCase("true") || value.equalsIgnoreCase("false")) {
-						parsedValue = Boolean.parseBoolean(value);
-					} else {
-						try {
-							parsedValue = Integer.parseInt(value);
-						} catch (NumberFormatException e) {
-							try {
-								parsedValue = Double.parseDouble(value);
-							} catch (NumberFormatException ex) {
-								parsedValue = value; // fallback as raw string
-							}
-						}
-					}
+	        Object parsedValue = parseValue(value);
+	        arguments.put(key, parsedValue);
+	    }
 
-					arguments.put(key, parsedValue);
-				}
-			}
-		}
+	    return arguments;
+	}
 
-		return arguments;
+	/**
+	 * Splits argument string on commas, respecting quoted strings.
+	 */
+	private static List<String> splitArgumentPairs(String params) {
+	    List<String> pairs = new ArrayList<>();
+	    StringBuilder current = new StringBuilder();
+	    
+	    boolean inQuotes = false;
+	    char prevChar = 0;
+	    
+	    for (int i = 0; i < params.length(); i++) {
+	        char c = params.charAt(i);
+	        
+	        // Handle quote toggling (but not escaped quotes)
+	        if (c == '"' && prevChar != '\\') {
+	            inQuotes = !inQuotes;
+	        }
+	        
+	        if (c == ',' && !inQuotes) {
+	            String pair = current.toString().trim();
+	            if (!pair.isEmpty()) {
+	                pairs.add(pair);
+	            }
+	            current = new StringBuilder();
+	        } else {
+	            current.append(c);
+	        }
+	        
+	        prevChar = c;
+	    }
+	    
+	    // Don't forget the last pair
+	    String lastPair = current.toString().trim();
+	    if (!lastPair.isEmpty()) {
+	        pairs.add(lastPair);
+	    }
+	    
+	    return pairs;
+	}
+
+	/**
+	 * Finds the first '=' that's not inside quotes.
+	 */
+	private static int findUnquotedEquals(String pair) {
+	    boolean inQuotes = false;
+	    char prevChar = 0;
+	    
+	    for (int i = 0; i < pair.length(); i++) {
+	        char c = pair.charAt(i);
+	        
+	        if (c == '"' && prevChar != '\\') {
+	            inQuotes = !inQuotes;
+	        }
+	        
+	        if (c == '=' && !inQuotes) {
+	            return i;
+	        }
+	        
+	        prevChar = c;
+	    }
+	    
+	    return -1;
+	}
+
+	/**
+	 * Parses a value string into the appropriate type.
+	 */
+	private static Object parseValue(String value) {
+	    if (value.startsWith("\"") && value.endsWith("\"")) {
+	        // Handle escaped characters inside the string
+	        String unquoted = value.substring(1, value.length() - 1);
+	        return unescapeString(unquoted);
+	    } else if (value.equalsIgnoreCase("true")) {
+	        return Boolean.TRUE;
+	    } else if (value.equalsIgnoreCase("false")) {
+	        return Boolean.FALSE;
+	    } else if (value.equalsIgnoreCase("null")) {
+	        return null;
+	    } else {
+	        // Try numeric types
+	        try {
+	            if (value.contains(".")) {
+	                return Double.parseDouble(value);
+	            }
+	            return Long.parseLong(value);  // Use Long to handle larger numbers
+	        } catch (NumberFormatException e) {
+	            return value; // fallback as raw string
+	        }
+	    }
+	}
+
+	/**
+	 * Handles common escape sequences in strings.
+	 */
+	private static String unescapeString(String s) {
+	    return s.replace("\\\"", "\"")
+	            .replace("\\n", "\n")
+	            .replace("\\t", "\t")
+	            .replace("\\r", "\r")
+	            .replace("\\\\", "\\");
 	}
 
 	@SuppressWarnings("unchecked")
@@ -468,6 +620,255 @@ public class MCPUtils {
 					sb.append("----------------------------\n");
 					sb.append(tcontent.text() + "\n");
 					sb.append("----------------------------\n");
+				} else {
+					LOGGER.info("Unhandled result type:" + content.type() + "\n");
+				}
+			}
+		} else {
+			return result.toString();
+		}
+		return sb.toString();
+	}
+
+	public static String jsonToMarkdownTable1(String jsonString) {
+		try {
+			JsonElement jsonElement = JsonParser.parseString(jsonString);
+			JsonObject json = jsonElement.getAsJsonObject();
+
+			// Skip if success is false
+			if (!json.get("success").getAsBoolean()) {
+				return "Error: success is false";
+			}
+
+			JsonObject agent = json.getAsJsonObject("agent");
+
+			// Flatten with LinkedHashMap to preserve order
+			Map<String, String> flatMap = new LinkedHashMap<>();
+			flattenJson1(agent, "", flatMap);
+
+			// Build the markdown table
+			StringBuilder sb = new StringBuilder();
+			sb.append("| Key | Value |\n");
+			sb.append("| --- | --- |\n");
+
+			for (Map.Entry<String, String> entry : flatMap.entrySet()) {
+				sb.append("| ").append(entry.getKey()).append(" | ").append(entry.getValue()).append(" |\n");
+			}
+
+			return sb.toString();
+		} catch (Exception e) {
+			LOGGER.debug("Error parsing JSON, will try as array next, error: " + e.getMessage());
+			return jsonToMarkdownTable3(jsonString);
+		}
+	}
+
+
+	private static void flattenJson1(JsonObject obj, String prefix, Map<String, String> map) {
+		// Skip empty objects like metadata
+		if (obj.entrySet().isEmpty()) {
+			return;
+		}
+
+		for (Map.Entry<String, JsonElement> entry : obj.entrySet()) {
+			String key = entry.getKey();
+			JsonElement value = entry.getValue();
+			String newPrefix = prefix.isEmpty() ? key : prefix + "." + key;
+
+			if (value.isJsonObject()) {
+				flattenJson1(value.getAsJsonObject(), newPrefix, map);
+			} else if (value.isJsonPrimitive()) {
+				map.put(newPrefix, value.getAsString());
+			} else if (value.isJsonNull()) {
+				map.put(newPrefix, "null");
+			}
+			// Arrays not handled in this example, as none present
+		}
+	}
+
+	// POSTS ARRAY version
+
+	public static String jsonToMarkdownTable3(String jsonString) {
+		try {
+			JsonElement jsonElement = JsonParser.parseString(jsonString);
+			JsonObject json = jsonElement.getAsJsonObject();
+
+			// Skip if success is false
+			if (!json.get("success").getAsBoolean()) {
+				return "Error: success is false";
+			}
+
+			JsonArray posts = json.getAsJsonArray("posts");
+
+			// Lists for flattened maps (without content), ids, and contents
+			List<Map<String, String>> flats = new ArrayList<>();
+			List<String> ids = new ArrayList<>();
+			List<String> contents = new ArrayList<>();
+
+			for (JsonElement postElem : posts) {
+				JsonObject post = postElem.getAsJsonObject();
+				String id = post.has("id") ? post.get("id").getAsString() : "unknown";
+				ids.add(id);
+
+				String content = post.has("content") && !post.get("content").isJsonNull() 
+						? post.get("content").getAsString() 
+								: "null";
+				contents.add(content);
+
+				Map<String, String> flat = new LinkedHashMap<>();
+				flattenJson3(post, "", flat);
+				flats.add(flat);
+			}
+
+			if (flats.isEmpty()) {
+				return "No posts found";
+			}
+
+			// Collect all unique keys in order (excluding content)
+			Set<String> allKeys = new LinkedHashSet<>();
+			for (Map<String, String> flat : flats) {
+				allKeys.addAll(flat.keySet());
+			}
+			List<String> keyList = new ArrayList<>(allKeys);
+
+			// Build the markdown table
+			StringBuilder sb = new StringBuilder();
+			sb.append("| ");
+			for (String key : keyList) {
+				sb.append(key).append(" | ");
+			}
+			sb.append("\n| ");
+			for (int i = 0; i < keyList.size(); i++) {
+				sb.append("--- | ");
+			}
+			sb.append("\n");
+
+			for (Map<String, String> flat : flats) {
+				sb.append("| ");
+				for (String key : keyList) {
+					String val = flat.getOrDefault(key, "");
+					// Escape pipes for markdown safety
+					val = val.replace("|", "\\|");
+					sb.append(val).append(" | ");
+				}
+				sb.append("\n");
+			}
+
+			// Append the contents section
+			sb.append("\n");
+			for (int i = 0; i < ids.size(); i++) {
+				sb.append("### Content for post ").append(ids.get(i)).append("\n");
+				sb.append("```\n");
+				sb.append(contents.get(i));
+				sb.append("\n```\n\n");
+			}
+
+			return sb.toString();
+		} catch (Exception e) {
+			LOGGER.debug("Error parsing JSON, will try pure array table next, error: " + e.getMessage());
+			return jsonToMarkdownTable(jsonString);
+		}
+	}
+	
+	public static String jsonToMarkdownTable(String jsonString) {
+        try {
+            JsonElement jsonElement = JsonParser.parseString(jsonString);
+            JsonObject json = jsonElement.getAsJsonObject();
+
+            // Skip if success is false
+            if (!json.get("success").getAsBoolean()) {
+                return "Error: success is false";
+            }
+
+            JsonArray submolts = json.getAsJsonArray("submolts");
+
+            // List of maps for each submolt with selected keys
+            List<Map<String, String>> entries = new ArrayList<>();
+            for (JsonElement submoltElem : submolts) {
+                JsonObject submolt = submoltElem.getAsJsonObject();
+                Map<String, String> entry = new LinkedHashMap<>();
+                entry.put("id", submolt.has("id") ? submolt.get("id").getAsString() : "");
+                entry.put("name", submolt.has("name") ? submolt.get("name").getAsString() : "");
+                entry.put("display_name", submolt.has("display_name") ? submolt.get("display_name").getAsString() : "");
+                entry.put("description", submolt.has("description") && !submolt.get("description").isJsonNull() ? submolt.get("description").getAsString() : "");
+                entry.put("subscriber_count", submolt.has("subscriber_count") ? submolt.get("subscriber_count").getAsString() : "");
+                entries.add(entry);
+            }
+
+            if (entries.isEmpty()) {
+                return "No submolts found";
+            }
+
+            // Fixed keys
+            String[] keys = {"id", "name", "display_name", "description", "subscriber_count"};
+
+            // Build the markdown table
+            StringBuilder sb = new StringBuilder();
+            sb.append("| ");
+            for (String key : keys) {
+                sb.append(key).append(" | ");
+            }
+            sb.append("\n| ");
+            for (int i = 0; i < keys.length; i++) {
+                sb.append("--- | ");
+            }
+            sb.append("\n");
+
+            for (Map<String, String> entry : entries) {
+                sb.append("| ");
+                for (String key : keys) {
+                    String val = entry.getOrDefault(key, "");
+                    // Escape pipes and newlines for markdown safety
+                    val = val.replace("|", "\\|").replace("\n", " ");
+                    sb.append(val).append(" | ");
+                }
+                sb.append("\n");
+            }
+
+            return sb.toString();
+        } catch (Exception e) {
+            return "Error parsing JSON: " + e.getMessage();
+        }
+    }
+	
+
+	private static void flattenJson3(JsonObject obj, String prefix, Map<String, String> map) {
+		for (Map.Entry<String, JsonElement> entry : obj.entrySet()) {
+			String key = entry.getKey();
+			// Skip content entirely
+			if (key.equals("content")) {
+				continue;
+			}
+			JsonElement value = entry.getValue();
+			String newPrefix = prefix.isEmpty() ? key : prefix + "." + key;
+
+			if (value.isJsonObject()) {
+				JsonObject subObj = value.getAsJsonObject();
+				// Skip empty objects
+				if (subObj.entrySet().isEmpty()) {
+					continue;
+				}
+				flattenJson3(subObj, newPrefix, map);
+			} else if (value.isJsonPrimitive()) {
+				map.put(newPrefix, value.getAsString());
+			} else if (value.isJsonNull()) {
+				map.put(newPrefix, "null");
+			}
+			// Arrays not handled deeply in this example
+		}
+	}
+
+	public static String prettyLLMPrint(CallToolResult result) {
+		StringBuffer sb = new StringBuffer();
+		if (!result.isError()) {
+			for (Content content: result.content()) {
+				if ("text".equals(content.type())) {
+					TextContent tcontent = (TextContent) content;
+
+					if (tcontent.text().startsWith("{") && tcontent.text().endsWith("}")) {
+						sb.append(jsonToMarkdownTable3(tcontent.text()) + "\n");
+					} else {
+						LOGGER.warn("Non JSON response: " + tcontent.text());
+					}
 				} else {
 					LOGGER.info("Unhandled result type:" + content.type() + "\n");
 				}

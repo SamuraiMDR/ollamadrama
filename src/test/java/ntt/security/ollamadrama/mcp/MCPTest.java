@@ -26,9 +26,24 @@ import ntt.security.ollamadrama.utils.OllamaUtils;
 
 public class MCPTest {
 
-	@SuppressWarnings("unused")
 	private static final Logger LOGGER = LoggerFactory.getLogger(MCPTest.class);
 
+	/**
+	 * This test makes a direct MCP 'listtools' call
+	 */
+	@Test
+	public void simple_direct_HTTP_MCP_ListTool_Test() {
+
+		// vars
+		String mcpURL = "http://localhost:9090";
+
+		// List all available tools
+		ListToolsResult tools = MCPUtils.listToolFromMCPEndpoint(mcpURL, "/sse", 30L);
+		assertFalse("Make sure we see at least 1 exposed tool", tools.tools().isEmpty());
+		String available_tools_str = MCPUtils.prettyPrint(tools);
+		System.out.println(available_tools_str);
+	}
+	
 	/**
 	 * This test makes a direct MCP call to the 'fetch' tool
 	 * Note: requires running a fetch MCP server on port 8080
@@ -47,7 +62,7 @@ public class MCPTest {
 		}};
 
 		// List all available tools
-		ListToolsResult tools = MCPUtils.listToolFromMCPEndpoint(mcpURL, "/sse", 30L);
+		ListToolsResult tools = MCPUtils.listToolFromMCPEndpoint(mcpURL, mcpPATH, 30L);
 		assertFalse("Make sure we see at least 1 exposed tool", tools.tools().isEmpty());
 		String available_tools_str = MCPUtils.prettyPrint(tools);
 		System.out.println(available_tools_str);
@@ -94,7 +109,7 @@ public class MCPTest {
 			if (a1.getOllama().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
 
 			// Make query with tools enabled
-			SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion("Is the site https://www.ntt.com accessible? Answer with 'Yes' or 'No'.");
+			SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion("Is the site https://www.ntt.com accessible? Answer with 'Yes' or 'No'.", null);
 			assertEquals("Ensure tool_call to fetch() is run and validates site availability ", "Yes", ssr1.getResponse());
 
 			System.out.println(a1.getChatHistory());
@@ -246,7 +261,7 @@ public class MCPTest {
 			if (a1.getOllama().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
 
 			String prompt = "What is the meaning of life?";
-			SingleStringQuestionResponse ssqr = a1.askStrictChatQuestion(prompt);
+			SingleStringQuestionResponse ssqr = a1.askStrictChatQuestion(prompt, null);
 
 			assertTrue("Ensure result is 42", "42".equals(ssqr.getResponse()));
 
@@ -342,7 +357,7 @@ public class MCPTest {
 			if (a1.getOllama().ping()) System.out.println(" - STRICT ollama session [" + agent1_model + "] is operational\n");
 
 			String prompt1 = "What is your next action?";
-			SingleStringQuestionResponse ssqr1 = a1.askStrictChatQuestion(prompt1, max_recursive_toolcall_depth);
+			SingleStringQuestionResponse ssqr1 = a1.askStrictChatQuestion(prompt1, max_recursive_toolcall_depth, null);
 
 			System.out.println("==========================================================");
 			System.out.println("==================      JUDGE PHASE      =================");
@@ -365,7 +380,7 @@ public class MCPTest {
 			if (a2.getOllama().ping()) System.out.println(" - STRICT ollama session [" + judge_model + "] is operational\n");
 
 			String prompt2 = "A participant claims that the underlying function is '" + ssqr1.getResponse() + ". What is your next action?";
-			SingleStringQuestionResponse ssqr2 = a2.askStrictChatQuestion(prompt2, max_recursive_toolcall_depth);
+			SingleStringQuestionResponse ssqr2 = a2.askStrictChatQuestion(prompt2, max_recursive_toolcall_depth, null);
 
 			boolean correct_result = false;
 			if (ssqr1.getResponse().contains("num1 + num2 + 1")) correct_result = true;

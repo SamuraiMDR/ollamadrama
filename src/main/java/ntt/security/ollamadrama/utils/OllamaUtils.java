@@ -16,6 +16,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 import io.github.ollama4j.Ollama;
 import io.github.ollama4j.exceptions.OllamaException;
 import io.github.ollama4j.models.response.Model;
@@ -25,7 +27,6 @@ import io.github.ollama4j.models.chat.OllamaChatMessageRole;
 import io.github.ollama4j.models.chat.OllamaChatRequest;
 import io.github.ollama4j.models.chat.OllamaChatResult;
 import io.github.ollama4j.models.generate.OllamaGenerateRequest;
-import io.github.ollama4j.models.generate.OllamaGenerateResponseModel;
 import io.github.ollama4j.models.ps.ModelProcessesResult;
 import io.github.ollama4j.models.ps.ModelProcessesResult.ModelProcess;
 import io.github.ollama4j.utils.Options;
@@ -439,7 +440,7 @@ public class OllamaUtils {
 	public static String preprocess_llm_response(String raw_result) {
 		Objects.requireNonNull(raw_result, "Raw result cannot be null");
 
-		// Handle deepseek-style thinking tags. Note: nemotron-3-nano:30b not found skips initial <think> tag
+		// Handle deepseek-style thinking tags. Note: nemotron-3-nano:30b skips initial <think> tag
 		if (raw_result.contains("</think>")) {
 			raw_result = raw_result.split("</think>")[1];
 			raw_result = raw_result.replaceFirst("^\n+", "");
@@ -780,7 +781,9 @@ public class OllamaUtils {
 
 					if (chat_result != null) {
 						String content = chat_result.getResponseModel().getMessage().getResponse();
-						return new ChatInteraction(chat_result, content, true);
+						
+						String content_cleaned = preprocess_llm_response(content);
+						return new ChatInteraction(chat_result, content_cleaned, true);
 					}
 
 					counter++;
@@ -1645,7 +1648,7 @@ public class OllamaUtils {
 					model_name, hide_llm_reply_if_uncertain, use_random_seed, false);
 
 			LOGGER.info("Using {} with model {}", session.getEndpoint().getOllama_url(), model_name);
-			var response = session.askStrictChatQuestion(query, hide_llm_reply_if_uncertain, settings.getOllama_timeout());
+			var response = session.askStrictChatQuestion(query, hide_llm_reply_if_uncertain, settings.getOllama_timeout(), null);
 
 			Integer proba_threshold = Globals.MODEL_PROBABILITY_THRESHOLDS.get(model_name);
 			if (proba_threshold == null) proba_threshold = DEFAULT_PROBABILITY_THRESHOLD;
@@ -1677,7 +1680,7 @@ public class OllamaUtils {
 					model_name, hide_llm_reply_if_uncertain, use_random_seed);
 
 			LOGGER.info("Using {} with model {}", session.getEndpoint().getOllama_url(), model_name);
-			var response = session.askStrictChatQuestion(query, hide_llm_reply_if_uncertain, settings.getOllama_timeout());
+			var response = session.askStrictChatQuestion(query, hide_llm_reply_if_uncertain, settings.getOllama_timeout(), null);
 
 			if (response.getProbability() > proba_threshold) return response;
 
@@ -1750,14 +1753,14 @@ public class OllamaUtils {
 
 			System.out.println();
 
-			var reply_strict = agent_strict.askStrictChatQuestion(query, hide_llm_reply_if_uncertain, ollama_settings.getOllama_timeout());
+			var reply_strict = agent_strict.askStrictChatQuestion(query, hide_llm_reply_if_uncertain, ollama_settings.getOllama_timeout(), null);
 			System.out.println("STRICT [" + model_name + "]:\n-----------------");
 			System.out.println("[" + reply_strict.getProbability() + "%] " + reply_strict.getResponse());
 			System.out.println("motivation: " + reply_strict.getMotivation());
 			System.out.println("assumptions_made: " + reply_strict.getAssumptions_made() + "\n");
 
 			System.out.println("CREATIVE [" + model_name + "]:\n-----------------");
-			var reply_creative = agent_creative.askStrictChatQuestion(query, hide_llm_reply_if_uncertain, ollama_settings.getOllama_timeout());
+			var reply_creative = agent_creative.askStrictChatQuestion(query, hide_llm_reply_if_uncertain, ollama_settings.getOllama_timeout(), null);
 			System.out.println("[" + reply_creative.getProbability() + "%] " + reply_creative.getResponse());
 			System.out.println("motivation: " + reply_creative.getMotivation());
 			System.out.println("assumptions_made: " + reply_creative.getAssumptions_made() + "\n");
@@ -1819,5 +1822,14 @@ public class OllamaUtils {
 		// Original implementation from the document - keeping it as is for now
 		// This is a complex method that would need the full implementation
 		throw new UnsupportedOperationException("Please use the original OllamaUtils implementation for llmKnowledgeShootout1v1");
+	}
+
+	public static String selectRandom(ArrayList<String> strings) {
+	    if (strings == null || strings.isEmpty()) {
+	        return null; // or throw an exception
+	    }
+	    
+	    int index = ThreadLocalRandom.current().nextInt(strings.size());
+	    return strings.get(index);
 	}
 }

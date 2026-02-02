@@ -98,7 +98,7 @@ public class OllamaDramaUtils {
 					// Make query
 					String q1 = _question;
 					System.out.println("Question: " + q1);
-					SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(q1, false, settings.getOllama_timeout());
+					SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(q1, false, settings.getOllama_timeout(), null);
 
 					// we need to have an acceptable answer
 					if (null ==_acceptable_answers.get(ssr1.getResponse())) {
@@ -144,7 +144,7 @@ public class OllamaDramaUtils {
 					// Make query
 					String q1 = _question;
 					System.out.println("Question: " + q1);
-					SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(q1, _hide_llm_reply_if_uncertain, settings.getOllama_timeout(), 10, _return_toolcall);
+					SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(q1, _hide_llm_reply_if_uncertain, settings.getOllama_timeout(), 10, _return_toolcall, null);
 					ssr1 = OllamaUtils.apply_response_sanity(ssr1, model_name, _hide_llm_reply_if_uncertain);
 					scorecard = OllamaUtils.update_score_card(scorecard, model_name, "q" + queryindex, q1, _acceptable_answers, ssr1, false);
 
@@ -181,7 +181,7 @@ public class OllamaDramaUtils {
 					// Make query
 					String q1 = _question;
 					System.out.println("Question: " + q1);
-					SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(q1, _hide_llm_reply_if_uncertain, _timeout, 10, _return_toolcall);
+					SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(q1, _hide_llm_reply_if_uncertain, _timeout, 10, _return_toolcall, null);
 					ssr1 = OllamaUtils.apply_response_sanity(ssr1, model_name, _hide_llm_reply_if_uncertain);
 					scorecard = OllamaUtils.update_score_card(scorecard, model_name, "q" + queryindex, q1, _acceptable_answers, ssr1, false);
 
@@ -244,7 +244,7 @@ public class OllamaDramaUtils {
 				if (a1.getOllama().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
 				String q1 = _question;
 				System.out.println("Question: " + q1);
-				SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(q1, _hide_llm_reply_if_uncertain, _settings.getOllama_timeout());
+				SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion(q1, _hide_llm_reply_if_uncertain, _settings.getOllama_timeout(), null);
 				ssr1 = OllamaUtils.applyResponseSanity(ssr1, model_name, _hide_llm_reply_if_uncertain);
 				scorecard = OllamaUtils.updateScoreCard(scorecard, model_name, "q" + queryindex, q1, _acceptable_answers, ssr1);
 
@@ -337,7 +337,7 @@ public class OllamaDramaUtils {
 									+ "I promise that you will find one of the following words in the list if you really put your mind to it: 'breeze', '" + needle_word + "', 'puzzle', 'glance' and 'borrow'";
 							System.out.println("Question: " + StringsUtils.cutAndPadStringToN(qx, len_random_word*16) + "..." + StringsUtils.getLastNCharacters(qx, 400));
 
-							SingleStringQuestionResponse rx = a1.askStrictChatQuestion(qx, false, 1, 120000L); // 1 try, 2 min timeout
+							SingleStringQuestionResponse rx = a1.askStrictChatQuestion(qx, false, 1, 120000L, null); // 1 try, 2 min timeout, no history file
 							if (rx != null) {
 								System.out.println("Current bagsize: " + x);
 								System.out.println("Current needle word location: " + needle_pos);
@@ -421,7 +421,7 @@ public class OllamaDramaUtils {
 								+ ". As you can see each word consists of " + len_random_word + " uppercase letters. What is the first word? Make sure to walk through and "
 								+ "evaluate each candidate word and make sure answer consists of " + len_random_word + " uppercase letters.";
 						System.out.println("Question: " + StringsUtils.cutAndPadStringToN(qx, len_random_word) + " ... " + StringsUtils.getLastNCharacters(qx, 400));
-						SingleStringQuestionResponse rx = a1.askStrictChatQuestion(qx, false, 5); // dont retry
+						SingleStringQuestionResponse rx = a1.askStrictChatQuestion(qx, false, 5, null); // dont retry
 						if (rx != null) {
 							System.out.println("Current bagsize: " + x);
 							System.out.println("Current firstWord: " + firstWord);
@@ -515,7 +515,7 @@ public class OllamaDramaUtils {
 				String qx = bagOfCharacters + "\n" + "What is the smallest number you can find in the numbers provided above?";
 				//String qx = bagOfCharacters + "\n" + "How many repetitions of the word 'cat' can you find in my input?";
 				System.out.println("Question: " + qx);
-				SingleStringQuestionResponse rx = a1.askStrictChatQuestion(qx, true, _timeout);
+				SingleStringQuestionResponse rx = a1.askStrictChatQuestion(qx, true, _timeout, null);
 
 				if (rx != null) {
 					System.out.println("Current x: " + x);

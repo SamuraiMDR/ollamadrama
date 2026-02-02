@@ -615,7 +615,7 @@ public class Globals {
 		this.put("devstral:24b", 14);
 		this.put("gemma3n:e4b", 14);
 		
-		
+		this.put("qwq:32b", 14);
 		this.put("nemotron-3-nano:30b", 14);
 		
 
