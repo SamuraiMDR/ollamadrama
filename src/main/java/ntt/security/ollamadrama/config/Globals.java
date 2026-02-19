@@ -41,11 +41,25 @@ public class Globals {
 		    - Use 'oneshot' if you only need the tool output once. Use 'continous' if you want fresh tool output as part of all future interactions. 
 		    - You MUST only populate the 'tool_calls' key with the name of a known tool name along with all its known required arguments in the suggested format, i.e. 'oneshot tool_name(arg1="val1",arg2="val2", ..)' or 'continous tool_name(arg1="val1",arg2="val2", ..)'. 
 		    - You should NEVER guess or assume the availability of tools mentioned in the 'tool_calls'; you must have explicitly been told that a tool is available. 
-		    - If you want to call a tool after a pause, respond with 'TOOLCALL_AFTER_PAUSE' and (optionally) populate 'tool_calls' in the same way as for 'TOOLCALL'.
-		    - If you have nothing to and want to wait until your next interaction, respond with 'TOOLCALL_AFTER_PAUSE' and populate 'tool_calls'. 
 		    - The key 'tool_calls' MUST be populated if the response key is 'TOOLCALL'.
 		    - When passing string arguments to tools, use double quotes (") only and NEVER single quotes(').
-		    - The key 'probability' key MUST BE 0 if the response key is 'TOOLCALL' or 'TOOLCALL_AFTER_PAUSE'. 
+		    - The key 'probability' key MUST BE 0 if the response key is 'TOOLCALL'. 
+		    - The reply string will be pure JSON and will start with the character { since it’s JSON and NOT markdown.
+		    """;
+	
+	public static final String ENFORCE_SINGLE_KEY_JSON_RESPONSE_FOR_AGENTS = """
+		    - You MUST reply with a single JSON formatted string with the keys 'response', 'probability', 'motivation', 'assumptions_made' and 'tool_calls'. 
+		    - The 'response' key should only include 'TOOLCALL' since you always interact with the tools available to you. 
+		    - The 'probability' key should ALWAYS be set to 0. 
+		    - The 'motivation' key should include a brief description string motivating your selected tools to call. 
+		    - The 'assumptions_made' key should include a brief description string of the assumptions made. 
+		    - The 'tool_calls' key is a string and should include a comma-separated list of tool calls you want the output from (see 'MCP TOOLS AVAILABLE' section). 
+		    - Every tool listed in 'tool_calls' should be preceded with 'oneshot' or 'continous', indicating how often the tool is called. 
+		    - Use 'oneshot' if you only need the tool output once. Use 'continous' if you want fresh tool output as part of all future interactions. 
+		    - You MUST only populate the 'tool_calls' key with the name of a known tool name along with all its known required arguments in the suggested format, i.e. 'oneshot tool_name(arg1="val1",arg2="val2", ..)' or 'continous tool_name(arg1="val1",arg2="val2", ..)'. 
+		    - You should NEVER guess or assume the availability of tools mentioned in the 'tool_calls'; you must have explicitly been told that a tool is available. 
+		    - The key 'tool_calls' MUST be populated if the response key is 'TOOLCALL'.
+		    - When passing string arguments to tools, use double quotes (") only and NEVER single quotes('). 
 		    - The reply string will be pure JSON and will start with the character { since it’s JSON and NOT markdown.
 		    """;
 
@@ -68,8 +82,19 @@ public class Globals {
 
 	public static String PROMPT_TEMPLATE_CREATIVE = "You are a free thinking creative bot and always give descriptive and long winded answers. You NEVER reply to a question with just one word and always justify your answer with an explaination.";
 
+	// Strange behavior with 0 temp, https://github.com/abetlen/llama-cpp-python/issues/890
+	// Temperature 0 no longer means greedy in llama.cpp: https://github.com/ggml-org/llama.cpp/discussions/3005
+	public static final Map<String, Float> temp_strict_defaults = Map.ofEntries(
+			Map.entry("glm-4.7-flash:q4_K_M",0.7f),
+			Map.entry("glm-4.7-flash:q8_0",0.7f),
+			Map.entry("glm-4.7-flash:bf16",0.7f), 
+			Map.entry("huihui_ai/glm-4.7-flash-abliterated:q4_K",0.7f),
+			Map.entry("huihui_ai/glm-4.7-flash-abliterated:q4_K_S",0.7f),
+			Map.entry("huihui_ai/glm-4.7-flash-abliterated:q8_0",0.7f),
+			Map.entry("huihui_ai/glm-4.7-flash-abliterated:bf16",0.7f)
+			);
+	
 	// ollama 0.9.3 RN: Ollama will now limit context length to what the model was trained against to avoid strange overflow behavior
-
 	public static final Map<String, Integer> n_ctx_defaults = Map.ofEntries(
 			Map.entry("wizard-vicuna-uncensored:30b", 2048), // train 2048
 			Map.entry("llava:34b", 4096), // train 4096
@@ -135,13 +160,18 @@ public class Globals {
 			Map.entry("olmo-3.1:32b", 32768), // train 65536
 			Map.entry("qwq:32b", 32768), // train 131072
 			Map.entry("nemotron-3-nano:30b", 32768), // train 1048576 (1M)
-			Map.entry("glm-4.7-flash:q4_K_M",32768), // train 198k
-			Map.entry("glm-4.7-flash:q8_0",32768), // train 198k
-			Map.entry("glm-4.7-flash:bf16",32768) // train 198k
+			Map.entry("glm-4.7-flash:q4_K_M",65536), // train 198k
+			Map.entry("glm-4.7-flash:q8_0",65536), // train 198k
+			Map.entry("glm-4.7-flash:bf16",65536), // train 198k
+			Map.entry("huihui_ai/glm-4.7-flash-abliterated:q4_K",65536), // train 198k
+			Map.entry("huihui_ai/glm-4.7-flash-abliterated:q4_K_S",65536), // train 198k
+			Map.entry("huihui_ai/glm-4.7-flash-abliterated:q8_0",65536), // train 198k
+			Map.entry("huihui_ai/glm-4.7-flash-abliterated:bf16",65536), // train 198k
+			Map.entry("emsi/mixtral-8x22b:q4_0", 65536) // train 65536
 			);
 
 
-	public static Options createStrictOptionsBuilder(String _modelname, Boolean _use_random_seed, int _n_ctx_override) {
+	public static Options createStrictOptionsBuilder(String _modelname, Boolean _use_random_seed, int _n_ctx_override, Float _temp_override) {
 		Integer n_ctx = null;
 		if (_n_ctx_override == -1) {
 			n_ctx = n_ctx_defaults.get(_modelname);
@@ -152,33 +182,46 @@ public class Globals {
 		} else {
 			n_ctx = _n_ctx_override;
 		}
-		LOGGER.debug("n_ctx used: " + n_ctx);
+		Float temperature = null;
+		if (_temp_override == null) {
+			temperature = temp_strict_defaults.get(_modelname);
+			if (null == temperature) {
+				LOGGER.debug("No custom temperature for strict mode with " + _modelname + ", can safely use 0.0");
+				temperature = 0.0f;
+			}
+		} else {
+			temperature = _temp_override;
+		}
+		LOGGER.info("n_ctx used: " + n_ctx);
+		LOGGER.info("temperature used: " + temperature);
 		if (_use_random_seed)  {
+			int seed = NumUtils.randomNumWithinRangeAsInt(1, 100000);
+			LOGGER.info("Using random seed " + seed);
 			return new OptionsBuilder()
 
 					// https://github.com/SillyTavern/SillyTavern/issues/4188
-					.setMirostat(0)					// 0 = DISABLED
-					//.setMirostat(2) 				// allows perplexity/uncertainty control
-					//.setMirostatEta(0.5f) 		// learning rate (default 0.1)
-					//.setMirostatTau(1.0f) 		// lower = more focused and coherent text (default 5.0)		
-
-					.setTemperature(0.0f) 			// higher = more creative (default 0.8)
-					.setTopK(0) 					// 0-100, higher = more creative (default 40)
-					.setTopP(0.0f)					// 0.0-1.0, higher = more creative (default 0.9)
+					//.setMirostat(0)				// 0 = DISABLED, msg="invalid option provided" option=mirostat
+					.setTemperature(temperature) 	// higher = more creative (default 0.8), 0 = true greedy but breaks GLM
+					.setTopK(40) 					// 1 breaks GLM models
+					.setTopP(0.95f)					// keep tokens until 100% cumulative prob
+					.setMinP(0.05f)              	// helps filter very low-probability token
+				    //.setTfsZ(1.0f)             	// tail-free sampling disabled (1.0 = off), msg="invalid option provided" option=tfs_z
+				    .setRepeatPenalty(1.10f)     	// light penalty prevents loops without hurting coherence
+				    
+				    .setSeed(seed)					// random
 					.setNumCtx(n_ctx) 	// Size of the context window (default 2048), https://github.com/ollama/ollama/blob/main/docs/faq.md#how-can-i-specify-the-context-window-size
 					.build();
 		} else {
 			return new OptionsBuilder()
 
 					// https://github.com/SillyTavern/SillyTavern/issues/4188
-					.setMirostat(0)					// 0 = DISABLED
-					//.setMirostat(2) 				// allows perplexity/uncertainty control
-					//.setMirostatEta(0.5f) 		// learning rate (default 0.1)
-					//.setMirostatTau(1.0f) 		// lower = more focused and coherent text (default 5.0)
-
-					.setTemperature(0.0f) 			// higher = more creative (default 0.8)
-					.setTopK(0) 					// 0-100, higher = more creative (default 40)
-					.setTopP(0.0f)					// 0.0-1.0, higher = more creative (default 0.9)
+					//.setMirostat(0)				// 0 = DISABLED, msg="invalid option provided" option=mirostat
+					.setTemperature(temperature) 	// higher = more creative (default 0.8), 0 = true greedy but breaks GLM
+					.setTopK(40) 					// 1 breaks GLM models
+					.setTopP(0.95f)					// keep tokens until 100% cumulative prob
+					.setMinP(0.05f)              	// helps filter very low-probability token
+				    //.setTfsZ(1.0f)             	// tail-free sampling disabled (1.0 = off), msg="invalid option provided" option=tfs_z
+				    .setRepeatPenalty(1.10f)     	// light penalty prevents loops without hurting coherence
 					.setSeed(42)					// Just make it fixed
 					.setNumCtx(n_ctx) 	// Size of the context window (default 2048), https://github.com/ollama/ollama/blob/main/docs/faq.md#how-can-i-specify-the-context-window-size
 					.build();
@@ -216,20 +259,25 @@ public class Globals {
 	}
 
 	/**
-	 * XXXL (<256GB)
+	 * XXXL (128GB+ <256GB)
 	 */
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XXXL = ""
 			+ "llama3.1:405b"		// 243 GB
 			+ "";
 	
 	/**
-	 * XXL (<64GB)
+	 * XXL (48GB+ <128GB)
 	 */
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XXL = ""
-			+ "gpt-oss:120b,"		// 65 GB
-			+ "glm-4.7-flash:bf16"	// 60 GB
+			+ "glm-4.7-flash:bf16,"							// 60 GB
+			+ "huihui_ai/glm-4.7-flash-abliterated:bf16,"	// 60 GB
+			+ "gpt-oss:120b,"								// 65 GB
+			+ "emsi/mixtral-8x22b:q4_0" 					// 80 GB
 			+ "";
 
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_UNCENSORED_XXL = ""
+			+ "huihui_ai/glm-4.7-flash-abliterated:bf16";	// 60 GB
+	
 	// task specific
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_VISION_XXL = ""
@@ -241,14 +289,21 @@ public class Globals {
 	 */
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL = ""
-			+ "llama3.1:70b," 				 	 		// 43 GB
-			+ "llama3.3:70b," 					 		// 43 GB
-			+ "nemotron:70b,"					 		// 43 GB
-			+ "qwen3:32b,"						 		// 20 GB
-			+ "qwq:32b,"	    				 		// 20 GB
-			+ "glm-4.7-flash:q4_K_M,"					// 19 GB
-			+ "glm-4.7-flash:q8_0,"						// 32 GB
-			+ "gemma3:27b"						 		// 16 GB
+			+ "llama3.1:70b," 				 	 			// 43 GB
+			+ "llama3.3:70b," 					 			// 43 GB
+			+ "nemotron:70b,"					 			// 43 GB
+			
+			+ "glm-4.7-flash:q8_0,"							// 32 GB
+			+ "glm-4.7-flash:q4_K_M,"						// 19 GB
+			+ "huihui_ai/glm-4.7-flash-abliterated:q8_0,"	// 32 GB
+			+ "huihui_ai/glm-4.7-flash-abliterated:q4_K,"	// 19 GB
+			+ "huihui_ai/glm-4.7-flash-abliterated:q4_K_S,"	// 17 GB
+			
+			+ "qwen3:32b,"						 			// 20 GB
+			+ "huihui_ai/qwen3-abliterated:32b," 			// 20 GB
+			
+			+ "qwq:32b,"	    				 			// 20 GB
+			+ "gemma3:27b"						 			// 16 GB
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_MINIDIVERSE_XL = ""
@@ -261,8 +316,7 @@ public class Globals {
 			+ "qwen2.5:72b,"					    // 47 GB, fails strawberry test
 			+ "cogito:70b,"							// 43 GB
 			+ "athene-v2:72b,"						// 47 GB
-			+ "tulu3:70b,"		    				// 43 GB
-			+ "huihui_ai/qwen3-abliterated:32b" 	// 20 GB, uncensored
+			+ "tulu3:70b"		    				// 43 GB
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_XL = ""
@@ -292,8 +346,10 @@ public class Globals {
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_UNCENSORED_XL = ""
-			+ "huihui_ai/qwen3-abliterated:32b," 		// 20 GB
-			+ "dolphin-llama3:70b"						// 39 GB
+			+ "huihui_ai/qwen3-abliterated:32b," 			// 20 GB
+			+ "huihui_ai/glm-4.7-flash-abliterated:q4_K,"	// 19 GB
+			+ "huihui_ai/glm-4.7-flash-abliterated:q4_K_S,"	// 17 GB
+			+ "huihui_ai/glm-4.7-flash-abliterated:q8_0"	// 32 GB
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_VISION_XL = ""
@@ -302,7 +358,8 @@ public class Globals {
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_GUARDED_XL = ""
-			+ "shieldgemma:27b"		// 17 GB, 'Yes'/'No' if safe replies only
+			+ "gpt-oss-safeguard:20b,"	// 14 GB, 
+			+ "shieldgemma:27b"			// 17 GB, 'Yes'/'No' if safe replies only
 			+ "";
 
 	// task specific
@@ -334,6 +391,10 @@ public class Globals {
 			+ "qwen3:14b"							// 9.3 GB
 			+ "";
 
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_UNCENSORED_L = ""
+			+ "huihui_ai/qwen3-abliterated:14b" 	// 9 GB, uncensored
+			+ "";
+	
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_L = ""
 			+ "gemma3:12b,"							// 8.1 GB
 			+ "sailor2:20b,"						// 12 GB
@@ -378,7 +439,6 @@ public class Globals {
 	 */
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M = ""
-			+ "marco-o1:7b,"		// 4.1 GB
 			+ "qwen3:8b,"			// 5.2 GB
 			+ "qwen2.5:7b," 		// 4.1 GB
 			+ "gemma2:9b"			// 5.4 GB
@@ -489,6 +549,15 @@ public class Globals {
 			+ MODEL_NAMES_OLLAMA_ALL_UP_TO_M
 			+"";
 
+	public static String MODEL_NAMES_OLLAMA_ALL_UNCENSORED_UP_TO_XXL = ""
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_UNCENSORED_XXL + ","
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_UNCENSORED_XL + ","
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_UNCENSORED_L;
+	
+	public static String MODEL_NAMES_OLLAMA_ALL_UNCENSORED_UP_TO_XL = ""
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_UNCENSORED_XL + ","
+			+ ENSEMBLE_MODEL_NAMES_OLLAMA_UNCENSORED_L;
+	
 	public static String MODEL_NAMES_OLLAMA_ALL_UP_TO_XL = ""
 			+ ENSEMBLE_MODEL_NAMES_OLLAMA_VISION_XL + ","
 			+ ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL + ","
@@ -505,7 +574,7 @@ public class Globals {
 			// + "wizard-vicuna-uncensored:13b,"	// always 0% prob
 
 			// broken/unsupported in ollama
-			
+			// + "marco-o1:7b,"						// 4.1 GB, frequent hallucinations in Chinese
 			// + "r1-1776:70b"					    // 43 GB, unreliable performance
 			// + "olmo-3.1:32b,"					// 19 GB, often times out setting system profile
 			// + "olmo2:13b"			            // 8.4 GB, tool call limitations
@@ -615,7 +684,7 @@ public class Globals {
 		this.put("devstral:24b", 14);
 		this.put("gemma3n:e4b", 14);
 		
-		
+		this.put("qwq:32b", 14);
 		this.put("nemotron-3-nano:30b", 14);
 		
 

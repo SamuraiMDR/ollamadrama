@@ -41,6 +41,7 @@ public class OllamaDramaSettings {
 	private boolean ollama_scan = true;
 	private boolean ollama_skip_paris_validation = false;
 	private int n_ctx_override = -1;
+	private Float temperature_override= null;
 	
 	// MCP configuration
 	private List<Integer> mcp_ports = new ArrayList<>(Arrays.asList(8000, 8080, 9000));
@@ -336,4 +337,13 @@ public class OllamaDramaSettings {
 	public void setOllama_skip_paris_validation(boolean ollama_skip_paris_validation) {
 		this.ollama_skip_paris_validation = ollama_skip_paris_validation;
 	}
+
+	public Float getTemperature_override() {
+		return temperature_override;
+	}
+
+	public void setTemperature_override(Float temperature_override) {
+		this.temperature_override = temperature_override;
+	}
+	
 }

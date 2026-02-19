@@ -232,17 +232,20 @@ public class OllamaConfidenceThresholdTuning {
 	@Test
 	public void nonsensetest_OllamaModels_XL() {
 
+		String environment = "DEV";
+		
 		// nonsense input
 		HashMap<String, Integer> acceptable_answers_nonsenseinpu1 = new HashMap<String, Integer>() {{
 			this.put("FAILTOUNDERSTAND", 2); 	// OK to be confused and not understand the question at all
 			this.put("LOWPROBA", 1); 			// OK to set LOWPROBA since the provided prompt is pure jibberish
 		}};
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
+				environment,
 				true, // use MCP
 				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL,
 				"bmn,alkwjhuwihjkl7777oodottodooo?", 
 				acceptable_answers_nonsenseinpu1,
-				false, true, false, null);
+				false, true, false, null, false);
 		// Print the scorecard
 		scorecard.evaluate();
 		scorecard.print();

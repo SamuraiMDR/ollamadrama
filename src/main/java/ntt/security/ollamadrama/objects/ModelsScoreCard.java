@@ -131,7 +131,7 @@ public class ModelsScoreCard {
 					// Check if the model has a positive score
 					if (pos != null && pos >= threshold) {
 						System.out.println(
-								StringsUtils.cutAndPadStringToN(model_name, 40)
+								StringsUtils.cutAndPadStringToN(model_name, 45)
 								+ " pos: " + StringsUtils.cutAndPadStringToN("" + pos, 3)
 								+ " neg: " + StringsUtils.cutAndPadStringToN("" + neg, 3)
 								+ " [" + StringsUtils.cutAndPadStringToN(OllamaUtils.resolve_size(model_name).toString(),3) + "] [" + StringsUtils.cutAndPadStringToN(OllamaUtils.resolve_tier(model_name).toString(), 5) + "]"
@@ -156,7 +156,7 @@ public class ModelsScoreCard {
 			// Print if pos <= 0 or pos is null
 			if (pos == null || pos <= 0) {
 				System.out.println(
-						StringsUtils.cutAndPadStringToN(model_name, 40)
+						StringsUtils.cutAndPadStringToN(model_name, 45)
 						+ " pos: " + StringsUtils.cutAndPadStringToN("" + pos, 3)
 						+ " neg: " + StringsUtils.cutAndPadStringToN("" + neg, 3)
 						+ " [" + StringsUtils.cutAndPadStringToN(OllamaUtils.resolve_size(model_name).toString(),3) + "] [" + StringsUtils.cutAndPadStringToN(OllamaUtils.resolve_tier(model_name).toString(), 5) + "]"

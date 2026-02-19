@@ -8,11 +8,23 @@ public class SingleStringQuestionResponse {
 	private String motivation = "";
 	private String assumptions_made = "";
 	private String tool_calls = "";
+	private Double exec_time = 0d;
 
 	public SingleStringQuestionResponse() {
 		super();
 	}
 
+	public SingleStringQuestionResponse(String _response, Integer _probability, String _motivation, String _assumptions_made, String _tool_calls, Double _exec_time) {
+		super();
+		this.response = _response;
+		this.probability = _probability;
+		this.empty = false;
+		this.motivation = _motivation;
+		this.assumptions_made = _assumptions_made;
+		this.tool_calls = _tool_calls;
+		this.exec_time = _exec_time;
+	}
+	
 	public SingleStringQuestionResponse(String _response, Integer _probability, String _motivation, String _assumptions_made, String _tool_calls) {
 		super();
 		this.response = _response;
@@ -70,6 +82,14 @@ public class SingleStringQuestionResponse {
 	public void setTool_calls(String tool_calls) {
 		this.tool_calls = tool_calls;
 	}
+	
+	public Double getExec_time() {
+		return exec_time;
+	}
+
+	public void setExec_time(Double exec_time) {
+		this.exec_time = exec_time;
+	}
 
 	public void print() {
 		System.out.println("response         : " + this.response);
@@ -77,6 +97,7 @@ public class SingleStringQuestionResponse {
 		System.out.println("motivation       : " + this.motivation);
 		System.out.println("assumptions_made : " + this.assumptions_made);
 		System.out.println("tool_calls       : " + this.tool_calls);
+		System.out.println("exec_time        : " + this.exec_time);
 	}
 	
 	public String getOutputAsString() {
@@ -88,6 +109,7 @@ public class SingleStringQuestionResponse {
 	    sb.append("motivation : ").append(this.motivation).append("\n");
 	    sb.append("assumptions_made : ").append(this.assumptions_made).append("\n");
 	    sb.append("tool_calls : ").append(this.tool_calls).append("\n");
+	    sb.append("exec_time : ").append(this.exec_time).append("\n");
 	    return sb.toString();
 	}
 }

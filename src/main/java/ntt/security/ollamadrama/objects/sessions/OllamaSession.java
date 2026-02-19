@@ -1,5 +1,6 @@
 package ntt.security.ollamadrama.objects.sessions;
 
+import java.io.File;
 import java.util.*;
 
 import org.slf4j.Logger;
@@ -11,7 +12,9 @@ import io.github.ollama4j.models.chat.OllamaChatResponseModel;
 import io.github.ollama4j.models.chat.OllamaChatResult;
 import io.github.ollama4j.utils.Options;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import ntt.security.ollamadrama.config.Globals;
 import ntt.security.ollamadrama.config.OllamaDramaSettings;
+import ntt.security.ollamadrama.mcp.McpResponseTruncator;
 import ntt.security.ollamadrama.objects.ChatInteraction;
 import ntt.security.ollamadrama.objects.MCPTool;
 import ntt.security.ollamadrama.objects.OllamaEndpoint;
@@ -19,6 +22,8 @@ import ntt.security.ollamadrama.objects.SessionType;
 import ntt.security.ollamadrama.objects.ToolCallRequest;
 import ntt.security.ollamadrama.objects.response.SingleStringQuestionResponse;
 import ntt.security.ollamadrama.singletons.OllamaService;
+import ntt.security.ollamadrama.utils.DateUtils;
+import ntt.security.ollamadrama.utils.FilesUtils;
 import ntt.security.ollamadrama.utils.InteractUtils;
 import ntt.security.ollamadrama.utils.JSONUtils;
 import ntt.security.ollamadrama.utils.MCPUtils;
@@ -39,10 +44,17 @@ public class OllamaSession {
 	private boolean initialized = false;
 	private SessionType sessiontype;
 	private int interactcounter = 0;
-	private String initial_prompt = "";
+	private String system_prompt = "";
 	private boolean make_tools_available = false;
+	private String sessionid = "";
+	private String toolcall_history = "";
 
-	public OllamaSession(String _model_name, OllamaEndpoint _endpoint, Options _options, OllamaDramaSettings _settings, String _profilestatement, SessionType _sessiontype, boolean _make_tools_available) {
+	// Defaults
+	private int DEFAULT_SESSION_TOKENS_MAXLEN = 32000;
+	private long DEFAULT_TIMEOUT_IN_SECONDS = 300L;
+	private int DEFAULT_MAX_RECURSIVE_TOOLCALL_DEPTH = 5;
+
+	public OllamaSession(String _model_name, OllamaEndpoint _endpoint, Options _options, OllamaDramaSettings _settings, String _systemprompt, SessionType _sessiontype, boolean _make_tools_available) {
 		super();
 
 		this.model_name = _model_name;
@@ -51,13 +63,15 @@ public class OllamaSession {
 		this.options = _options;
 		this.settings = _settings;
 		this.uuid = UUID.randomUUID().toString();
+		this.system_prompt = _systemprompt;
 		this.sessiontype = _sessiontype;
 		this.make_tools_available = _make_tools_available;
-		
+		this.sessionid = UUID.randomUUID().toString();
+
 		// Wait for our turn
 		OllamaUtils.wait_for_our_turn(this.Ollama, model_name);
 
-		this.initialized = setChatSystemProfileStatement(_profilestatement, _settings.getAutopull_max_llm_size(), _settings.getOllama_timeout());		
+		this.initialized = setChatSystemProfileStatement(_systemprompt, _settings.getAutopull_max_llm_size(), _settings.getOllama_timeout());		
 	}
 
 	public String getModel_name() {
@@ -92,12 +106,12 @@ public class OllamaSession {
 		this.interactcounter = interactcounter;
 	}
 
-	public String getInitial_prompt() {
-		return initial_prompt;
+	public String getSystem_prompt() {
+		return system_prompt;
 	}
 
-	public void setInitial_prompt(String initial_prompt) {
-		this.initial_prompt = initial_prompt;
+	public void setSystem_prompt(String system_prompt) {
+		this.system_prompt = system_prompt;
 	}
 
 	public String askGenericSingleWordQuestion(String _question) {
@@ -170,49 +184,69 @@ public class OllamaSession {
 		}
 	}
 
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question) {
-		return askStrictChatQuestion(_question, false, 60000, 3000L, 5, 30, false);
+	public SingleStringQuestionResponse askStrictChatQuestion(String _prompt) {
+		return askStrictChatQuestion(_prompt, false, DEFAULT_SESSION_TOKENS_MAXLEN, DEFAULT_TIMEOUT_IN_SECONDS, 5, 4, false, null, false, false);
 	}
 
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question, long _timeout, boolean _return_toolcall) {
-		return askStrictChatQuestion(_question, false, 60000,_timeout, 5, 30, _return_toolcall);
+
+	public SingleStringQuestionResponse askStrictChatQuestion(String _prompt, String _history_file) {
+		return askStrictChatQuestion(_prompt, false, DEFAULT_SESSION_TOKENS_MAXLEN, DEFAULT_TIMEOUT_IN_SECONDS, 5, 4, false, _history_file, false, false);
 	}
 
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question, long _timeout) {
-		return askStrictChatQuestion(_question, false, 60000,_timeout, 5, 30, false);
+	public SingleStringQuestionResponse askStrictChatQuestion(String _prompt, long _timeout, boolean _return_toolcall, String _history_file) {
+		return askStrictChatQuestion(_prompt, false, DEFAULT_SESSION_TOKENS_MAXLEN,_timeout, DEFAULT_MAX_RECURSIVE_TOOLCALL_DEPTH, 4, _return_toolcall, _history_file, false, false);
 	}
 
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question, int session_tokens_maxlen, int _max_recursive_toolcall_depth, int _toolcall_pausetime_in_seconds) {
-		return askStrictChatQuestion(_question, false, 60000, 3000L, _max_recursive_toolcall_depth, _toolcall_pausetime_in_seconds, false);
+	public SingleStringQuestionResponse askStrictChatQuestion(String _prompt, long _timeout_seconds, int _max_recursive_toolcall_depth) {
+		return askStrictChatQuestion(_prompt, false, DEFAULT_SESSION_TOKENS_MAXLEN,_timeout_seconds, _max_recursive_toolcall_depth, 4, false, null, false, false);
 	}
 
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question, int _max_recursive_toolcall_depth) {
-		return askStrictChatQuestion(_question, 60000, false, 30, 120, 0, _max_recursive_toolcall_depth, 30, false, false);
+	public SingleStringQuestionResponse askStrictChatQuestion(String _prompt, int session_tokens_maxlen, int _max_recursive_toolcall_depth, int _toolcall_pausetime_in_seconds, String _history_file) {
+		return askStrictChatQuestion(_prompt, false, DEFAULT_SESSION_TOKENS_MAXLEN, DEFAULT_TIMEOUT_IN_SECONDS, _max_recursive_toolcall_depth, _toolcall_pausetime_in_seconds, false, _history_file, false, false);
 	}
 
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, long _timeout_in_ms) {
-		return askStrictChatQuestion(_question, _hide_llm_reply_if_uncertain, 60000, _timeout_in_ms, 5, 30, false);
+	public SingleStringQuestionResponse askStrictChatQuestion(String _prompt, int _max_recursive_toolcall_depth, String _history_file, boolean _unloadModelAfterChat) {
+		return askStrictChatQuestion(_prompt, "", DEFAULT_SESSION_TOKENS_MAXLEN, false, 30, 120, 0, _max_recursive_toolcall_depth, 4, false, false, _history_file, _unloadModelAfterChat, false, false);
 	}
 
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, long _timeout_in_ms, int _toolcall_pausetime_in_seconds, boolean _return_toolcall) {
-		return askStrictChatQuestion(_question, _hide_llm_reply_if_uncertain, 60000, _timeout_in_ms, 5, _toolcall_pausetime_in_seconds, _return_toolcall);
+	public SingleStringQuestionResponse askStrictChatQuestion(String _prompt, boolean _hide_llm_reply_if_uncertain, long _timeout_seconds, String _history_file) {
+		return askStrictChatQuestion(_prompt, _hide_llm_reply_if_uncertain, DEFAULT_SESSION_TOKENS_MAXLEN, _timeout_seconds, DEFAULT_MAX_RECURSIVE_TOOLCALL_DEPTH, 4, false, _history_file, false, false);
 	}
 
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, int _retryThreshold, long _timeout_in_ms) {
-		return askStrictChatQuestion(_question, 60000, _hide_llm_reply_if_uncertain, _retryThreshold, _timeout_in_ms, 0, 5, 30, false, false);
+	public SingleStringQuestionResponse askStrictChatQuestion(String _prompt, boolean _hide_llm_reply_if_uncertain, long _timeout_seconds, int _toolcall_pausetime_in_seconds, boolean _return_toolcall, String _history_file) {
+		return askStrictChatQuestion(_prompt, _hide_llm_reply_if_uncertain, DEFAULT_SESSION_TOKENS_MAXLEN, _timeout_seconds, DEFAULT_MAX_RECURSIVE_TOOLCALL_DEPTH, _toolcall_pausetime_in_seconds, _return_toolcall, _history_file, false, false);
 	}
 
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question, boolean _hide_llm_reply_if_uncertain, int _session_tokens_maxlen, long _timeout_in_ms, int _max_recursive_toolcall_depth, int _toolcall_pausetime_in_seconds, boolean _return_toolcall) {
-		return askStrictChatQuestion(_question, _session_tokens_maxlen, _hide_llm_reply_if_uncertain, 30, _timeout_in_ms, 0, _max_recursive_toolcall_depth, _toolcall_pausetime_in_seconds, _return_toolcall, false);
+	public SingleStringQuestionResponse askStrictChatQuestion(String _prompt, boolean _hide_llm_reply_if_uncertain, int _retryThreshold, long _timeout_seconds, String _history_file, boolean _unloadModelAfterChat) {
+		return askStrictChatQuestion(_prompt, "", DEFAULT_SESSION_TOKENS_MAXLEN, _hide_llm_reply_if_uncertain, _retryThreshold, _timeout_seconds, 0, DEFAULT_MAX_RECURSIVE_TOOLCALL_DEPTH, 4, false, false, _history_file, _unloadModelAfterChat, false, false);
 	}
 
-	public SingleStringQuestionResponse askStrictChatQuestion(String _question, int session_tokens_maxlen, boolean _hide_llm_reply_if_uncertain, int _retryThreshold, long _timeout_in_ms, int _exec_depth_counter, int _max_recursive_toolcall_depth, int _toolcall_pausetime_in_seconds, boolean _return_toolcall, boolean _halt_on_tool_error) {
+	public SingleStringQuestionResponse askStrictChatQuestion(String _prompt, boolean _hide_llm_reply_if_uncertain, int _session_tokens_maxlen, long _timeout_seconds, int _max_recursive_toolcall_depth, int _toolcall_pausetime_in_seconds, boolean _return_toolcall, String _history_file, boolean _unloadModelAfterChat, boolean _use_mcp_truncator) {
+		return askStrictChatQuestion(_prompt, "", _session_tokens_maxlen, _hide_llm_reply_if_uncertain, 30, _timeout_seconds, 0, _max_recursive_toolcall_depth, _toolcall_pausetime_in_seconds, _return_toolcall, false, _history_file, _unloadModelAfterChat, _use_mcp_truncator, false);
+	}
+
+	public SingleStringQuestionResponse askStrictChatQuestion(String _prompt, String _recursive_question, int session_tokens_maxlen, boolean _hide_llm_reply_if_uncertain, int _retryThreshold, long _timeout_seconds, int _exec_depth_counter, int _max_recursive_toolcall_depth, int _toolcall_pausetime_in_seconds, boolean _return_toolcall, boolean _halt_on_tool_error, String _history_file, boolean _unloadModelAfterQuery, boolean _use_mcp_truncator, boolean _debug) {
 		if (_max_recursive_toolcall_depth < 0) LOGGER.warn("No tools will be called if value of_max_recursive_toolcall_depth is not 1 or more");
-		boolean debug = false;
-		if (debug) System.out.println("interactcounter: " + interactcounter);
-
+		String full_prompt = _prompt;
+		String full_prompt_STDOUT = _prompt;
+		if (!"".equals(_recursive_question)) {
+			full_prompt = _prompt + "\n\n" + _recursive_question + "\n" + Globals.ENFORCE_SINGLE_KEY_JSON_RESPONSE_FOR_AGENTS + "\n\n" + OllamaService.getAllAvailableMCPTools();
+			full_prompt_STDOUT = _prompt + "\n\n" + _recursive_question + "\n<JSON FORMAT NAG HERE>\n<MCP TOOLS LISTED AGAIN HERE>";
+		}
+		
+		if (this.interactcounter == 0) {
+			System.out.println("this.interactcounter: " + this.interactcounter);
+			System.out.println(this.getSystem_prompt() + "\n" + full_prompt_STDOUT + "\n\n");
+		} else {
+			System.out.println(full_prompt_STDOUT + "\n\n");
+		}
+		LOGGER.info("Estimated context tokencount is " + estimateTokenCount(this.getSystem_prompt() + "\n" + full_prompt));
+		if (this.getToolcall_history().contains("-")) System.out.println("Toolcall history:" + this.getToolcall_history() + "\n");
+		
+		// debug prompt at each depth
+		if (_debug) FilesUtils.writeToFileUNIXNoException(this.getSystem_prompt() + "\n\n" + _prompt + "\n\n" + _recursive_question, this.getSessionid() + "_prompt_at_depth_" + _exec_depth_counter + ".log");
+		
 		this.interactcounter = interactcounter + 1;
-
 		if (this.sessiontype == SessionType.STRICTPROTOCOL) {
 
 			if (null == this.chatResult) {
@@ -222,11 +256,13 @@ public class OllamaSession {
 			} else {
 				int retryCounter = 0;
 				while (true) {
-					ChatInteraction ci =  OllamaUtils.askChatQuestion(this.Ollama, this.model_name, this.options, this.chatResult, _question, _timeout_in_ms);
+					LOGGER.debug("Execution timer start, new APPEND prompt to LLM of charsize " + full_prompt.length() + " and estimated tokencount " + estimateTokenCount(this.getSystem_prompt() + full_prompt));
+					long startTime  = System.nanoTime();
+					ChatInteraction ci =  OllamaUtils.askChatQuestion(this.Ollama, this.model_name, this.options, this.chatResult, full_prompt, _timeout_seconds, _retryThreshold, _unloadModelAfterQuery);
 					if (null != ci) {
 						String json = "";
 
-						if (debug) System.out.println(ci.getResponse());
+						if (_debug) LOGGER.info(ci.getResponse());
 
 						// JSON markdown (LLM protocol helper hack)
 						if (ci.getResponse().contains("{") && ci.getResponse().contains("}") && (json.split("\\}").length == 1) && (json.split("\\{").length == 1)) {
@@ -252,6 +288,10 @@ public class OllamaSession {
 						SingleStringQuestionResponse swr = JSONUtils.createPOJOFromJSONOpportunistic(json, SingleStringQuestionResponse.class);
 						if (null != swr) {
 
+							long endTime = System.nanoTime();
+							double executionTimeSeconds = (endTime - startTime) / 1_000_000_000.0;
+							swr.setExec_time(executionTimeSeconds);
+
 							if (null != swr.getResponse()) {
 								// PROTOCOL hack
 								if (swr.getResponse().equals("FAILTOUNDERSTAND")) {
@@ -262,16 +302,23 @@ public class OllamaSession {
 									swr.setResponse("FAILTOUNDERSTAND");
 									swr.setProbability(0);
 								}
+								if (swr.getResponse().equals("OKIDOKI") && swr.getTool_calls().startsWith("oneshot")) {
+									// we forgive ..
+									swr.setResponse("TOOLCALL");
+								}
 
 								this.chatResult = ci.getChatResult();
 								swr.setEmpty(false);
 								swr = OllamaUtils.applyResponseSanity(swr, model_name, _hide_llm_reply_if_uncertain);
 
+								// toolcall rewrites
+								
 								boolean valid_tool_calls = true;
 								if (!swr.getTool_calls().equals("")) {
+									LOGGER.debug("swr.getTool_calls(): " + swr.getTool_calls());
 									ArrayList<ToolCallRequest> tool_calls = MCPUtils.parseToolCalls(swr.getTool_calls());
 									for (ToolCallRequest tcr: tool_calls) {
-										System.out.println("tcr: " + tcr.toString());
+										//System.out.println("tcr: " + tcr.toString());
 										MCPTool mcpTool = OllamaService.getMCPURLForTool(tcr.getToolname());
 										if (null == mcpTool) {
 											LOGGER.warn(tcr.getToolname() + " is not a valid tool name");
@@ -290,48 +337,54 @@ public class OllamaSession {
 								swr.print();
 								System.out.println("");
 
+								// exec_time debug
+								if (_debug) {
+									if (null != swr) {
+										// dont count timeouts
+										if (swr.getExec_time().longValue() < settings.getOllama_timeout()) {
+											// prompt size vs exec_time
+											String debug_file = "exec_time.csv";
+											File f = new File(debug_file);
+											if (!f.exists()) FilesUtils.writeToFileUNIXNoException("model,tokens_in_prompt,exec_time,sessionid",debug_file);
+											int estimated_prompt_token_count = estimateTokenCount(this.getSystem_prompt() + this.getChatHistory() + full_prompt);
+											FilesUtils.appendToFileUNIXNoException(model_name + "," + estimated_prompt_token_count + "," + swr.getExec_time() + "," + this.getSessionid(), debug_file);
+										}
+									}
+								}
+
 								if (_return_toolcall && swr.getResponse().startsWith("TOOLCALL")) {
 									return swr;
 								}
 
-								if ("TOOLCALL_AFTER_PAUSE".equals(swr.getResponse()) && valid_tool_calls) {
-									LOGGER.info("Pausing )" + _toolcall_pausetime_in_seconds + " before next round of toolcalls");
-									SystemUtils.sleepInSeconds(_toolcall_pausetime_in_seconds);
-								}
-
-								if ("TOOLCALL_AFTER_PAUSE".equals(swr.getResponse()) && !valid_tool_calls) {
-
-									// print intermediate result to STDOUT
-									swr.print();
-									System.out.println("");
-
-									LOGGER.info("Pausing " + _toolcall_pausetime_in_seconds + " before next round");
-									SystemUtils.sleepInSeconds(_toolcall_pausetime_in_seconds);
-								}
-
-								if (this.isMake_tools_available() && ("TOOLCALL".equals(swr.getResponse()) || "TOOLCALL_AFTER_PAUSE".equals(swr.getResponse()))) {
+								if (this.isMake_tools_available() && ("TOOLCALL".equals(swr.getResponse()))) {
 
 									if (!valid_tool_calls) {
 										LOGGER.warn("Agent requested a tool_call which does not exist (" + swr.getTool_calls() + ")\n");
 										return swr;
 									} else {
 
+										this.addToToolcall_history(swr.getTool_calls());
 										StringBuffer sb = new StringBuffer();
 
-										LOGGER.info("Tool Call Request: " + swr.getTool_calls());
-										ArrayList<ToolCallRequest> tool_calls = MCPUtils.parseToolCalls(swr.getTool_calls());
+										LOGGER.info("Tool Call Request: " + sanitizeToolCallQuotes(swr.getTool_calls()));
+										ArrayList<ToolCallRequest> tool_calls = MCPUtils.parseToolCalls(sanitizeToolCallQuotes(swr.getTool_calls()));
 
+										LOGGER.info("tool_calls size: " + tool_calls.size());
 										for (ToolCallRequest tcr: tool_calls) {
 											if (!tcr.sanitycheck_pass()) {
 												LOGGER.warn("Tool Call Request sanitycheck failed - name: " + tcr.getToolname() + " calltype: " + tcr.getCalltype() + " arguments:" + tcr.getArguments().toString());
 												return swr;
 											} else {
+												LOGGER.info("Valid toolcall request");
 
 												// Find the MCP URL to call the tool
 												MCPTool mcpTool = OllamaService.getMCPURLForTool(tcr.getToolname());
 												if (null == mcpTool) {
 													LOGGER.error("Agent requested a tool_call which does not exist (" + tcr.getToolname() + ")\n");
-													SystemUtils.halt();
+													if (_halt_on_tool_error) {
+														LOGGER.error("Instructed to halt on error");
+														SystemUtils.halt();
+													}
 												}
 												String mcpURL = mcpTool.getEndpoint().getSchema() + "://" + mcpTool.getEndpoint().getHost() + ":" + mcpTool.getEndpoint().getPort();
 												String mcpPATH = mcpTool.getEndpoint().getPath();
@@ -354,32 +407,88 @@ public class OllamaSession {
 
 													// Call tool
 													if (make_call) {
-														CallToolResult result = MCPUtils.callToolUsingMCPEndpoint(mcpURL, mcpPATH, tcr.getToolname(), tcr.getArguments(), 30L, _halt_on_tool_error);
-														String tool_response = "\nResponse from running tool_call " + tcr.getRawrequest() + ":\n\n" + MCPUtils.prettyPrint(result);
-														System.out.println("tool_response: " + tool_response);
-														if (null != tool_response) {
-															// replace sequences of 10 or more consecutive whitespaces with a single space
-															tool_response = tool_response.replaceAll("\\s{10,}", " ");
-															//System.out.println(tool_response);
+														LOGGER.info("Making call to URL " + mcpURL);
+														CallToolResult result = MCPUtils.callToolUsingMCPEndpoint(mcpURL, mcpPATH, tcr.getToolname(), tcr.getArguments(), 300L, _halt_on_tool_error);
+
+														if (result.isError()) {
+															LOGGER.warn("Will exit TOOLCALL LOOP since I got an error reply: " + result.toString());
+															SystemUtils.sleepInSeconds(5);
+															return swr;
+														} else {
+
+															String tool_response = "";
+
+															if (!_use_mcp_truncator) {
+																tool_response = "\nResponse from running tool_call " + tcr.getRawrequest() + ":\n\n" + MCPUtils.getRawText(result);
+															} else {
+																McpResponseTruncator truncator = new McpResponseTruncator()
+																		.maxStringLength(2000)
+																		.maxTotalChars(100000)
+																		.maxDepth(10)
+																		.maxArrayElements(10);
+																tool_response = "\nResponse from running tool_call " + tcr.getRawrequest() + ":\n\n" + truncator.truncate(MCPUtils.getRawText(result));
+															}
+															
+															
+															
+															// Simple prompt injection checks
+															String tool_response_sanitized = OllamaUtils.sanitizePromptInjection(tool_response, "PROMPT_INJECTION_ATTACK_HERE");
+															if (!tool_response.equals(tool_response_sanitized)) {
+																LOGGER.info("Prompt injection attack found in tool_response!");
+																LOGGER.info("tool_response: " + tool_response);
+																LOGGER.info("NEW tool_response: " + tool_response_sanitized);
+																tool_response = tool_response_sanitized;
+															}
+
+															// Check for context overflows when received tool reply 
+															int estimated_response_token_count = estimateTokenCount(tool_response);
+
+															int estimated_sum_context_token_count = this.getChatSizeWordCount() + estimated_response_token_count;
+															if (estimated_sum_context_token_count >= session_tokens_maxlen) {
+																LOGGER.warn("Estimated tokencount in TOOLCALL response is " + estimated_response_token_count + ", so the full context " + estimated_sum_context_token_count + " exceeds the total context restriction of " + session_tokens_maxlen + ". Will abort recursive TOOLCALL run.");
+																return swr;
+															} else {
+																LOGGER.warn("Estimated tokencount in TOOLCALL response is " + estimated_response_token_count + ", so the full context is roughly " + estimated_sum_context_token_count);
+															}
+
+															System.out.println("tool_response: " + tool_response);
+															sb.append(_recursive_question + "\n\n");
+															sb.append(swr.getOutputAsString() + "\n");
 															sb.append(tool_response + "\n");
+
+															// update history file with successful actions
+															if (null != _history_file) {
+																//FilesUtils.appendToFileUNIXNoException(swr.getOutputAsString() + "\n\n" + tool_response, _history_file);
+															}
+
 														}
+
 													} else {
-														LOGGER.info("Not making MCP call ..");
-														sb.append("Your MCP Tool call to " + tcr.getToolname() + " was rejected\n");
+														LOGGER.info("Your MCP Tool call to " + tcr.getToolname() + " was rejected so leaving recursive TOOLCALL loop");
+														return swr;
 													}
 
 												} else {
 													LOGGER.warn("Unable to call tool " + tcr.getToolname() + " with MCP URL " + mcpURL);
+													if (_halt_on_tool_error) {
+														LOGGER.info("Instructed to halt on error");
+														SystemUtils.halt();
+													}
 													return swr;
 												}
 											}
+											LOGGER.info("toolname: " + tcr.getToolname());
 										}
 
 										// check if we need to break due to token usage
-										int chatsize_wordcount_a1 = this.getChatSizeWordCount();
-										if (debug) LOGGER.info("session wordcount: " + chatsize_wordcount_a1);
-										if (chatsize_wordcount_a1 > session_tokens_maxlen) {
-											LOGGER.info("Breaking recursive toolcall since we have consumed roughly token " + chatsize_wordcount_a1);
+										int chatsize_wordcount_a1 = estimateTokenCount(
+												this.getSystem_prompt()) // session init 
+												+ this.getChatSizeWordCount()  // session history
+												+ estimateTokenCount(sb.toString()); // session new toolcall reply data
+										LOGGER.info("estimated session wordcount (including toolcall replies): " + chatsize_wordcount_a1);
+										int headroom = (int)(session_tokens_maxlen * 0.8); // leave 20% for the LLM reply
+										if (chatsize_wordcount_a1 > headroom) {
+											LOGGER.info("Breaking recursive toolcall, estimated tokens: " + chatsize_wordcount_a1);
 											return swr;
 										}
 
@@ -389,9 +498,21 @@ public class OllamaSession {
 											return swr;
 										}
 
+										if (tool_calls.isEmpty()) {
+											LOGGER.info("Breaking recursive toolcall since we had no tools being called");
+											return swr;
+										}
+
 										_exec_depth_counter++;
-										//System.out.println("new query:\n\n" + _question + sb.toString());
-										return askStrictChatQuestion(_question+ "\n\n" + sb.toString() , session_tokens_maxlen, _hide_llm_reply_if_uncertain, _retryThreshold, _timeout_in_ms, _exec_depth_counter, _max_recursive_toolcall_depth, _toolcall_pausetime_in_seconds, _return_toolcall, _halt_on_tool_error);
+										LOGGER.info("Recursive call at depth " + _exec_depth_counter + " to askStrictChatQuestion()");
+
+										//System.out.println("will now call again using:");
+										//System.out.println(sb.toString());
+										//System.exit(1);
+										
+										// Let's start over
+										this.clearChatHistory(); // reship full_prompt instead
+										return askStrictChatQuestion(_prompt + "\n" + sb.toString(),_recursive_question, session_tokens_maxlen, _hide_llm_reply_if_uncertain, _retryThreshold, _timeout_seconds, _exec_depth_counter, _max_recursive_toolcall_depth, _toolcall_pausetime_in_seconds, _return_toolcall, _halt_on_tool_error, _history_file, _unloadModelAfterQuery, _use_mcp_truncator, false);
 									}
 								}
 
@@ -410,7 +531,7 @@ public class OllamaSession {
 						}
 					}
 					retryCounter++;
-					if (retryCounter > 5) LOGGER.warn("Having problems getting a valid reply using this question: " + _question);
+					if (retryCounter > 5) LOGGER.warn("Having problems getting a valid reply using this question: " + full_prompt);
 					SystemUtils.sleepInSeconds(1); // throttle
 				}
 			}
@@ -513,13 +634,26 @@ public class OllamaSession {
 		try {
 			for (OllamaChatMessage cm: this.getChatResult().getChatHistory()) {
 				// Split the input into tokens based on whitespace and basic punctuation.
-				String[] tokens = cm.getResponse().split("\\s+|(?=[.,!?;:])|(?<=[.,!?;:])");
-				tokenCount = tokenCount + tokens.length;
+				tokenCount = tokenCount + estimateTokenCount(cm.getResponse());
 			}
 			return tokenCount;
 		} catch (Exception e) {
 			return 0;
 		}
+	}
+
+	public int estimateTokenCount(String text) {
+		if (text == null || text.isEmpty()) return 0;
+
+		// Rough but better heuristic for modern tokenizers
+		int words = text.split("\\s+").length;
+		int chars = text.length();
+
+		// GLM-4 / ChatGLM style: typically 1.35–1.8 tokens per "word"
+		return Math.max(
+				(int) (words * 1.45),           // base
+				(int) (chars / 3.8)             // fallback for dense text/code
+				) + 10; // small safety buffer
 	}
 
 	public String getChatHistory() {
@@ -532,6 +666,14 @@ public class OllamaSession {
 		} catch (Exception e) {
 			return "";
 		}
+	}
+	
+	public void clearChatHistory() {
+	    try {
+	        this.getChatResult().getChatHistory().clear();
+	    } catch (Exception e) {
+	        // ignore
+	    }
 	}
 
 	public SessionType getSessiontype() {
@@ -548,6 +690,29 @@ public class OllamaSession {
 
 	public void setMake_tools_available(boolean make_tools_available) {
 		this.make_tools_available = make_tools_available;
+	}
+
+	public static String sanitizeToolCallQuotes(String tool_calls_csv) {
+	    if (tool_calls_csv == null) return tool_calls_csv;
+	    // Replace key='value' with key=\"value\"
+	    return tool_calls_csv.replaceAll("=\\'([^']*)\\'", "=\\\\\"$1\\\\\"");
+	}
+
+	public String getSessionid() {
+		return sessionid;
+	}
+
+	public void setSessionid(String sessionid) {
+		this.sessionid = sessionid;
+	}
+
+	public String getToolcall_history() {
+		return toolcall_history;
+	}
+
+	public void addToToolcall_history(String _newentry) {
+		this.toolcall_history = this.toolcall_history + "\n - " + DateUtils.epochInSecondsToUTC(System.currentTimeMillis()/1000L) + ": " + _newentry;
+		System.out.println("toolcall_history for session " + this.getSessionid() + " : " + this.toolcall_history);
 	}
 
 }

@@ -1,25 +1,41 @@
 package ntt.security.ollamadrama.memoryloss;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ntt.security.ollamadrama.config.Globals;
+import ntt.security.ollamadrama.config.OllamaDramaSettings;
 import ntt.security.ollamadrama.objects.ModelsScoreCard;
+import ntt.security.ollamadrama.objects.OllamaEndpoint;
+import ntt.security.ollamadrama.singletons.OllamaService;
 import ntt.security.ollamadrama.utils.OllamaDramaUtils;
+import ntt.security.ollamadrama.utils.OllamaUtils;
 
 public class MemoryLossTest {
 
 	@SuppressWarnings("unused")
 	private static final Logger LOGGER = LoggerFactory.getLogger(MemoryLossTest.class);
-	private static final String tag = "Ollama0.11.4+2x5090+128G+64kctx";
+	private static final String tag = "Ollama0.15.2+2x5090+128G+32kctx";
 	
 	// Guided 'needle' test
 	//@Ignore
 	@Test
 	public void checkMemoryLengthForAllEnsembleModels_FindTheNeedleTest_CSV() {
-		ModelsScoreCard scorecard = OllamaDramaUtils.performMemoryTestUsingRandomWordNeedleTest("cogito:70b", 0, true, tag);
+		
+		String selected_models = Globals.MODEL_NAMES_OLLAMA_ALL_UNCENSORED_UP_TO_XL;
+		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
+		settings.setSatellites(new ArrayList<>(Arrays.asList(new OllamaEndpoint("http://127.0.0.1:11434", "", ""))));
+		settings.setOllama_scan(false);
+		settings.setOllama_timeout(300);
+		settings.setOllama_models(selected_models);
+		OllamaService.resetInstance(settings);
+		
+		ModelsScoreCard scorecard = OllamaDramaUtils.performMemoryTestUsingRandomWordNeedleTest(settings, selected_models, 0, true, tag, "model_maxcap.csv");
 		System.out.println("SCORECARD:");
 		scorecard.evaluate();
 		scorecard.print();

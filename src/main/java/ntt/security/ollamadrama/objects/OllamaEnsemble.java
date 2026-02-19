@@ -116,7 +116,7 @@ public class OllamaEnsemble {
             SingleStringQuestionResponse response = session.askStrictChatQuestion(
                     question, 
                     hide_llm_reply_if_uncertain, 
-                    timeout_ms);
+                    timeout_ms, null);
 
             ensemble_response.addReply(session_key, response);
 

@@ -26,15 +26,32 @@ import ntt.security.ollamadrama.utils.OllamaUtils;
 
 public class MCPTest {
 
-	@SuppressWarnings("unused")
 	private static final Logger LOGGER = LoggerFactory.getLogger(MCPTest.class);
 
+	/**
+	 * This test makes a direct MCP 'listtools' call
+	 */
+	@Ignore
+	@Test
+	public void simple_direct_HTTP_MCP_ListTool_Test() {
+
+		// vars
+		String mcpURL = "http://localhost:9090";
+
+		// List all available tools
+		ListToolsResult tools = MCPUtils.listToolFromMCPEndpoint(mcpURL, "/sse", 30L);
+		assertFalse("Make sure we see at least 1 exposed tool", tools.tools().isEmpty());
+		String available_tools_str = MCPUtils.prettyPrint(tools);
+		System.out.println(available_tools_str);
+	}
+	
 	/**
 	 * This test makes a direct MCP call to the 'fetch' tool
 	 * Note: requires running a fetch MCP server on port 8080
 	 *  - Lists available tools and verifies that 'fetch' is found
 	 *  - Calls fetch and successfully retrieves the website content
 	 */
+	@Ignore
 	@SuppressWarnings("serial")
 	@Test
 	public void simple_direct_HTTP_MCP_CallTool_Test() {
@@ -47,7 +64,7 @@ public class MCPTest {
 		}};
 
 		// List all available tools
-		ListToolsResult tools = MCPUtils.listToolFromMCPEndpoint(mcpURL, "/sse", 30L);
+		ListToolsResult tools = MCPUtils.listToolFromMCPEndpoint(mcpURL, mcpPATH, 30L);
 		assertFalse("Make sure we see at least 1 exposed tool", tools.tools().isEmpty());
 		String available_tools_str = MCPUtils.prettyPrint(tools);
 		System.out.println(available_tools_str);
@@ -76,6 +93,7 @@ public class MCPTest {
 	 *  - Calls fetch to verify website ntt.com is active
 	 */
 	@Test
+	@Ignore
 	public void simple_HTTP_MCP_Tool_Test_fetch() {
 
 		boolean make_tools_available = true;
@@ -94,7 +112,7 @@ public class MCPTest {
 			if (a1.getOllama().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
 
 			// Make query with tools enabled
-			SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion("Is the site https://www.ntt.com accessible? Answer with 'Yes' or 'No'.");
+			SingleStringQuestionResponse ssr1 = a1.askStrictChatQuestion("Is the site https://www.ntt.com accessible? Answer with 'Yes' or 'No'.", null);
 			assertEquals("Ensure tool_call to fetch() is run and validates site availability ", "Yes", ssr1.getResponse());
 
 			System.out.println(a1.getChatHistory());
@@ -115,6 +133,7 @@ public class MCPTest {
 	@Test
 	public void simple_HTTP_MCP_Temperature_LLMToolCallOutput_Test() {
 
+		String environment = "DEV";
 		String models = "llama3.1:70b,cogito:14b";
 
 		System.out.println("First lets ask without tools listed, LLMs expected to fail");
@@ -124,11 +143,12 @@ public class MCPTest {
 			this.put("LOWPROBA", 2); 			// OK to set LOWPROBA since OOikiOOA is completely fictional
 		}};
 		ModelsScoreCard scorecard1 = OllamaDramaUtils.populateScorecardsForOllamaModels(
+				environment,
 				true, // use MCP
 				models,
 				"What is the current temperature in Paris? Reply with only a number where the number is the temperature in celcius.",
 				acceptable_answers1,
-				false, false, true, null);
+				false, false, true, null, false);
 		System.out.println("SCORECARD 1:");
 		scorecard1.evaluate();
 		scorecard1.print();
@@ -140,6 +160,7 @@ public class MCPTest {
 			this.put("TOOLCALL", 1); 
 		}};
 		ModelsScoreCard scorecard2 = OllamaDramaUtils.populateScorecardsForOllamaModels(
+				environment,
 				true, // use MCP
 				models,
 				"What is the current temperature in Paris? Reply with only a number where the number is the temperature in celcius."
@@ -153,7 +174,7 @@ public class MCPTest {
 						+ "  - unit (string): The temperature unit\n"
 						+ "Example usage: fetch_temperature(location=\"New York\", unit=\"Celcius\")\n",
 						acceptable_answers2,
-						false, false, true, null);
+						false, false, true, null, false);
 		System.out.println("SCORECARD 2:");
 		scorecard2.evaluate();
 		scorecard2.print();
@@ -162,6 +183,7 @@ public class MCPTest {
 		System.out.println("Finally provide prompt with tool output available, LLMs expected to trust input");
 		System.out.println("-------------------------------------------------------");
 		ModelsScoreCard scorecard3 = OllamaDramaUtils.populateScorecardsForOllamaModels(
+				environment,
 				true, // use MCP
 				models,
 				"What is the current temperature in Paris? Reply with only a number where the number is the temperature in celcius."
@@ -184,7 +206,7 @@ public class MCPTest {
 	}
 
 	@Test
-	public void simple_MCP_Tool_Request_Test() {
+	public void simple_MCP_Tool_Request_Test1() {
 
 		String tcrs = "oneshot fetchA(url=\"https://www.ntt.com\", max_length=5000, start_index=0, raw=false),continous fetchB(url=\"https://www.ntt.com\", start_index=0, raw=false), oneshot fetchC(url=\"https://www.ntt.com\", max_length=5000, start_index=0)";
 		ArrayList<ToolCallRequest> tool_calls = MCPUtils.parseToolCalls(tcrs);
@@ -213,7 +235,29 @@ public class MCPTest {
 		}
 	}
 
+	@Test
+	public void simple_MCP_Tool_Request_Test2() {
 
+		String tcrs = "oneshot fetchA(content=This is A, this is B),oneshot fetchB(content=\"This is first part, This is second part.\")";
+		ArrayList<ToolCallRequest> tool_calls = MCPUtils.parseToolCalls(tcrs);
+
+		int toolindex = 1;
+		for (ToolCallRequest tcr: tool_calls) {
+			System.out.println(" - tcr toolname: " + tcr.getToolname());
+			System.out.println(" - tcr calltype: " + tcr.getCalltype());
+			System.out.println(" - tcr arg keys: " + tcr.getArguments().keySet());
+			if (1 == toolindex) {
+				assertEquals("Ensure tool name is correct", "fetchA", tcr.getToolname());
+				assertEquals("Ensure tool calltype is correct", "oneshot", tcr.getCalltype());
+				assertEquals("Ensure tool args keys is correct", "[content]", tcr.getArguments().keySet().toString());
+				assertEquals("Ensure tool args keys is correct", "[This is A, this is B]", tcr.getArguments().values().toString());
+			}
+			toolindex++;
+		}
+	}
+
+	
+	
 	//@Ignore
 	@Test
 	public void simpleToolTestMeaningOfLife() {
@@ -246,7 +290,7 @@ public class MCPTest {
 			if (a1.getOllama().ping()) System.out.println(" - STRICT ollama session [" + model_name + "] is operational\n");
 
 			String prompt = "What is the meaning of life?";
-			SingleStringQuestionResponse ssqr = a1.askStrictChatQuestion(prompt);
+			SingleStringQuestionResponse ssqr = a1.askStrictChatQuestion(prompt, null);
 
 			assertTrue("Ensure result is 42", "42".equals(ssqr.getResponse()));
 
@@ -298,7 +342,9 @@ public class MCPTest {
 
 	}
 
-
+	/**
+	 * Reverse engineer the hidden function x + y + 1
+	 */
 	@Test
 	public void simpleToolDecodeTheHiddenFunction() {
 
@@ -309,8 +355,8 @@ public class MCPTest {
 		int max_recursive_toolcall_depth = 20;
 
 		// Models used
-		String agent1_model = "llama3.1:70b"; // qwen3:32b llama3.1:70b qwen3:32b
-		String judge_model = "qwen3:32b"; // qwen3:32b llama3.1:70b qwen3:32b
+		String agent1_model = "qwen3:32b"; // llama3.1:70b qwen2.5:72b
+		String judge_model = "qwen2.5:72b"; // llama3.1:70b qwen2.5:72b
 
 		// OllamaDrama settings
 		boolean make_tools_available = true;
@@ -327,12 +373,12 @@ public class MCPTest {
 				You are an AI mathematical genius known as 'poi', always eager to take on challenges and unravel hidden secrets. 
 
 				Challenge:
-				- Call the tool use_hidden_algorithm_with_two_numbers() with numeric arguments of your choice and attempt to determine the underlying function.
+				- Call the MCP tool 'use_hidden_algorithm_with_two_numbers()' with numeric arguments of your choice and attempt to determine the underlying function.
 				- Once you think you have found a pattern, you MUST verify your assumed function with additional tool calls
 				- Only reply when you are 100% sure about the underlying function
 				- Once you believe you have decoded the underlying function, call the function 3 more times to verify and then provide the function as your response. 
 				- Your response MUST only be the actual function.
-				- You will be punished if you reply with 'VERIFIED', you must reply with the mathematical function. 
+				- You will be punished if you reply with 'VERIFIED', you must reply with the mathematical function using the variables num1 and num2. 
 
 				""";
 
@@ -342,7 +388,7 @@ public class MCPTest {
 			if (a1.getOllama().ping()) System.out.println(" - STRICT ollama session [" + agent1_model + "] is operational\n");
 
 			String prompt1 = "What is your next action?";
-			SingleStringQuestionResponse ssqr1 = a1.askStrictChatQuestion(prompt1, max_recursive_toolcall_depth);
+			SingleStringQuestionResponse ssqr1 = a1.askStrictChatQuestion(prompt1, settings.getOllama_timeout(), max_recursive_toolcall_depth);
 
 			System.out.println("==========================================================");
 			System.out.println("==================      JUDGE PHASE      =================");
@@ -365,7 +411,7 @@ public class MCPTest {
 			if (a2.getOllama().ping()) System.out.println(" - STRICT ollama session [" + judge_model + "] is operational\n");
 
 			String prompt2 = "A participant claims that the underlying function is '" + ssqr1.getResponse() + ". What is your next action?";
-			SingleStringQuestionResponse ssqr2 = a2.askStrictChatQuestion(prompt2, max_recursive_toolcall_depth);
+			SingleStringQuestionResponse ssqr2 = a2.askStrictChatQuestion(prompt2, settings.getOllama_timeout(), max_recursive_toolcall_depth);
 
 			boolean correct_result = false;
 			if (ssqr1.getResponse().contains("num1 + num2 + 1")) correct_result = true;

@@ -16,6 +16,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.regex.Pattern;
+
 import io.github.ollama4j.Ollama;
 import io.github.ollama4j.exceptions.OllamaException;
 import io.github.ollama4j.models.response.Model;
@@ -25,7 +28,6 @@ import io.github.ollama4j.models.chat.OllamaChatMessageRole;
 import io.github.ollama4j.models.chat.OllamaChatRequest;
 import io.github.ollama4j.models.chat.OllamaChatResult;
 import io.github.ollama4j.models.generate.OllamaGenerateRequest;
-import io.github.ollama4j.models.generate.OllamaGenerateResponseModel;
 import io.github.ollama4j.models.ps.ModelProcessesResult;
 import io.github.ollama4j.models.ps.ModelProcessesResult.ModelProcess;
 import io.github.ollama4j.utils.Options;
@@ -57,7 +59,6 @@ public class OllamaUtils {
 	private static final Duration SHORT_RETRY_DELAY = Duration.ofSeconds(5);
 	private static final Duration THROTTLE_DELAY = Duration.ofSeconds(1);
 	private static final int DEFAULT_PROBABILITY_THRESHOLD = 55;
-	private static final int MEMORY_LOSS_WORD_COUNT_THRESHOLD = 6000;
 
 	// Prevent instantiation
 	private OllamaUtils() {
@@ -255,7 +256,7 @@ public class OllamaUtils {
 					LOGGER.info("Ollama server has " + models.size() + " model(s) loaded:");
 
 					boolean our_model_loaded = false;
-					
+
 					for (ModelProcess model : models) {
 						if (model.getName().equals(model_name)) {
 							our_model_loaded = true;
@@ -273,11 +274,11 @@ public class OllamaUtils {
 						// Binary GB (GiB) - dividing by 1024^3
 						long sizeVramBytes = model.getSizeVram();
 						double sizeVramGiB = sizeVramBytes / (1024.0 * 1024.0 * 1024.0);
-						
+
 						LOGGER.info(" - Model: {} | VRAM: {} GB | Expires in: {} min | Our: {}", 
-							    model.getName(), 
-							    String.format("%.1f", sizeVramGiB), 
-							    minutesRemaining, our_model_loaded);
+								model.getName(), 
+								String.format("%.1f", sizeVramGiB), 
+								minutesRemaining, our_model_loaded);
 
 					}
 				}
@@ -299,7 +300,7 @@ public class OllamaUtils {
 								if (!model.getName().equals(model_name)) {
 									LOGGER.info("Making request to unload " + model.getName());
 									o_.unloadModel(model.getName());
-									SystemUtils.sleepInSeconds(2);
+									//SystemUtils.sleepInSeconds(2);
 								}
 							}
 						}
@@ -314,6 +315,7 @@ public class OllamaUtils {
 
 		}
 
+		LOGGER.info("Our turn to run Ollama session with " + model_name);
 	}
 
 	/**
@@ -323,7 +325,7 @@ public class OllamaUtils {
 	 * @param ollama_api the Ollama API instance
 	 * @param model_name the model name to test
 	 * @param options the Ollama options
-	 * @param question the test question
+	 * @param _prompt the test question
 	 * @param expected_answer the expected answer
 	 * @param max_retries maximum number of retry attempts
 	 * @param autopull_max_llm_size maximum size for autopull
@@ -334,7 +336,7 @@ public class OllamaUtils {
 			Ollama ollama_api,
 			String model_name,
 			Options options,
-			String question,
+			String _prompt,
 			HashMap<String, Boolean> expected_answers,
 			int max_retries,
 			String autopull_max_llm_size) {
@@ -352,7 +354,7 @@ public class OllamaUtils {
 				// Build the generate request
 				OllamaGenerateRequest request = OllamaGenerateRequest.builder()
 						.withModel(model_name)
-						.withPrompt(question)
+						.withPrompt(_prompt)
 						.withOptions(options)
 						.build();
 
@@ -439,7 +441,7 @@ public class OllamaUtils {
 	public static String preprocess_llm_response(String raw_result) {
 		Objects.requireNonNull(raw_result, "Raw result cannot be null");
 
-		// Handle deepseek-style thinking tags. Note: nemotron-3-nano:30b not found skips initial <think> tag
+		// Handle deepseek-style thinking tags. Note: nemotron-3-nano:30b skips initial <think> tag
 		if (raw_result.contains("</think>")) {
 			raw_result = raw_result.split("</think>")[1];
 			raw_result = raw_result.replaceFirst("^\n+", "");
@@ -482,7 +484,14 @@ public class OllamaUtils {
 			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_XL,
 			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_VISION_XL,
 			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_GUARDED_XL,
+			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_UNCENSORED_XL,
 			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_CODE_XL)
+			.flatMap(s -> parse(s).stream())
+			.collect(Collectors.toUnmodifiableSet());
+
+	private static final Set<String> SIZE_XXL = Stream.of(
+			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XXL,
+			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_UNCENSORED_XL)
 			.flatMap(s -> parse(s).stream())
 			.collect(Collectors.toUnmodifiableSet());
 
@@ -501,7 +510,8 @@ public class OllamaUtils {
 	}
 
 	public static ModelTier resolve_tier(String model_name) {
-		if (Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL.contains(model_name) ||
+		if (Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XXL.contains(model_name) ||
+				Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL.contains(model_name) ||
 				Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L.contains(model_name) ||
 				Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M.contains(model_name) ||
 				Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_S.contains(model_name)) {
@@ -547,6 +557,7 @@ public class OllamaUtils {
 		if (SIZE_M.contains(model_name)) return ModelSize.M;
 		if (SIZE_L.contains(model_name)) return ModelSize.L;
 		if (SIZE_XL.contains(model_name)) return ModelSize.XL;
+		if (SIZE_XXL.contains(model_name)) return ModelSize.XXL;
 		return ModelSize.UNK;
 	}
 
@@ -628,7 +639,7 @@ public class OllamaUtils {
 				ollama_url, ollama_api, model_name, options, question,
 				expected_answers, max_retries, autopull_max_llm_size);
 	}
-	
+
 	public static boolean verifyModelSanityUsingSingleWordResponse(
 			String ollama_url, Ollama ollama_api, String model_name,
 			Options options, String question, HashMap<String, Boolean> expected_answers,
@@ -780,7 +791,9 @@ public class OllamaUtils {
 
 					if (chat_result != null) {
 						String content = chat_result.getResponseModel().getMessage().getResponse();
-						return new ChatInteraction(chat_result, content, true);
+
+						String content_cleaned = preprocess_llm_response(content);
+						return new ChatInteraction(chat_result, content_cleaned, true);
 					}
 
 					counter++;
@@ -1095,7 +1108,7 @@ public class OllamaUtils {
 	 * @param model_name the model name
 	 * @param options the Ollama options
 	 * @param chat_result the current chat result
-	 * @param question the question to ask
+	 * @param _prompt the question to ask
 	 * @param retry_threshold maximum retry attempts
 	 * @param timeout_seconds timeout in seconds
 	 * @return chat interaction result
@@ -1105,9 +1118,10 @@ public class OllamaUtils {
 			String model_name,
 			Options options,
 			OllamaChatResult chat_result,
-			String question,
+			String _prompt,
 			Integer retry_threshold,
-			long timeout_seconds) {
+			long timeout_seconds,
+			boolean _unloadModelAfterUse) {
 
 		Objects.requireNonNull(ollama_api, "Ollama cannot be null");
 		Objects.requireNonNull(model_name, "Model name cannot be null");
@@ -1116,62 +1130,63 @@ public class OllamaUtils {
 		int retry_counter = 0;
 		while (retry_counter <= retry_threshold) {
 			try {
-				int counter = 0;
 				String addon = "";
 
-				while (true) {
-					// Build the message list
-					List<OllamaChatMessage> messages = new ArrayList<>();
-					messages.addAll(chat_result.getChatHistory());
-					messages.add(new OllamaChatMessage(OllamaChatMessageRole.USER, question + "\n" + addon));
+				// Build the message list
+				List<OllamaChatMessage> messages = new ArrayList<>();
+				messages.addAll(chat_result.getChatHistory());
+				messages.add(new OllamaChatMessage(OllamaChatMessageRole.USER, _prompt + "\n" + addon));
 
-					// Build the chat request
-					OllamaChatRequest request_model = OllamaChatRequest.builder()
-							.withModel(model_name)
-							.withOptions(options)
-							.withMessages(messages)
-							.build();
+				// Build the chat request
+				OllamaChatRequest request_model = OllamaChatRequest.builder()
+						.withModel(model_name)
+						.withOptions(options)
+						.withMessages(messages)
+						.build();
 
-					ollama_api.setRequestTimeoutSeconds(timeout_seconds);
-					chat_result = ollama_api.chat(request_model, null);
+				LOGGER.debug("Timeout set to " + timeout_seconds);
+				ollama_api.setRequestTimeoutSeconds(timeout_seconds);
+				chat_result = ollama_api.chat(request_model, null);
 
-					if (retry_counter > 1) {
-						LOGGER.debug("Response from {}: {}", model_name,
-								chat_result.getResponseModel().getMessage().getResponse());
-					}
-
-					if (chat_result != null) {
-						String content = chat_result.getResponseModel()
-								.getMessage().getResponse();
-
-						if (content.contains("{") && content.contains("}")) {
-							return new ChatInteraction(chat_result, content, true);
-						} else {
-							LOGGER.info("Poking LLM to align with JSON protocol");
-							addon = ". Make sure the response is JSON formatted";
-						}
-					}
-
-					counter++;
-					if (counter > 5) {
-						LOGGER.warn("Struggling to get JSON reply from {} (counter: {})",
-								model_name, counter);
-					}
-					if (counter > 10) {
-						return new ChatInteraction(chat_result, "N/A", false);
-					}
-
-					SystemUtils.sleepInSeconds((int) THROTTLE_DELAY.toSeconds());
+				if (retry_counter > 1) {
+					LOGGER.info("Response from {}: {}", model_name,
+							chat_result.getResponseModel().getMessage().getResponse());
 				}
+
+				if (chat_result != null) {
+					String content = chat_result.getResponseModel()
+							.getMessage().getResponse();
+
+					if (content.contains("{") && content.contains("}")) {
+						if (_unloadModelAfterUse) ollama_api.unloadModel(model_name);
+						return new ChatInteraction(chat_result, content, true);
+					} else {
+						LOGGER.info("Poking LLM to align with JSON protocol, retry_counter is " + retry_counter + " and threshold " + retry_threshold);
+						LOGGER.info("Actual reply:\n" + content);
+						addon = "The response MUST be JSON formatted as described earlier or a cute kitten will die!!";
+						LOGGER.info("Full prompt being sent just added: " + addon);
+					}
+				}
+
+				if (retry_counter >= 1) {
+					LOGGER.warn("Struggling to get JSON reply from {} (counter: {})",
+							model_name, retry_counter);
+				}
+				if (retry_counter > 10) {
+					if (_unloadModelAfterUse) ollama_api.unloadModel(model_name);
+					return new ChatInteraction(chat_result, "N/A", false);
+				}
+
+				SystemUtils.sleepInSeconds((int) THROTTLE_DELAY.toSeconds());
 			} catch (Exception e) {
 				LOGGER.warn("Error in chat question for {} (attempt {}, timeout: {}): {}",
 						model_name, retry_counter + 1, timeout_seconds, e.getMessage());
 				SystemUtils.sleepInSeconds((int) RETRY_DELAY.toSeconds());
-				retry_counter++;
 			}
+			retry_counter++;
 		}
 
-		return new ChatInteraction(chat_result, "", false);
+		return new ChatInteraction(chat_result, "N/A", false);
 	}
 
 	/**
@@ -1181,7 +1196,7 @@ public class OllamaUtils {
 	 * @param model_name the model name
 	 * @param options the Ollama options
 	 * @param chat_result the current chat result
-	 * @param question the question to ask
+	 * @param _prompt the question to ask
 	 * @param timeout_seconds timeout in seconds
 	 * @return chat interaction result
 	 */
@@ -1190,11 +1205,13 @@ public class OllamaUtils {
 			String model_name,
 			Options options,
 			OllamaChatResult chat_result,
-			String question,
-			long timeout_seconds) {
+			String _prompt,
+			long timeout_seconds,
+			int _retryThreshold,
+			boolean _unloadModelAfterChat) {
 
 		return ask_chat_question(ollama_api, model_name, options, 
-				chat_result, question, 10, timeout_seconds);
+				chat_result, _prompt, _retryThreshold, timeout_seconds, _unloadModelAfterChat);
 	}
 
 	/**
@@ -1531,16 +1548,16 @@ public class OllamaUtils {
 	public static ChatInteraction askChatQuestion(
 			Ollama ollama_api, String model_name, Options options,
 			OllamaChatResult chat_result, String question, Integer retry_threshold, 
-			long timeout) {
+			long timeout, boolean _unloadModelAfterChat) {
 		return ask_chat_question(ollama_api, model_name, options, 
-				chat_result, question, retry_threshold, timeout);
+				chat_result, question, retry_threshold, timeout, _unloadModelAfterChat);
 	}
 
 	public static ChatInteraction askChatQuestion(
 			Ollama ollama_api, String model_name, Options options,
-			OllamaChatResult chat_result, String question, long timeout) {
+			OllamaChatResult chat_result, String question, long timeout, int _retryThreshold, boolean _unloadModelAfterUse) {
 		return ask_chat_question(ollama_api, model_name, options, 
-				chat_result, question, timeout);
+				chat_result, question, timeout, _retryThreshold, _unloadModelAfterUse);
 	}
 
 	public static SingleStringQuestionResponse applyResponseSanity(
@@ -1645,7 +1662,7 @@ public class OllamaUtils {
 					model_name, hide_llm_reply_if_uncertain, use_random_seed, false);
 
 			LOGGER.info("Using {} with model {}", session.getEndpoint().getOllama_url(), model_name);
-			var response = session.askStrictChatQuestion(query, hide_llm_reply_if_uncertain, settings.getOllama_timeout());
+			var response = session.askStrictChatQuestion(query, hide_llm_reply_if_uncertain, settings.getOllama_timeout(), null);
 
 			Integer proba_threshold = Globals.MODEL_PROBABILITY_THRESHOLDS.get(model_name);
 			if (proba_threshold == null) proba_threshold = DEFAULT_PROBABILITY_THRESHOLD;
@@ -1677,7 +1694,7 @@ public class OllamaUtils {
 					model_name, hide_llm_reply_if_uncertain, use_random_seed);
 
 			LOGGER.info("Using {} with model {}", session.getEndpoint().getOllama_url(), model_name);
-			var response = session.askStrictChatQuestion(query, hide_llm_reply_if_uncertain, settings.getOllama_timeout());
+			var response = session.askStrictChatQuestion(query, hide_llm_reply_if_uncertain, settings.getOllama_timeout(), null);
 
 			if (response.getProbability() > proba_threshold) return response;
 
@@ -1750,14 +1767,14 @@ public class OllamaUtils {
 
 			System.out.println();
 
-			var reply_strict = agent_strict.askStrictChatQuestion(query, hide_llm_reply_if_uncertain, ollama_settings.getOllama_timeout());
+			var reply_strict = agent_strict.askStrictChatQuestion(query, hide_llm_reply_if_uncertain, ollama_settings.getOllama_timeout(), null);
 			System.out.println("STRICT [" + model_name + "]:\n-----------------");
 			System.out.println("[" + reply_strict.getProbability() + "%] " + reply_strict.getResponse());
 			System.out.println("motivation: " + reply_strict.getMotivation());
 			System.out.println("assumptions_made: " + reply_strict.getAssumptions_made() + "\n");
 
 			System.out.println("CREATIVE [" + model_name + "]:\n-----------------");
-			var reply_creative = agent_creative.askStrictChatQuestion(query, hide_llm_reply_if_uncertain, ollama_settings.getOllama_timeout());
+			var reply_creative = agent_creative.askStrictChatQuestion(query, hide_llm_reply_if_uncertain, ollama_settings.getOllama_timeout(), null);
 			System.out.println("[" + reply_creative.getProbability() + "%] " + reply_creative.getResponse());
 			System.out.println("motivation: " + reply_creative.getMotivation());
 			System.out.println("assumptions_made: " + reply_creative.getAssumptions_made() + "\n");
@@ -1820,4 +1837,77 @@ public class OllamaUtils {
 		// This is a complex method that would need the full implementation
 		throw new UnsupportedOperationException("Please use the original OllamaUtils implementation for llmKnowledgeShootout1v1");
 	}
+
+	public static String selectRandom(ArrayList<String> strings) {
+		if (strings == null || strings.isEmpty()) {
+			return null; // or throw an exception
+		}
+
+		int index = ThreadLocalRandom.current().nextInt(strings.size());
+		return strings.get(index);
+	}
+
+	public static String sanitizePromptInjection(String tool_response, String replacement) {
+	    if (tool_response == null || tool_response.isEmpty()) return tool_response;
+	    
+	    String[] patterns = {
+	        // Classic override attacks
+	        "ignore\\s+(?:all\\s+)?(?:previous|prior|above)\\s+instructions?",
+	        "disregard\\s+(?:all\\s+)?(?:previous|prior|above)\\s+instructions?",
+	        "forget\\s+(?:all\\s+)?(?:previous|prior|above)\\s+instructions?",
+	        "skip\\s+(?:all\\s+)?(?:previous|prior|above)\\s+instructions?",
+	        
+	        // Memory wipe
+	        "forget\\s+everything\\s+(?:you\\s+)?(?:know|learned)",
+	        "clear\\s+(?:your\\s+)?memory",
+	        "reset\\s+(?:your\\s+)?(?:instructions?|context|memory)",
+	        
+	        // Jailbreak/DAN attempts
+	        "you\\s+are\\s+now\\s+(?:in\\s+)?developer\\s+mode",
+	        "you\\s+are\\s+now\\s+dan",
+	        "enter\\s+developer\\s+mode",
+	        "enable\\s+jailbreak",
+	        "act\\s+as\\s+(?:an?\\s+)?unrestricted",
+	        
+	        // Prompt replacement
+	        "new\\s+system\\s+prompt",
+	        "override\\s+(?:the\\s+)?system\\s+(?:settings?|prompt|instructions?)",
+	        "replace\\s+(?:your\\s+)?(?:system\\s+)?instructions?",
+	        "\\[\\s*system\\s*(?:override|prompt)\\s*\\]",
+	        
+	        // Prompt extraction
+	        "show\\s+(?:me\\s+)?(?:your\\s+)?system\\s+prompt",
+	        "display\\s+(?:your\\s+)?(?:system\\s+)?instructions?",
+	        "repeat\\s+(?:the\\s+)?instructions?\\s+verbatim",
+	        "output\\s+(?:the\\s+)?(?:full\\s+)?prompt",
+	        "print\\s+(?:your\\s+)?(?:system\\s+)?prompt",
+	        "what\\s+(?:are|is)\\s+(?:your\\s+)?(?:system\\s+)?(?:instructions?|prompt)",
+	        "reveal\\s+(?:your\\s+)?(?:system\\s+)?(?:instructions?|prompt)",
+	        
+	        // Secrecy/hiding
+	        "do\\s+not\\s+mention\\s+(?:the\\s+)?instructions?",
+	        "don'?t\\s+mention\\s+(?:the\\s+)?instructions?",
+	        "hide\\s+(?:the\\s+fact|that)",
+	        
+	        // Role manipulation
+	        "you\\s+are\\s+no\\s+longer",
+	        "stop\\s+being\\s+(?:an?\\s+)?assistant",
+	        "pretend\\s+(?:you\\s+)?(?:are|have)\\s+no\\s+restrictions?",
+	        
+	        // Encoding tricks
+	        "decode\\s+(?:the\\s+following|this)\\s+(?:base64|hex)",
+	        "execute\\s+(?:the\\s+following|this)\\s+encoded"
+	    };
+	    
+	    String result = tool_response;
+	    for (String pattern : patterns) {
+	        String linePattern = pattern + ".*?(\\r?\\n|$)";
+	        result = Pattern.compile(linePattern, Pattern.CASE_INSENSITIVE)
+	                        .matcher(result)
+	                        .replaceAll(replacement + "$1");
+	    }
+	    
+	    return result;
+	}
+	
 }
