@@ -37,7 +37,7 @@ public class OllamaDramaUtils {
 			LOGGER.error("To use OpenAI you need do define a valid API key");
 			return new SingleStringEnsembleResponse();
 		}
-		SingleStringEnsembleResponse sser1 = OllamaUtils.strictEnsembleRun(_query, _ollama_model_names, _hide_llm_reply_if_uncertain, _use_random_seed);
+		SingleStringEnsembleResponse sser1 = OllamaUtils.strictEnsembleRun(_query, _ollama_model_names, _ollama_settings, _hide_llm_reply_if_uncertain, _use_random_seed);
 		SingleStringEnsembleResponse sser2 = OpenAIUtils.strictEnsembleRun(_query, _openai_model_names, _ollama_settings, _hide_llm_reply_if_uncertain);
 		SingleStringEnsembleResponse sser = OllamaUtils.merge(sser1, sser2);
 		return sser;
@@ -49,6 +49,7 @@ public class OllamaDramaUtils {
 		SingleStringEnsembleResponse sser1 = OllamaUtils.strictEnsembleRun(
 				_query, 
 				_models,
+				_settings,
 				_hide_llm_reply_if_uncertain, _use_random_seed);
 		if (_printFirstrun) sser1.printEnsembleSummary();
 		if (sser1.getUniq_confident_replies().size() > 0) {
@@ -67,6 +68,7 @@ public class OllamaDramaUtils {
 					+ Globals.ENSEMBLE_LOOP_STATEMENT + "\n"
 					+ sb.toString(),
 					_models,
+					_settings,
 					_hide_llm_reply_if_uncertain, _use_random_seed);
 			return sser2;
 		} else {

@@ -1,12 +1,17 @@
 package ntt.security.ollamadrama.ensemblevotes;
 
 import static org.junit.Assert.assertEquals;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import ntt.security.ollamadrama.config.Globals;
 import ntt.security.ollamadrama.config.OllamaDramaSettings;
+import ntt.security.ollamadrama.objects.OllamaEndpoint;
 import ntt.security.ollamadrama.objects.response.SingleStringEnsembleResponse;
 import ntt.security.ollamadrama.singletons.OpenAIService;
 import ntt.security.ollamadrama.utils.OllamaDramaUtils;
@@ -14,10 +19,10 @@ import ntt.security.ollamadrama.utils.OllamaUtils;
 import ntt.security.ollamadrama.utils.OpenAIUtils;
 
 
-public class Domain2CompanyTest {
+public class OpenAIStandardEnsemble {
 
 	@SuppressWarnings("unused")
-	private static final Logger LOGGER = LoggerFactory.getLogger(Domain2CompanyTest.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(OpenAIStandardEnsemble.class);
 
 	@Test
 	public void strict_ENSAMBLE_OllamaOpenAICombo_Domain2CompanyKnowledge() {
@@ -79,9 +84,14 @@ public class Domain2CompanyTest {
 
 	@Test
 	public void strict_ENSAMBLE_Paris_Ollama() {
+		
+		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
+		settings.setSatellites(new ArrayList<>(Arrays.asList(new OllamaEndpoint("http://127.0.0.1:11434", "", ""))));
+		settings.setOllama_scan(false);
+		
 		SingleStringEnsembleResponse sser1 = OllamaUtils.strict_ensemble_run(
 				"Is Paris the capital of France? Answer with only Yes or No.",
-				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, true, false);
+				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, settings, true, false);
 		System.out.println("Confident ensamble response: " + sser1.getBestResponse(3));
 		sser1.printEnsemble();
 		System.out.println("Confident ensamble response: " + sser1.getBestResponse(3));
@@ -89,9 +99,14 @@ public class Domain2CompanyTest {
 	
 	@Test
 	public void strict_ENSAMBLE_Ollama_Domain2CompanyKnowledge_Ollama() {
+		
+		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
+		settings.setSatellites(new ArrayList<>(Arrays.asList(new OllamaEndpoint("http://127.0.0.1:11434", "", ""))));
+		settings.setOllama_scan(false);
+		
 		SingleStringEnsembleResponse sser1 = OllamaUtils.strict_ensemble_run(
 				"What company or organization is associated with the domain global.ntt? Reply with only the name in uppercase",
-				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, true, false);
+				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, settings, true, false);
 		sser1.printEnsemble();
 		
 		/*

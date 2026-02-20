@@ -1,6 +1,7 @@
 package ntt.security.ollamadrama.ensemblevotes;
 
-import static org.junit.Assert.assertTrue;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -8,23 +9,29 @@ import org.slf4j.LoggerFactory;
 
 import ntt.security.ollamadrama.config.Globals;
 import ntt.security.ollamadrama.config.OllamaDramaSettings;
+import ntt.security.ollamadrama.objects.OllamaEndpoint;
 import ntt.security.ollamadrama.objects.response.SingleStringEnsembleResponse;
-import ntt.security.ollamadrama.singletons.OpenAIService;
-import ntt.security.ollamadrama.utils.OllamaDramaUtils;
 import ntt.security.ollamadrama.utils.OllamaUtils;
-import ntt.security.ollamadrama.utils.OpenAIUtils;
 
 
-public class TCPIPTest {
+public class OllamaStandardEnsemble {
 
 	@SuppressWarnings("unused")
-	private static final Logger LOGGER = LoggerFactory.getLogger(TCPIPTest.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(OllamaStandardEnsemble.class);
 
 	@Test
 	public void strict_ENSAMBLE_Ollama_POP3() {
-		SingleStringEnsembleResponse sser1 = OllamaUtils.strictEnsembleRun(
+		
+		String selected_models = Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_MINIDIVERSE_L;
+		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
+		settings.setSatellites(new ArrayList<>(Arrays.asList(new OllamaEndpoint("http://127.0.0.1:11434", "", ""))));
+		settings.setOllama_scan(false);
+		settings.setOllama_models(selected_models);
+		settings.setAutopull_max_llm_size("XL");
+		
+		SingleStringEnsembleResponse sser1 = OllamaUtils.strictEnsembleRun( 
 				"What TCP port does the POP3 protocol typically use? Answer with only a number.",
-				Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_MINIDIVERSE_M, true, false);
+				selected_models, settings, true, false);
 		sser1.printEnsemble();
 		
 		/*

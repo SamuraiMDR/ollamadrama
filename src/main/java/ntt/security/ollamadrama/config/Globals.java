@@ -387,7 +387,12 @@ public class Globals {
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L = ""
 			+ "cogito:14b,"							// 9 GB
-			+ "huihui_ai/qwen3-abliterated:14b," 	// 9 GB, uncensored
+			+ "qwen3:14b"							// 9.3 GB
+			+ "";
+	
+	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_MINIDIVERSE_L = ""
+			+ "cogito:14b,"							// 9 GB
+			+ "gemma3:12b,"							// 8.1 GB
 			+ "qwen3:14b"							// 9.3 GB
 			+ "";
 
@@ -440,22 +445,22 @@ public class Globals {
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M = ""
 			+ "qwen3:8b,"			// 5.2 GB
-			+ "qwen2.5:7b," 		// 4.1 GB
 			+ "gemma2:9b"			// 5.4 GB
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_MINIDIVERSE_M = ""
 			+ "marco-o1:7b,"	// 4.1 GB
-			+ "qwen2.5:7b," 	// 4.1 GB
 			+ "gemma2:9b"		// 5.4 GB
 			+ "";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_M = ""
+			+ "qwen2.5:7b," 		// 4.1 GB, JSON protocol issues at times
 			+ "openchat:7b"			// 4.1 GB, fails at obvious tool calling cases
 			+"";
 
 	public static String ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_M = ""
 			+ "llama3.1:8b,"			// 4.9 GB
+			+ "qwen2.5:7b," 			// 4.1 GB, fails to follow JSON protocol at times
 			+ "mistral:7b" 				// 4.1 GB, fails to trigger obvious
 			+ "";
 

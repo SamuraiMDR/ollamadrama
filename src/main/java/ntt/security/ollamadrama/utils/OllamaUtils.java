@@ -1528,16 +1528,6 @@ public class OllamaUtils {
 				settings, hide_llm_reply_if_uncertain, use_random_seed);
 	}
 
-	public static SingleStringEnsembleResponse strict_ensemble_run(
-			String query, String models, boolean hide_llm_reply_if_uncertain, 
-			boolean use_random_seed) {
-		var settings = parse_ollama_drama_config_env();
-		settings.setOllama_models(models);
-		settings.sanityCheck();
-		return strict_ensemble_run(query, models, settings, 
-				hide_llm_reply_if_uncertain, use_random_seed);
-	}
-
 	// ========== MORE BACKWARD COMPATIBILITY WRAPPERS ==========
 
 	public static String askGenericSingleWordQuestion(
@@ -1611,12 +1601,6 @@ public class OllamaUtils {
 	public static SingleStringEnsembleResponse strictEnsembleRun(
 			String query, boolean hide_llm_reply_if_uncertain, boolean use_random_seed) {
 		return strict_ensemble_run(query, hide_llm_reply_if_uncertain, use_random_seed);
-	}
-
-	public static SingleStringEnsembleResponse strictEnsembleRun(
-			String query, String models, boolean hide_llm_reply_if_uncertain, 
-			boolean use_random_seed) {
-		return strict_ensemble_run(query, models, hide_llm_reply_if_uncertain, use_random_seed);
 	}
 
 	/**
@@ -1710,19 +1694,19 @@ public class OllamaUtils {
 	 */
 	public static SingleStringEnsembleResponse collective_full_ensemble_run(
 			String query, String ollama_model_names, String openai_model_names,
-			OllamaDramaSettings ollama_settings, boolean print_first_run,
+			OllamaDramaSettings ollamadrama_settings, boolean print_first_run,
 			boolean hide_llm_reply_if_uncertain, boolean use_random_seed) {
 
 		Objects.requireNonNull(query, "Query cannot be null");
-		Objects.requireNonNull(ollama_settings, "Settings cannot be null");
+		Objects.requireNonNull(ollamadrama_settings, "Settings cannot be null");
 
-		if (ollama_settings.getOpenaikey() == null || ollama_settings.getOpenaikey().length() < 10) {
+		if (ollamadrama_settings.getOpenaikey() == null || ollamadrama_settings.getOpenaikey().length() < 10) {
 			LOGGER.error("Valid OpenAI API key required for collective ensemble");
 			return new SingleStringEnsembleResponse();
 		}
 
-		var sser1 = strict_ensemble_run(query, ollama_model_names, hide_llm_reply_if_uncertain, use_random_seed);
-		var sser2 = OpenAIUtils.strictEnsembleRun(query, openai_model_names, ollama_settings, hide_llm_reply_if_uncertain);
+		var sser1 = strict_ensemble_run(query, ollama_model_names, ollamadrama_settings, hide_llm_reply_if_uncertain, use_random_seed);
+		var sser2 = OpenAIUtils.strictEnsembleRun(query, openai_model_names, ollamadrama_settings, hide_llm_reply_if_uncertain);
 		var sser = merge(sser1, sser2);
 
 		if (print_first_run) sser.printEnsembleSummary();
@@ -1735,8 +1719,8 @@ public class OllamaUtils {
 			}
 
 			String enhanced_query = query + Globals.ENSEMBLE_LOOP_STATEMENT + "\n" + sb.toString();
-			var sser3 = strict_ensemble_run(enhanced_query, ollama_model_names, hide_llm_reply_if_uncertain, use_random_seed);
-			var sser4 = OpenAIUtils.strictEnsembleRun(enhanced_query, openai_model_names, ollama_settings, hide_llm_reply_if_uncertain);
+			SingleStringEnsembleResponse sser3 = strict_ensemble_run(enhanced_query, ollama_model_names, ollamadrama_settings, hide_llm_reply_if_uncertain, use_random_seed);
+			SingleStringEnsembleResponse sser4 = OpenAIUtils.strictEnsembleRun(enhanced_query, openai_model_names, ollamadrama_settings, hide_llm_reply_if_uncertain);
 			return merge(sser3, sser4);
 		}
 		return sser;

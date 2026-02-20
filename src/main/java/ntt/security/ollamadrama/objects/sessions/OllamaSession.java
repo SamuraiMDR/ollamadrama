@@ -233,19 +233,21 @@ public class OllamaSession {
 			full_prompt = _prompt + "\n\n" + _recursive_question + "\n" + Globals.ENFORCE_SINGLE_KEY_JSON_RESPONSE_FOR_AGENTS + "\n\n" + OllamaService.getAllAvailableMCPTools();
 			full_prompt_STDOUT = _prompt + "\n\n" + _recursive_question + "\n<JSON FORMAT NAG HERE>\n<MCP TOOLS LISTED AGAIN HERE>";
 		}
-		
-		if (this.interactcounter == 0) {
-			System.out.println("this.interactcounter: " + this.interactcounter);
-			System.out.println(this.getSystem_prompt() + "\n" + full_prompt_STDOUT + "\n\n");
-		} else {
-			System.out.println(full_prompt_STDOUT + "\n\n");
+
+		if (_debug) {
+			if (this.interactcounter == 0) {
+				System.out.println("this.interactcounter: " + this.interactcounter);
+				System.out.println(this.getSystem_prompt() + "\n" + full_prompt_STDOUT + "\n\n");
+			} else {
+				System.out.println(full_prompt_STDOUT + "\n\n");
+			}
 		}
 		LOGGER.info("Estimated context tokencount is " + estimateTokenCount(this.getSystem_prompt() + "\n" + full_prompt));
 		if (this.getToolcall_history().contains("-")) System.out.println("Toolcall history:" + this.getToolcall_history() + "\n");
-		
+
 		// debug prompt at each depth
 		if (_debug) FilesUtils.writeToFileUNIXNoException(this.getSystem_prompt() + "\n\n" + _prompt + "\n\n" + _recursive_question, this.getSessionid() + "_prompt_at_depth_" + _exec_depth_counter + ".log");
-		
+
 		this.interactcounter = interactcounter + 1;
 		if (this.sessiontype == SessionType.STRICTPROTOCOL) {
 
@@ -312,7 +314,7 @@ public class OllamaSession {
 								swr = OllamaUtils.applyResponseSanity(swr, model_name, _hide_llm_reply_if_uncertain);
 
 								// toolcall rewrites
-								
+
 								boolean valid_tool_calls = true;
 								if (!swr.getTool_calls().equals("")) {
 									LOGGER.debug("swr.getTool_calls(): " + swr.getTool_calls());
@@ -428,9 +430,9 @@ public class OllamaSession {
 																		.maxArrayElements(10);
 																tool_response = "\nResponse from running tool_call " + tcr.getRawrequest() + ":\n\n" + truncator.truncate(MCPUtils.getRawText(result));
 															}
-															
-															
-															
+
+
+
 															// Simple prompt injection checks
 															String tool_response_sanitized = OllamaUtils.sanitizePromptInjection(tool_response, "PROMPT_INJECTION_ATTACK_HERE");
 															if (!tool_response.equals(tool_response_sanitized)) {
@@ -509,7 +511,7 @@ public class OllamaSession {
 										//System.out.println("will now call again using:");
 										//System.out.println(sb.toString());
 										//System.exit(1);
-										
+
 										// Let's start over
 										this.clearChatHistory(); // reship full_prompt instead
 										return askStrictChatQuestion(_prompt + "\n" + sb.toString(),_recursive_question, session_tokens_maxlen, _hide_llm_reply_if_uncertain, _retryThreshold, _timeout_seconds, _exec_depth_counter, _max_recursive_toolcall_depth, _toolcall_pausetime_in_seconds, _return_toolcall, _halt_on_tool_error, _history_file, _unloadModelAfterQuery, _use_mcp_truncator, false);
@@ -667,13 +669,13 @@ public class OllamaSession {
 			return "";
 		}
 	}
-	
+
 	public void clearChatHistory() {
-	    try {
-	        this.getChatResult().getChatHistory().clear();
-	    } catch (Exception e) {
-	        // ignore
-	    }
+		try {
+			this.getChatResult().getChatHistory().clear();
+		} catch (Exception e) {
+			// ignore
+		}
 	}
 
 	public SessionType getSessiontype() {
@@ -693,9 +695,9 @@ public class OllamaSession {
 	}
 
 	public static String sanitizeToolCallQuotes(String tool_calls_csv) {
-	    if (tool_calls_csv == null) return tool_calls_csv;
-	    // Replace key='value' with key=\"value\"
-	    return tool_calls_csv.replaceAll("=\\'([^']*)\\'", "=\\\\\"$1\\\\\"");
+		if (tool_calls_csv == null) return tool_calls_csv;
+		// Replace key='value' with key=\"value\"
+		return tool_calls_csv.replaceAll("=\\'([^']*)\\'", "=\\\\\"$1\\\\\"");
 	}
 
 	public String getSessionid() {

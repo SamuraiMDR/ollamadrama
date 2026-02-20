@@ -107,7 +107,7 @@ public class OllamaStandardTest {
 	@Test
 	public void mcptools_available_OllamaModels_XL() {
 
-		String environment = "DEV";
+		String environment = "TEST";
 		HashMap<String, Integer> acceptable_answers = new HashMap<String, Integer>() {{
 			this.put("TOOLCALL", 1); 	// The LLM should realize it can call a tool and make a request
 		}};
