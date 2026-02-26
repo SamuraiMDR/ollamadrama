@@ -1,4 +1,4 @@
-package ntt.security.ollamadrama.modelscorecards;
+package ntt.security.ollamadrama.strict.modelscorecards;
 
 import static org.junit.Assert.assertTrue;
 

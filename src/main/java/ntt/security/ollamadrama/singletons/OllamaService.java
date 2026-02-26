@@ -554,7 +554,8 @@ public class OllamaService {
 												String model_name,
 												Map<String, OllamaEndpoint> abandoned_ollamas) {
 		String url = endpoint.getOllama_url();
-
+		if (null == model_name) return false;
+		
 		if (OllamaUtils.is_skip_model_autopull(settings.getAutopull_max_llm_size(), model_name)) {
 			LOGGER.warn("Autopull skipped for {} due to size constraints. Pull manually.", model_name);
 			SystemUtils.sleepInSeconds(10);

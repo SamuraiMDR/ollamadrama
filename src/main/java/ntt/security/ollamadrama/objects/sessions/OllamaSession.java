@@ -545,7 +545,7 @@ public class OllamaSession {
 	}
 
 
-	public String askRawChatQuestion(String _question, long _timeout) {
+	public String askRawChatQuestion(String _question, long _timeout_in_seconds) {
 		if (!_question.endsWith("?")) _question = _question + "?";
 		if (null == this.chatResult) {
 			LOGGER.warn("chatResult is null!");
@@ -553,7 +553,7 @@ public class OllamaSession {
 		} else {
 			int retryCounter = 0;
 			while (true) {
-				ChatInteraction ci =  OllamaUtils.askRawChatQuestion(this.Ollama, this.model_name, this.options, this.chatResult, _question, _timeout);
+				ChatInteraction ci =  OllamaUtils.askRawChatQuestion(this.Ollama, this.model_name, this.options, this.chatResult, _question, _timeout_in_seconds);
 				if (null != ci) return ci.getResponse();
 				retryCounter++;
 				if (retryCounter > 5) LOGGER.warn("Having problems getting a valid reply using this question: " + _question);

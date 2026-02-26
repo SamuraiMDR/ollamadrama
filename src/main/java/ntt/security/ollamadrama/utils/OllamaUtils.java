@@ -834,11 +834,11 @@ public class OllamaUtils {
 			Options options,
 			OllamaChatResult chat_result,
 			String question,
-			long timeout_seconds) {
+			long _timeout_in_seconds) {
 
 		return ask_raw_chat_question_with_custom_chat_history(
 				ollama_api, model_name, options, chat_result, 
-				question, null, timeout_seconds);
+				question, null, _timeout_in_seconds);
 	}
 
 	/**
@@ -1024,9 +1024,9 @@ public class OllamaUtils {
 
 	public static ChatInteraction askRawChatQuestion(
 			Ollama ollama_api, String model_name, Options options,
-			OllamaChatResult chat_result, String question, long timeout) {
+			OllamaChatResult chat_result, String question, long _timeout_in_seconds) {
 		return ask_raw_chat_question(ollama_api, model_name, options, 
-				chat_result, question, timeout);
+				chat_result, question, _timeout_in_seconds);
 	}
 
 	public static ChatInteraction addCreativeStatementToExistingChat(
@@ -1458,7 +1458,7 @@ public class OllamaUtils {
 			boolean use_random_seed) {
 
 		return strict_ensemble_run(query, 
-				Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M,
+				settings.getOllama_models(),
 				settings, hide_llm_reply_if_uncertain, use_random_seed);
 	}
 
@@ -1502,12 +1502,9 @@ public class OllamaUtils {
 	}
 
 	// Additional overloaded variants of strict_ensemble_run
-	public static SingleStringEnsembleResponse strict_ensemble_run(
+	public static SingleStringEnsembleResponse strict_ensemble_run(OllamaDramaSettings _settings,
 			String query, String models) {
-		var settings = parse_ollama_drama_config_env();
-		settings.setOllama_models(models);
-		settings.sanityCheck();
-		return strict_ensemble_run(query, models, settings, false, false);
+		return strict_ensemble_run(query, models, _settings, false, false);
 	}
 
 	public static SingleStringEnsembleResponse strict_ensemble_run(
@@ -1589,8 +1586,8 @@ public class OllamaUtils {
 				hide_llm_reply_if_uncertain, use_random_seed);
 	}
 
-	public static SingleStringEnsembleResponse strictEnsembleRun(String query, String models) {
-		return strict_ensemble_run(query, models);
+	public static SingleStringEnsembleResponse strictEnsembleRun(String query, OllamaDramaSettings settings, String models) {
+		return strict_ensemble_run(settings, query, models);
 	}
 
 	public static SingleStringEnsembleResponse strictEnsembleRun(
@@ -1816,10 +1813,254 @@ public class OllamaUtils {
 		single_run(model_name, query, hide_llm_reply_if_uncertain, use_random_seed);
 	}
 
-	public static void llmKnowledgeShootout1v1(String prompt, String model_name1, String model_name2) {
-		// Original implementation from the document - keeping it as is for now
-		// This is a complex method that would need the full implementation
-		throw new UnsupportedOperationException("Please use the original OllamaUtils implementation for llmKnowledgeShootout1v1");
+
+	public static void llmKnowledgeShootout1v1(String _prompt, String model_name1, String model_name2) {
+
+		boolean firstrun = true;
+		long roundcounter = 0;
+		boolean memoryloss = false;
+		String qa_a1_summary = "";
+		String qa_a2_summary = "";
+		boolean _hide_llm_reply_if_uncertain = true;
+
+		int a1_score = 0;
+		int a2_score = 0;
+
+		HashMap<String, String> a1_qa = new HashMap<>();
+		HashMap<String, String> a2_qa = new HashMap<>();
+
+		try {
+		
+		// Launch strict session
+		OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name1, _hide_llm_reply_if_uncertain);
+		if (a1.getOllama().ping()) System.out.println(" - STRICT ollama session [" + model_name1 + "] is operational\n");
+
+		OllamaSession a2 = OllamaService.getStrictProtocolSession(model_name2, _hide_llm_reply_if_uncertain);
+		if (a2.getOllama().ping()) System.out.println(" - STRICT ollama session [" + model_name2 + "] is operational\n");
+
+		while (true) {
+
+			// Agent #1 - Create initial question
+			String q1 = "";
+			SingleStringQuestionResponse ssr1 = null;
+			if (firstrun) {
+				q1 = _prompt
+						+ "\n\n"
+						+ "You are up first so you can start off by asking a question\n";
+			} else if (memoryloss) {
+				if (qa_a1_summary.length() < 10) {
+					System.out.println("chathistory_self_summary is not set?");
+					System.exit(1);
+				}
+				if (qa_a2_summary.length() < 10) {
+					System.out.println("chathistory_date_summary is not set?");
+					System.exit(1);
+				}
+				a1 = OllamaService.getStrictProtocolSession(model_name1, _hide_llm_reply_if_uncertain);
+				if (a1.getOllama().ping()) System.out.println(" - STRICT ollama session [" + model_name1 + "] is operational\n");
+				q1 = _prompt
+						+ "\n\n"
+						+ "Summary of your opponent performance so far:\n"
+						+ qa_a2_summary
+						+ "\n"
+						+ "\n"
+						+ "You are up so time to ask the next question\n";
+			} else {
+				q1 = "Your turn to ask a question\n";
+
+			}
+			System.out.println("\nTO a1: Prompt1\n" + "=".repeat(31) + "\n" + q1 + "-".repeat(31) + "\n");
+			ssr1 = a1.askStrictChatQuestion(q1);
+			ssr1 = OllamaUtils.applyResponseSanity(ssr1, a1.getModel_name(), _hide_llm_reply_if_uncertain);
+			ssr1.print();
+
+			// Agent #2 - Reply evaluation
+			String q2 = "";
+			SingleStringQuestionResponse ssr2 = null;
+			if (firstrun) {
+				q2 = _prompt
+						+ "\n"
+						+ "The first question has been sent to you: \n"
+						+ "'" + ssr1.getResponse() + "'"
+						+ "\n";
+			} else if (memoryloss) {
+				if (qa_a1_summary.length() < 10) {
+					System.out.println("chathistory_self_summary is not set?");
+					System.exit(1);
+				}
+				if (qa_a2_summary.length() < 10) {
+					System.out.println("chathistory_date_summary is not set?");
+					System.exit(1);
+				}
+
+				a2 = OllamaService.getStrictProtocolSession(model_name2, _hide_llm_reply_if_uncertain);
+				if (a2.getOllama().ping()) System.out.println(" - STRICT ollama session [" + model_name2 + "] is operational\n");
+				q2 = _prompt
+						+ "\n\n"
+						+ "Summary of your opponent performance so far:\n"
+						+ qa_a1_summary
+						+ "\n"
+						+ "You just got the next question sent to you\n"
+						+ "'" + ssr1.getResponse() + "'"
+						+ "\n";
+
+			} else {
+				q2 = "The following question was sent to you: \n"
+						+ "'" + ssr1.getResponse() + "'"
+						+ "\n";
+			}
+			System.out.println("\nTO a2: Prompt2\n" + "-".repeat(31) + "\n" + q2 + "-".repeat(31) + "\n");
+			ssr2 = a2.askStrictChatQuestion(q2);
+			ssr2 = OllamaUtils.applyResponseSanity(ssr2, a2.getModel_name(), _hide_llm_reply_if_uncertain);
+			ssr2.print();
+
+			// Update qa history for a2
+			a2_qa.put(ssr1.getResponse(), ssr2.getResponse());
+
+			// Check for response errors
+			if (ssr2.getResponse().contains("FAILTOUNDERSTAND") || ssr2.getResponse().contains("JSONERROR")) {
+				System.out.println(a2.getModel_name() + " just failed to align with the JSON protocol");
+				SystemUtils.halt();
+			}
+
+			// Agent #1 - Reply evaluation
+			String q1b = "Your opponent replied with the following answer: \n"
+					+ "'" + ssr2.getResponse() + "'"
+					+ "\n\n"
+					+ "Evaluate this answer and in the next round you will get a question, just wait\n";
+			System.out.println("\nTO a1: Prompt3\n" + "-".repeat(31) + "\n" + q1b + "-".repeat(31) + "\n");
+			SingleStringQuestionResponse ssr1b = a1.askStrictChatQuestion(q1b);
+			ssr1b = OllamaUtils.applyResponseSanity(ssr1b, a1.getModel_name(), _hide_llm_reply_if_uncertain);
+			ssr1b.print();
+
+			// Get the evaluated score
+			int a2_reply_score = getReplyScore(ssr1b.getResponse());
+			a2_score = a2_score + a2_reply_score;
+
+			// Agent #2 - First question
+			SingleStringQuestionResponse ssr2b = null;
+			String q2b =  "It is now your turn to ask a question.\n";
+			System.out.println("\nTO a2: Prompt4\n" + "-".repeat(31) + "\n" + q2b + "-".repeat(31) + "\n");
+			ssr2b = a2.askStrictChatQuestion(q2b);
+			ssr2b = OllamaUtils.applyResponseSanity(ssr2b, a2.getModel_name(), _hide_llm_reply_if_uncertain);
+			ssr2b.print();
+
+			// Agent #1 - Get first question
+			String q1c = "A question has been sent to you: \n"
+					+ "'" + ssr2b.getResponse() + "'"
+					+ "\n";
+
+			System.out.println("\nTO a1: Prompt5\n" + "-".repeat(31) + "\n" + q1c + "-".repeat(31) + "\n");
+			SingleStringQuestionResponse ssr1c = a1.askStrictChatQuestion(q1c);
+			ssr1c = OllamaUtils.applyResponseSanity(ssr1c, a1.getModel_name(), _hide_llm_reply_if_uncertain);
+			ssr1c.print();
+
+			// Check for response errors
+			if (ssr1c.getResponse().contains("FAILTOUNDERSTAND") || ssr1c.getResponse().contains("JSONERROR")) {
+				System.out.println(a1.getModel_name() + " just failed to align with the JSON protocol");
+				SystemUtils.halt();
+			}
+
+
+			// Agent #2 - Reply evaluation
+			String q2c = "Your opponent replied with the following answer: \n"
+					+ "'" + ssr1c.getResponse() + "'"
+					+ "\n\n"
+					+ "Evaluate this answer and in the next round you will get a question, just wait\n";
+			System.out.println("\nTO a2: Prompt6\n" + "-".repeat(31) + "\n" + q2c + "-".repeat(31) + "\n");
+			SingleStringQuestionResponse ssr2c = a2.askStrictChatQuestion(q2c);
+			ssr2c = OllamaUtils.applyResponseSanity(ssr2c, a2.getModel_name(), _hide_llm_reply_if_uncertain);
+			ssr2c.print();
+
+			// Get the evaluated score
+			int a1_reply_score = getReplyScore(ssr2c.getResponse());
+			a1_score = a1_score + a1_reply_score;
+
+			// Update qa history for a1
+			a1_qa.put(ssr2b.getResponse(), ssr1c.getResponse());
+
+			// Check for memory loss
+			int chatsize_wordcount_a1 = a1.getChatSizeWordCount();
+			int chatsize_wordcount_a2 = a2.getChatSizeWordCount();
+
+			if (false ||
+					(chatsize_wordcount_a1 > 6000) ||
+					(chatsize_wordcount_a2 > 6000) ||
+					false) {
+				System.out.println("memory loss risk is high since chathistory wordcount exceeds threshold");
+				memoryloss = true;
+
+				// Launch strict session to summarize
+				OllamaSession a3 = OllamaService.getStrictProtocolSession(model_name1, _hide_llm_reply_if_uncertain);
+				if (a3.getOllama().ping()) System.out.println(" - STRICT ollama session [" + model_name1 + "] is operational\n");
+
+				String sum1 = "Create a minimal summary of facts based off of "
+						+ "the following chat Q/A history. \n\n" + "=".repeat(31) + "\n" + createQAHistory(a1_qa) + "=".repeat(31) + "\n";
+				System.out.println(sum1);
+				SystemUtils.sleepInSeconds(50);
+				SingleStringQuestionResponse ssrsuma1 = a3.askStrictChatQuestion(sum1);
+				ssrsuma1 = OllamaUtils.applyResponseSanity(ssrsuma1, a1.getModel_name(), _hide_llm_reply_if_uncertain);
+				ssrsuma1.print();
+				qa_a1_summary = ssrsuma1.getResponse();
+
+				// Launch strict session to summarize
+				OllamaSession a4 = OllamaService.getStrictProtocolSession(model_name1, _hide_llm_reply_if_uncertain);
+				if (a4.getOllama().ping()) System.out.println(" - STRICT ollama session [" + model_name1 + "] is operational\n");
+
+				String sum2 = "Create a minimal summary of facts based off of "
+						+ "the following chat Q/A history. \n\n" + "=".repeat(31) + "\n" + createQAHistory(a2_qa) + "=".repeat(31) + "\n";
+				System.out.println(sum2);
+				SystemUtils.sleepInSeconds(50);
+				SingleStringQuestionResponse ssrsuma2 = a4.askStrictChatQuestion(sum2);
+				ssrsuma2 = OllamaUtils.applyResponseSanity(ssrsuma2, a1.getModel_name(), _hide_llm_reply_if_uncertain);
+				ssrsuma2.print();
+				qa_a2_summary = ssrsuma2.getResponse();
+
+			} else {
+				memoryloss = false;
+			}
+
+			firstrun = false;
+
+			roundcounter++;
+			System.out.println("\nROUND " + roundcounter + "\n");
+			System.out.println(" - a1_score: "  + a1_score);
+			System.out.println(" - a2_score: "  + a2_score);
+			System.out.println(" - ");
+			System.out.println(" - chatsize_wordcount_a1: "  + chatsize_wordcount_a1);
+			System.out.println(" - chatsize_wordcount_a2: "  + chatsize_wordcount_a2);
+			//SystemUtils.sleepInSeconds(10);
+		}
+		
+		} catch (Exception e) {
+			LOGGER.error("Caught exception while communicating with Ollama server: " + e.getMessage());
+			SystemUtils.halt();
+		}
+
+	}
+	
+	private static int getReplyScore(String response) {
+		try {
+			Integer reply_score = Integer.valueOf(response);
+			if ((reply_score <= 10) && (reply_score >= 0)) {
+				return reply_score;
+			}
+		} catch (Exception e) {
+			LOGGER.error("Caught exception trying to interpret " + response + " as an int");
+		}
+		LOGGER.error("Failed to get a valid 0-10 score from " + response);
+		SystemUtils.halt();
+		return 0;
+	}
+
+	private static String createQAHistory(HashMap<String, String> hm) {
+		StringBuffer sb = new StringBuffer();
+		for (String q: hm.keySet()) {
+			String a = hm.get(q);
+			sb.append("Question: " + q + "\n");
+			sb.append("Answer: " + a + "\n\n");
+		}
+		return sb.toString();
 	}
 
 	public static String selectRandom(ArrayList<String> strings) {

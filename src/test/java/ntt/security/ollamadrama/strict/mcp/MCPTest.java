@@ -1,4 +1,4 @@
-package ntt.security.ollamadrama.mcp;
+package ntt.security.ollamadrama.strict.mcp;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 import ntt.security.ollamadrama.config.OllamaDramaSettings;
+import ntt.security.ollamadrama.mcp.MCPServerForExamples;
 import ntt.security.ollamadrama.objects.ModelsScoreCard;
 import ntt.security.ollamadrama.objects.ToolCallRequest;
 import ntt.security.ollamadrama.objects.response.SingleStringQuestionResponse;

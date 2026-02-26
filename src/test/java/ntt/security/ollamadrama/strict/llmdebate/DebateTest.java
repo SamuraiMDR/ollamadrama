@@ -1,4 +1,4 @@
-package ntt.security.ollamadrama.llmdebate;
+package ntt.security.ollamadrama.strict.llmdebate;
 
 import org.junit.Test;
 import org.slf4j.Logger;
