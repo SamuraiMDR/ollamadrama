@@ -270,7 +270,6 @@ public class MCPTest {
 		String model_name = "qwen2.5:72b"; // qwen3:32b
 		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
 		settings.setOllama_models(model_name);
-		settings.setElevenlabs_apikey("");
 		settings.setMcp_scan(true);
 		settings.setMcp_blind_trust(true);
 		settings.setMcp_ports_csv("5656");
@@ -311,7 +310,6 @@ public class MCPTest {
 		String model_name = "llama3.1:70b"; // qwen3:32b
 		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
 		settings.setOllama_models(model_name);
-		settings.setElevenlabs_apikey("");
 		settings.setMcp_scan(true);
 		settings.setMcp_blind_trust(true);
 		settings.setMcp_ports_csv("5656");
@@ -363,7 +361,6 @@ public class MCPTest {
 		boolean make_tools_available = true;
 		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
 		settings.setOllama_models(agent1_model + "," + judge_model);
-		settings.setElevenlabs_apikey("");
 		settings.setMcp_scan(true);
 		settings.setMcp_blind_trust(true);
 		settings.setMcp_ports_csv("5656");

@@ -136,13 +136,6 @@ public class OllamaSession {
 				if (null != res) {
 					//this.chatResult = res;
 					// Lets not store the initial prompt reply as part of the session
-
-					/*
-					System.out.println("here you go...");
-					System.out.println(res);
-					System.exit(1);
-					 */
-
 					OllamaChatResponseModel res_model = res.getResponseModel();
 					String raw_result = OllamaUtils.preprocess_llm_response(res.getResponseModel().getMessage().getResponse());
 					OllamaChatMessage message = res_model.getMessage();

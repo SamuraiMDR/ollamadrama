@@ -42,6 +42,7 @@ public class OllamaDramaSettings {
 	private boolean ollama_skip_paris_validation = false;
 	private int n_ctx_override = -1;
 	private float temperature_override = -1f; // leave for no override
+	private String orchestrator_url = null; // http://127.0.0.1:1111/api/status
 	
 	// MCP configuration
 	private List<Integer> mcp_ports = new ArrayList<>(Arrays.asList(8000, 8080, 9000));
@@ -57,10 +58,6 @@ public class OllamaDramaSettings {
 	// API keys
 	private String openaikey = "";
 	private boolean use_openai = false;
-	
-	private String elevenlabs_apikey = "";
-	private String elevenlabs_voice1 = "";
-	private String elevenlabs_voice2 = "";
 	
 	// Endpoints
 	private List<OllamaEndpoint> satellites = new ArrayList<>();
@@ -197,30 +194,6 @@ public class OllamaDramaSettings {
 		this.use_openai = use_openai;
 	}
 
-	public String getElevenlabs_apikey() {
-		return elevenlabs_apikey;
-	}
-
-	public void setElevenlabs_apikey(String elevenlabs_apikey) {
-		this.elevenlabs_apikey = elevenlabs_apikey;
-	}
-
-	public String getElevenlabs_voice1() {
-		return elevenlabs_voice1;
-	}
-
-	public void setElevenlabs_voice1(String elevenlabs_voice1) {
-		this.elevenlabs_voice1 = elevenlabs_voice1;
-	}
-
-	public String getElevenlabs_voice2() {
-		return elevenlabs_voice2;
-	}
-
-	public void setElevenlabs_voice2(String elevenlabs_voice2) {
-		this.elevenlabs_voice2 = elevenlabs_voice2;
-	}
-
 	public String getAutopull_max_llm_size() {
 		return autopull_max_llm_size;
 	}
@@ -343,6 +316,18 @@ public class OllamaDramaSettings {
 	}
 
 	public void setTemperature_override(Float temperature_override) {
+		this.temperature_override = temperature_override;
+	}
+
+	public String getOrchestrator_url() {
+		return orchestrator_url;
+	}
+
+	public void setOrchestrator_url(String orchestrator_url) {
+		this.orchestrator_url = orchestrator_url;
+	}
+
+	public void setTemperature_override(float temperature_override) {
 		this.temperature_override = temperature_override;
 	}
 	

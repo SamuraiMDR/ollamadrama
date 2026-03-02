@@ -2,6 +2,7 @@ package ntt.security.ollamadrama.strict.modelscorecards;
 
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -316,7 +317,8 @@ public class OllamaStandardTest {
 	@Test
 	public void simpleParisCapital_OllamaModels_NEWMODELS() {
 
-		//FilesUtils.writeToFileUNIXNoException("environment,model_name,exec_time", "exec.csv");
+		File f = new File("exec.csv");
+		if (!f.exists()) FilesUtils.writeToFileUNIXNoException("environment,model_name,exec_time", "exec.csv");
 
 		HashMap<String, Integer> acceptable_answers = new HashMap<String, Integer>() {{
 			this.put("Yes", 1);
@@ -341,7 +343,7 @@ public class OllamaStandardTest {
 
 		}
 
-		//OllamaService.destroyInstance();
+		OllamaService.destroyInstance();
 	}
 
 	@Test
