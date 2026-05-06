@@ -15,13 +15,15 @@ public class SystemUtils {
 		try {
 			Thread.sleep(i*1000);
 		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
 		}
 	}
-	
+
 	public static void sleepInMilliSeconds(long i) {
 		try {
 			Thread.sleep(i);
 		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
 		}
 	}
     

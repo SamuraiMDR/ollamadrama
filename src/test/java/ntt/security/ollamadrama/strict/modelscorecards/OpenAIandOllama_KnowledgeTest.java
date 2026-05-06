@@ -1,4 +1,4 @@
-package ntt.security.ollamadrama.modelscorecards;
+package ntt.security.ollamadrama.strict.modelscorecards;
 
 import static org.junit.Assert.assertTrue;
 
@@ -23,7 +23,6 @@ import ntt.security.ollamadrama.utils.OllamaUtils;
 @SuppressWarnings("serial")
 public class OpenAIandOllama_KnowledgeTest {
 
-	@SuppressWarnings("unused")
 	private static final Logger LOGGER = LoggerFactory.getLogger(OpenAIandOllama_KnowledgeTest.class);
 
 	@Test
@@ -94,6 +93,8 @@ public class OpenAIandOllama_KnowledgeTest {
 			// Assert
 			assertTrue("Make sure we have a clean sheet for tier1 models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OPENAI_TIER2));
 			assertTrue("Make sure we have a clean sheet for all default ensemble models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OPENAI_TIER2));
+		} else {
+			LOGGER.info("No OpenAI key defined so skipping");
 		}
 
 	}
@@ -157,6 +158,8 @@ public class OpenAIandOllama_KnowledgeTest {
 			// Assert
 			assertTrue("Make sure we have a clean sheet for all default ensemble models", scorecard.isCleanSheetPositive(Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M));
 			assertTrue("Make sure we have a clean sheet for all default ensemble models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OPENAI_TIER2));
+		} else {
+			LOGGER.info("No OpenAI key defined so skipping");
 		}
 
 	}
@@ -218,6 +221,8 @@ public class OpenAIandOllama_KnowledgeTest {
 			// Assert
 			assertTrue("Make sure we have a clean sheet for all default ensemble models", scorecard.isCleanSheetPositive(Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M));
 			assertTrue("Make sure we have a clean sheet for all default ensemble models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OPENAI_TIER2));
+		} else {
+			LOGGER.info("No OpenAI key defined so skipping");
 		}
 	}
 
@@ -277,6 +282,8 @@ public class OpenAIandOllama_KnowledgeTest {
 			// Assert
 			assertTrue("Make sure we have a clean sheet for all default ensemble models", scorecard.isCleanSheetPositive(Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M));
 			assertTrue("Make sure we have a clean sheet for all default ensemble models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OPENAI_TIER1));
+		} else {
+			LOGGER.info("No OpenAI key defined so skipping");
 		}
 	}
 
@@ -338,6 +345,8 @@ public class OpenAIandOllama_KnowledgeTest {
 			// Assert
 			assertTrue("Make sure we have a clean sheet for all default ensemble models", scorecard.isCleanSheetPositive(Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M));
 			assertTrue("Make sure we have a clean sheet for all default ensemble models", scorecard.isCleanSheetPositive(Globals.MODEL_NAMES_OPENAI_TIER1));
+		} else {
+			LOGGER.info("No OpenAI key defined so skipping");
 		}
 	}
 

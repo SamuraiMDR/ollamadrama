@@ -173,8 +173,8 @@ public class ModelsScoreCard {
 		boolean result = true;
 		for (String model_name: this.getScorecard().keySet()) {
 			if (null != selected_clean.get(model_name)) {
-				Integer pos = pos_scores.get(model_name);
-				Integer neg = neg_scores.get(model_name);
+				int pos = pos_scores.getOrDefault(model_name, 0);
+				int neg = neg_scores.getOrDefault(model_name, 0);
 				if ( (pos >= 0) && (neg == 0)) {
 					// all ok
 				} else {
@@ -193,8 +193,8 @@ public class ModelsScoreCard {
 		boolean result = true;
 		for (String model_name: this.getScorecard().keySet()) {
 			if (null != selected_clean.get(model_name)) {
-				Integer pos = pos_scores.get(model_name);
-				Integer neg = neg_scores.get(model_name);
+				int pos = pos_scores.getOrDefault(model_name, 0);
+				int neg = neg_scores.getOrDefault(model_name, 0);
 				if ( (pos == 0) && (neg > 0)) {
 					// all ok
 				} else {

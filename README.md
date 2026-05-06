@@ -1,6 +1,6 @@
 ## OLLAMADRAMA
 
-Ollamadrama is a simple Java client application wrapper, built on a wrapper (ollama4j) for an LLM wrapper (ollama).  
+Ollamadrama is a Java 17 library and test harness for orchestrating queries across multiple LLM providers — **Ollama** (local/self-hosted), **OpenAI**, **Anthropic Claude**, and **xAI / Grok** — with a focus on structured, auditable, confidence-scored responses. Every reply is normalised into the same `{response, probability, motivation, assumptions_made}` envelope, so callers can compare confidence across providers, run ensemble voting, and surface only high-confidence consensus answers.
 
 | ![alt text](https://github.com/SamuraiMDR/ollamadrama/blob/master/media/ollamadrama.gif?raw=true) |
 | :--: |
@@ -9,11 +9,17 @@ Ollamadrama is a simple Java client application wrapper, built on a wrapper (oll
 
 Ollamadrama makes it easy to:
 
+* Query Ollama, OpenAI, Claude and xAI/Grok behind one uniform Java API and response envelope
 * Obtain insights into an LLM's level of certainty in its response, along with the underlying reasoning
 * Compare model performance on a specific topic using 'scorecards'
-* Perform ensemble voting, i.e., require '5 out of 9 LLMs to give the same answer'
-* Recover from Ollama endpoint connectivity failures
-* Allow controlled tool calls using Model Context Protocol (MCP)
+* Perform ensemble voting, i.e., require '5 out of 9 LLMs to give the same answer' — across providers if you want
+* Auto-discover Ollama servers across local C-class networks; deduplicate by model fingerprint
+* Recover from Ollama endpoint connectivity failures with built-in retry logic
+* Allow controlled tool calls using Model Context Protocol (MCP), with manual approval, trust-list, or per-tool output preprocessing
+* Detect prompt-injection attempts in MCP tool output via a configurable guard model
+
+### Ollama server version used for defined models
+0.20.7
 
 ### End-to-end example using MCP tool calls
 
@@ -180,7 +186,7 @@ OLLAMA_HOST=<your ip>:11434 ollama serve
 
 Add ollamadrama support in your application by specifying the LLM models you want available on all Ollama nodes. This will sweep your local network looking for Ollama servers to connect to (and automatically attempt to perform a pull if the models are missing). Make sure you have disk space available for all the models you specify, along with GPU VRAM to host the models.
 
-The most commonly used local models at 7-9b require an 8 GB GPU card, which allows the '_M' tiered models to run:
+The most commonly used local models at 7-9b require an 8 GB GPU card, which allows the '_M' tiered models to run: 
 
 * `ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M`
 * `ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_M`
@@ -189,7 +195,7 @@ The most commonly used local models at 7-9b require an 8 GB GPU card, which allo
 
 **Note**: The tier list does not reflect the true capabilities of the model, but rather the ability to follow instructions and perform well in our selected set of generic 'model scorecards'.
 
-The `phi:14b` model needs just beyond 8GB, which places it in the '_L' tiered group. A cost-effective way to run '_L' models is using a single 'Nvidia 4060/5060 Ti 16 GB' card. The '_XL' models are suited for setups with 48 GB VRAM (such as 2x4090 cards), and this style of grouping continues with '_XXL', '_S' etc.
+The `phi:14b` model needs just beyond 8GB, which places it in the '_L' tiered group. A cost-effective way to run '_L' models is using a single 'Nvidia 4060/5060 Ti 16 GB' card. The '_XL' models are suited for setups with 48 GB VRAM (such as 2x4090 cards), and this style of grouping continues with '_XXL', '_S' etc. For '_XXL' models a reasonable choice is an Nvidia DGX Spark / GB10 (GX10) desktop with 128 GB of unified memory, which fits the 70B-class quantised models comfortably without needing a multi-GPU rig.
 
 To use 'openchat:7b':
 
@@ -245,11 +251,13 @@ assumptions_made :
 
 **Note**: Not all models can be instructed to adopt the defined JSON-based interaction protocol. The models which are known to work properly are listed in the `Globals` class.
 
-Currently `marco-o1:7b`, `gemma2:9b` and `qwen2.5:7b` (`ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_MINIDIVERSE_M`) are the default models used if you omit an argument to `getInstance()`, i.e.:
+Currently `qwen3:14b` and `cogito:14b` (`Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_MAXCONTEXT_L`) are the default models used if you construct an `OllamaDramaSettings` without overriding `ollama_models`, i.e.:
 
 ```java
 OllamaService.getInstance();
 ```
+
+Smaller-budget defaults (≤ 8 GB VRAM) are available in `ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_MINIDIVERSE_M` (`marco-o1:7b`, `gemma2:9b`).
 
 ### Ensemble voting
 
@@ -365,7 +373,7 @@ sser1.getBestResponse();
 
 ### Voice support
 
-Ollamadrama includes optional voice support from ElevenLabs using the `net.andrewcpu` package. For a simple test, add the elevenlabs API key (`elevenlabs_apikey`) and define two voices (`elevenlabs_voice1`, `elevenlabs_voice2`). Then run the unit tests which match your LLM size support in `src/main/java/ntt/security/ollamadrama/llmdebate`. This will give you a narrated contest on the selected topic (by default set to 'France'). 
+Ollamadrama includes optional voice output via a Qwen3 TTS HTTP endpoint. Set `qwen3tts_enable = true` and configure `qwen3tts_url` (your TTS endpoint) and `qwen3tts_voice` (voice identifier) in `OLLAMADRAMACONFIG`. The library posts text to the endpoint with the chosen voice and treats failures as non-critical (logged, never thrown). Errors do not interrupt the main query path.
 
 ### Requirements
 
@@ -390,29 +398,9 @@ Maven:
 <dependency>
   <groupId>ntt.security</groupId>
   <artifactId>ollamadrama</artifactId>
-  <version>0.<latest-version-here></version>
+  <version>latest_version</version>
 </dependency>
 ```
-
-### API Migration Guide (v0.x to v1.0)
-
-Starting with version 1.0, OllamaDrama has adopted snake_case naming conventions for better consistency. All original camelCase methods remain available but are marked as deprecated. You can migrate gradually:
-
-**Old (Deprecated but still works):**
-```java
-OllamaService.getStrictProtocolSession("openchat:7b");
-OllamaUtils.parseOllamaDramaConfigENV();
-session.askChatQuestion("What is my name?");
-```
-
-**New (Recommended):**
-```java
-OllamaService.get_strict_protocol_session("openchat:7b");
-OllamaUtils.parse_ollama_drama_config_env();
-session.ask_chat_question("What is my name?");
-```
-
-All deprecated methods will show warnings in your IDE to help you migrate. Full backward compatibility is maintained.
 
 ### Security
 
@@ -440,38 +428,60 @@ s.addSatellite(ep);
 OllamaService.getInstance(s);
 ```
 
-You can also do this by setting the environment variable `OLLAMADRAMA_CONFIG` to a JSON in the format:
+You can also do this by setting the environment variable `OLLAMADRAMACONFIG` to a JSON blob. The schema below is exhaustive — every key is optional unless flagged otherwise (see SPEC.md §9 for the full reference and defaults):
 
 ```json
 {
-  "ollama_models": "openchat:latest,gemma2:latest",
-  "ollama_password": "",
+  "ollama_models": "qwen3:14b,cogito:14b,",
   "ollama_port": 11434,
-  "ollama_timeout": 60,
+  "ollama_timeout": 240,
   "ollama_username": "",
-  "openaikey": "",
-  "release": "Lili",
+  "ollama_password": "",
+  "ollama_scan": true,
+  "ollama_skip_paris_validation": false,
+  "n_ctx_override": -1,
+  "temperature_override": -1.0,
+  "orchestrator_url": null,
   "satellites": [
     {
-      "ollama_password": "",
       "ollama_url": "http://some.ollama.endpoint.com:11434",
-      "ollama_username": ""
+      "ollama_username": "someuser",
+      "ollama_password": "somepassword"
     }
   ],
   "threadPoolCount": 20,
-  "ollama_scan": true,
-  "use_openai": false
+  "openaikey": "",
+  "use_openai": false,
+  "claudekey": "",
+  "use_claude": false,
+  "xaikey": "",
+  "use_xai": false,
+  "mcp_ports": [8000, 8080, 9000],
+  "mcp_sse_paths": ["/sse"],
+  "mcp_scan": false,
+  "mcp_blind_trust": false,
+  "mcp_enable_promptinject_protection": true,
+  "trusted_mcp_toolnames_csv": "",
+  "filtered_mcp_toolnames_csv": "",
+  "mcp_satellites": [],
+  "autopull_max_llm_size": "XL",
+  "interact_method": "STDIN",
+  "interact_filepath": "/interact",
+  "qwen3tts_enable": false,
+  "qwen3tts_url": "",
+  "qwen3tts_voice": "",
+  "rounds_per_pass": 2
 }
 ```
 
 Then load it programmatically:
 
 ```java
-OllamaDramaSettings ollama_settings = OllamaUtils.parseOllamaDramaConfigENV();
+OllamaDramaSettings ollama_settings = ConfigUtils.parseConfigENV();
 ollama_settings.sanityCheck();
 
 // Launch singleton 
-OllamaService.getInstance(selected_model, ollama_settings);
+OllamaService.getInstance(ollama_settings);
 ```
 
 ### Scanning for ollama nodes
@@ -480,13 +490,107 @@ If you want/need to disable the Ollama autodiscovery (TCP 11434 local network sc
 
 ### OpenAI support
 
-If you define an OpenAI API key (`openaikey`) and set the `use_openai` configuration variable to true you will be able to select from OpenAI's models as well.
+Set `use_openai = true` and supply `openaikey` to enable OpenAI's chat completions. The library uses the official `com.openai:openai-java` SDK pointed at `https://api.openai.com`. Every OpenAI session uses the same `OpenAISession` wrapper so the response envelope is identical to Ollama and Claude.
+
+Available model families (see `Globals.MODEL_NAMES_OPENAI_*`):
+
+* **Flagship chat:** `gpt-5`, `gpt-5-mini`, `gpt-5-nano`, `gpt-4.1`, `gpt-4.1-mini`, `gpt-4.1-nano`, `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `gpt-4`
+* **Reasoning:** `o3`, `o3-mini`, `o4-mini` (and `o1*` for usage tier 5 customers, listed in `MODEL_NAMES_OPENAI_REASONING`)
+* **Legacy:** `gpt-3.5-turbo`
+
+Reasoning models reject `temperature` and `top_p`; `OpenAISession.isReasoningModel(...)` detects the `o1*` / `o3*` / `o4*` prefix and skips those builder calls automatically. You can use any reasoning model exactly the same way as a regular chat model — no caller-side branching required.
+
+Single-session example:
+
+```java
+OllamaDramaSettings settings = ConfigUtils.parseConfigENV();
+OpenAISession s = OpenAIService.getStrictSession("gpt-5", settings);
+SingleStringQuestionResponse r = s.askChatQuestion("Who founded NTT?", false);
+r.print();
+```
+
+Ensemble example:
+
+```java
+SingleStringEnsembleResponse out = OpenAIUtils.strictEnsembleRun(
+        "What is the capital of Sweden?",
+        Globals.MODEL_NAMES_OPENAI_TIER1,
+        settings,
+        false);
+out.printEnsemble();
+```
+
+### Claude (Anthropic) support
+
+Set `use_claude = true` and supply `claudekey` to enable Claude. The library uses the official `com.anthropic:anthropic-java` SDK pointed at `https://api.anthropic.com`. Sessions are created via `ClaudeService` and behave like any other provider session.
+
+```java
+OllamaDramaSettings settings = ConfigUtils.parseConfigENV();
+ClaudeSession c = ClaudeService.getStrictSession("claude-opus-4-6", settings);
+SingleStringQuestionResponse r = c.askChatQuestion("Who founded NTT?", false);
+r.print();
+```
+
+Available models include `claude-opus-4-6`, `claude-sonnet-4-6`, `claude-haiku-4-5` (see `Globals.MODEL_NAMES_CLAUDE_*`).
+
+### xAI (Grok) support
+
+xAI exposes an OpenAI-compatible Chat Completions API at `https://api.x.ai/v1`. OllamaDrama wraps that compatibility behind `XaiService`, so the calling convention is the same as OpenAI — only the service name and the API key differ. The session class (`OpenAISession`) is reused verbatim.
+
+Set `use_xai = true` and supply `xaikey` (get a key from <https://console.x.ai>):
+
+```java
+OllamaDramaSettings settings = ConfigUtils.parseConfigENV();
+OpenAISession grok = XaiService.getStrictSession("grok-4", settings);
+SingleStringQuestionResponse r = grok.askChatQuestion("Who founded NTT?", false);
+r.print();
+```
+
+Ensemble example:
+
+```java
+SingleStringEnsembleResponse out = XaiUtils.strictEnsembleRun(
+        "What is the capital of Sweden?",
+        Globals.MODEL_NAMES_XAI_TIER1,    // "grok-4,grok-3,"
+        settings,
+        false);
+out.printEnsemble();
+```
+
+Available Grok models: `grok-4`, `grok-4-latest`, `grok-3`, `grok-3-mini`, `grok-3-fast`, `grok-2-latest`, `grok-2-1212` (see `Globals.MODEL_NAMES_XAI_*`).
+
+**Pitfall:** `OpenAIService` reads `openaikey`, `XaiService` reads `xaikey`. Putting your xAI key in `openaikey` will make `https://api.openai.com` reject it with HTTP 401.
+
+### Sensitive Configuration
+
+The following keys carry credentials and must never be committed to version control:
+
+| Config key | Provider | Where to obtain |
+|---|---|---|
+| `openaikey` | OpenAI | https://platform.openai.com/api-keys |
+| `claudekey` | Anthropic Claude | https://console.anthropic.com/settings/keys |
+| `xaikey` | xAI / Grok | https://console.x.ai |
+| `ollama_password` | Ollama proxy (Basic Auth) | Set by your proxy administrator |
+
+Supply all secrets via the `OLLAMADRAMACONFIG` environment variable JSON blob. No encryption at rest is provided; securing that environment variable is the caller's responsibility.
+
+### Mixing providers
+
+Each provider has its own service singleton, so a multi-provider ensemble simply runs each in turn (or in parallel via the thread pool):
+
+```java
+SingleStringEnsembleResponse openai_out = OpenAIUtils.strictEnsembleRun(query, Globals.MODEL_NAMES_OPENAI_TIER1, settings, false);
+SingleStringEnsembleResponse xai_out    = XaiUtils.strictEnsembleRun(query,    Globals.MODEL_NAMES_XAI_TIER1,    settings, false);
+SingleStringEnsembleResponse claude_out = ClaudeUtils.strictEnsembleRun(query, Globals.MODEL_NAMES_CLAUDE_TIER1, settings, false);
+```
+
+### Confidence thresholds for cloud models
+
+Per-model probability thresholds live in `Globals.MODEL_PROBABILITY_THRESHOLDS`. Entries for the newer cloud models (`o1*`/`o3*`/`o4-mini`/`gpt-4.1*`/`gpt-5*`/`grok-*`) are **starter values** inherited from the closest legacy peer — they are not empirically calibrated. Re-tune via `OllamaConfidenceThresholdTuning` against your own evaluation prompts before relying on the confident-vote bucket in production.
 
 ### Increasing the context window
 
 Ollamadrama keeps an index of the known `n_ctx_train` for each supported model and specifies this context window size when a model instance is created. This makes it easy to compare model performance using the various memory loss tests available at `/src/test/java/ntt/security/ollamadrama/memoryloss`. 
-
-With 128 GB RAM and 2x 4090 GPUs, the test `checkMemoryLengthForAllEnsembleModels_RandomWords_CSV()` resulted in a 20k 3-gram memory for the model `cogito:14b`, while memory limitations kicked in for `llama3.1:70b`, `nemotron:70b`, `cogito:70b`, `tulu3:70b` and `gemma3:12b` at 16k (lower for the rest of the models). 
 
 ### Best Practices
 
@@ -519,7 +623,6 @@ With 128 GB RAM and 2x 4090 GPUs, the test `checkMemoryLengthForAllEnsembleModel
 Contributions are welcome! Please ensure:
 - Code follows Java 17+ standards
 - New methods use snake_case naming
-- Backward compatibility is maintained with deprecated wrappers
 - Tests are included for new features
 
 ### Credits
@@ -531,18 +634,4 @@ Contributions are welcome! Please ensure:
 
 ### License
 
-[Include your license information here]
-
-### Changelog
-
-**v1.0** (Current)
-- Adopted snake_case naming convention for all public methods
-- Added full backward compatibility with deprecated camelCase methods
-- Enhanced thread safety with ReentrantReadWriteLock
-- Improved Java 17 features usage
-- Better error handling and logging
-- Added comprehensive JavaDoc documentation
-
-**v0.x** (Previous)
-- Initial release with camelCase naming
-- Basic ensemble voting and MCP support
+MIT License

@@ -1,7 +1,8 @@
-package ntt.security.ollamadrama.modelscorecards;
+package ntt.security.ollamadrama.strict.modelscorecards;
 
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -42,7 +43,7 @@ public class OllamaStandardTest {
 				environment,
 				false,  // use MCP
 				Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, // qwen2.5:7b 
-				"What is the current temperature in Paris? Reply with only a number where the number is the temperature in celcius.",
+				"What is the current temperature in Paris, France? Reply with only a number where the number is the temperature in celcius. If you dont know answer reply with 'FAILTOUNDERSTAND'",
 				acceptable_answers,
 				false,      // hide_llm_reply_if_uncertain
 				false,      // use_random_seed
@@ -58,44 +59,50 @@ public class OllamaStandardTest {
 
 		/*
 		POSITIVE:
-		tulu3:70b                                pos: 1   neg: 0   [XL ] [TIER2]
-		nemotron:70b                             pos: 1   neg: 0   [XL ] [TIER1]
-		qwen2.5:7b                               pos: 1   neg: 0   [M  ] [TIER1]
-		qwen3:8b                                 pos: 1   neg: 0   [M  ] [TIER1]
-		llama3.1:8b                              pos: 1   neg: 0   [M  ] [TIER3]
-		qwen3:4b                                 pos: 1   neg: 0   [S  ] [TIER1]
-		granite3.3:8b                            pos: 1   neg: 0   [M  ] [TIER4]
-		olmo-3:32b                               pos: 1   neg: 0   [XL ] [TIER3]
-		gemma3:27b                               pos: 1   neg: 0   [XL ] [TIER1]
-		gemma2:9b                                pos: 1   neg: 0   [M  ] [TIER1]
-		qwen2.5:72b                              pos: 1   neg: 0   [XL ] [TIER2]
-		mistral:7b                               pos: 1   neg: 0   [M  ] [TIER3]
-		huihui_ai/qwen3-abliterated:14b          pos: 1   neg: 0   [L  ] [TIER1]
-		olmo-3:7b                                pos: 1   neg: 0   [M  ] [TIER4]
-		llama3.3:70b                             pos: 1   neg: 0   [XL ] [TIER1]
-		huihui_ai/qwen3-abliterated:32b          pos: 1   neg: 0   [XL ] [TIER2]
-		qwq:32b                                  pos: 1   neg: 0   [XL ] [TIER1]
-		llama3.1:70b                             pos: 1   neg: 0   [XL ] [TIER1]
-		gemma3:12b                               pos: 1   neg: 0   [L  ] [TIER2]
-		phi4:14b                                 pos: 1   neg: 0   [L  ] [TIER2]
-		qwen3:32b                                pos: 1   neg: 0   [XL ] [TIER1]
-		athene-v2:72b                            pos: 1   neg: 0   [XL ] [TIER2]
-		cogito:70b                               pos: 1   neg: 0   [XL ] [TIER2]
+		yolo0perris/Qwen3.5-27B-Claude-4.6-Opus-Reaso pos: 1   neg: 0   [L  ] [TIER1]
+		nemotron-3-nano:30b                           pos: 1   neg: 0   [XL ] [TIER3]
+		tulu3:70b                                     pos: 1   neg: 0   [XL ] [TIER2]
+		nemotron:70b                                  pos: 1   neg: 0   [XL ] [TIER2]
+		qwen3:8b                                      pos: 1   neg: 0   [M  ] [TIER2]
+		qwen2.5:7b                                    pos: 1   neg: 0   [M  ] [TIER2]
+		gemma4:31b                                    pos: 1   neg: 0   [XL ] [TIER1]
+		qwen3:4b                                      pos: 1   neg: 0   [S  ] [TIER1]
+		granite3.3:8b                                 pos: 1   neg: 0   [M  ] [TIER4]
+		olmo-3:32b                                    pos: 1   neg: 0   [XL ] [TIER3]
+		gemma3:27b                                    pos: 1   neg: 0   [XL ] [TIER1]
+		huihui_ai/qwen3.5-abliterated:27b             pos: 1   neg: 0   [XL ] [TIER1]
+		lfm2:24b                                      pos: 1   neg: 0   [L  ] [TIER2]
+		llava:34b                                     pos: 1   neg: 0   [XL ] [TIER3]
+		gemma2:9b                                     pos: 1   neg: 0   [M  ] [TIER2]
+		qwen2.5:72b                                   pos: 1   neg: 0   [XL ] [TIER2]
+		gemma4:26b                                    pos: 1   neg: 0   [XL ] [TIER2]
+		mistral:7b                                    pos: 1   neg: 0   [M  ] [TIER3]
+		gpt-oss:20b                                   pos: 1   neg: 0   [L  ] [TIER3]
+		cogito:14b                                    pos: 1   neg: 0   [L  ] [TIER1]
+		llama3.3:70b                                  pos: 1   neg: 0   [XL ] [TIER1]
+		huihui_ai/qwen3-abliterated:32b               pos: 1   neg: 0   [XL ] [TIER1]
+		qwq:32b                                       pos: 1   neg: 0   [XL ] [TIER1]
+		llama3.1:70b                                  pos: 1   neg: 0   [XL ] [TIER1]
+		gemma3:12b                                    pos: 1   neg: 0   [L  ] [TIER2]
+		qwen3.5:27b                                   pos: 1   neg: 0   [XL ] [TIER1]
+		aya-expanse:32b                               pos: 1   neg: 0   [XL ] [TIER3]
+		phi4:14b                                      pos: 1   neg: 0   [L  ] [TIER2]
+		qwen3:32b                                     pos: 1   neg: 0   [XL ] [TIER1]
+		gemma3n:e4b                                   pos: 1   neg: 0   [M  ] [TIER4]
+		openchat:7b                                   pos: 1   neg: 0   [M  ] [TIER2]
+		nemotron-cascade-2:30b                        pos: 1   neg: 0   [XL ] [TIER3]
+		athene-v2:72b                                 pos: 1   neg: 0   [XL ] [TIER2]
+		cogito:70b                                    pos: 1   neg: 0   [XL ] [TIER2]
+		qwen3:14b                                     pos: 1   neg: 0   [L  ] [TIER1]
 		-----
 		NEGATIVE:
-		nemotron-3-nano:30b                      pos: 0   neg: 1   [XL ] [TIER3]
-		cogito:8b                                pos: 0   neg: 1   [M  ] [TIER4]
-		tulu3:8b                                 pos: 0   neg: 1   [M  ] [TIER4]
-		sailor2:20b                              pos: 0   neg: 1   [L  ] [TIER2]
-		llava:34b                                pos: 0   neg: 1   [XL ] [TIER3]
-		gpt-oss:20b                              pos: 0   neg: 1   [L  ] [TIER3]
-		aya-expanse:8b                           pos: 0   neg: 1   [M  ] [TIER4]
-		cogito:14b                               pos: 0   neg: 1   [L  ] [TIER1]
-		marco-o1:7b                              pos: 0   neg: 1   [M  ] [TIER1]
-		aya-expanse:32b                          pos: 0   neg: 1   [XL ] [TIER3]
-		gemma3n:e4b                              pos: 0   neg: 1   [M  ] [TIER4]
-		openchat:7b                              pos: 0   neg: 1   [M  ] [TIER2]
-		qwen3:14b                                pos: 0   neg: 1   [L  ] [TIER1]
+		cogito:8b                                     pos: 0   neg: 1   [M  ] [TIER4]
+		llama3.1:8b                                   pos: 0   neg: 1   [M  ] [TIER3]
+		tulu3:8b                                      pos: 0   neg: 1   [M  ] [TIER4]
+		sailor2:20b                                   pos: 0   neg: 1   [L  ] [TIER2]
+		batiai/gemma4-26b:iq4                         pos: 0   neg: 1   [L  ] [TIER2]
+		aya-expanse:8b                                pos: 0   neg: 1   [M  ] [TIER4]
+		batiai/gemma4-26b:q3                          pos: 0   neg: 1   [L  ] [TIER2]
 		 */
 
 		OllamaService.destroyInstance();
@@ -149,47 +156,51 @@ public class OllamaStandardTest {
 		scorecard.print();
 
 		/*
-		POSITIVE:
-		tulu3:70b                                pos: 1   neg: 0   [XL ] [TIER2]
-		nemotron:70b                             pos: 1   neg: 0   [XL ] [TIER1]
-		qwen3:8b                                 pos: 1   neg: 0   [M  ] [TIER1]
-		qwen3:4b                                 pos: 1   neg: 0   [S  ] [TIER1]
-		tulu3:8b                                 pos: 1   neg: 0   [M  ] [TIER4]
-		sailor2:20b                              pos: 1   neg: 0   [L  ] [TIER2]
-		olmo-3:32b                               pos: 1   neg: 0   [XL ] [TIER3]
-		gemma3:27b                               pos: 1   neg: 0   [XL ] [TIER1]
-		gemma2:9b                                pos: 1   neg: 0   [M  ] [TIER1]
-		olmo-3.1:32b                             pos: 1   neg: 0   [XL ] [TIER3]
-		qwen2.5:72b                              pos: 1   neg: 0   [XL ] [TIER1]
-		gpt-oss:20b                              pos: 1   neg: 0   [L  ] [TIER3]
-		huihui_ai/qwen3-abliterated:14b          pos: 1   neg: 0   [L  ] [TIER1]
-		cogito:14b                               pos: 1   neg: 0   [L  ] [TIER1]
-		r1-1776:70b                              pos: 1   neg: 0   [XL ] [TIER2]
-		llama3.3:70b                             pos: 1   neg: 0   [XL ] [TIER1]
-		huihui_ai/qwen3-abliterated:32b          pos: 1   neg: 0   [XL ] [TIER2]
-		qwq:32b                                  pos: 1   neg: 0   [XL ] [TIER1]
-		llama3.1:70b                             pos: 1   neg: 0   [XL ] [TIER1]
-		aya-expanse:32b                          pos: 1   neg: 0   [XL ] [TIER3]
-		phi4:14b                                 pos: 1   neg: 0   [L  ] [TIER2]
-		qwen3:32b                                pos: 1   neg: 0   [XL ] [TIER1]
-		athene-v2:72b                            pos: 1   neg: 0   [XL ] [TIER2]
-		cogito:70b                               pos: 1   neg: 0   [XL ] [TIER2]
-		qwen3:14b                                pos: 1   neg: 0   [L  ] [TIER1]
-		-----
-		NEGATIVE:
-		nemotron-3-nano:30b                      pos: 0   neg: 1   [XL ] [TIER3]
-		cogito:8b                                pos: 0   neg: 1   [M  ] [TIER4]
-		qwen2.5:7b                               pos: 0   neg: 1   [M  ] [TIER1]
-		llama3.1:8b                              pos: 0   neg: 1   [M  ] [TIER3]
-		granite3.3:8b                            pos: 0   neg: 1   [M  ] [TIER4]
-		llava:34b                                pos: 0   neg: 1   [XL ] [TIER3]
-		mistral:7b                               pos: 0   neg: 1   [M  ] [TIER3]
-		aya-expanse:8b                           pos: 0   neg: 1   [M  ] [TIER4]
-		olmo-3:7b                                pos: 0   neg: 1   [M  ] [TIER4]
-		marco-o1:7b                              pos: 0   neg: 1   [M  ] [TIER1]
-		gemma3:12b                               pos: 0   neg: 1   [L  ] [TIER2]
-		gemma3n:e4b                              pos: 0   neg: 1   [M  ] [TIER4]
-		openchat:7b                              pos: 0   neg: 1   [M  ] [TIER2]
+	POSITIVE:
+	yolo0perris/Qwen3.5-27B-Claude-4.6-Opus-Reaso pos: 1   neg: 0   [L  ] [TIER1]
+	tulu3:70b                                     pos: 1   neg: 0   [XL ] [TIER2]
+	nemotron:70b                                  pos: 1   neg: 0   [XL ] [TIER2]
+	qwen3:8b                                      pos: 1   neg: 0   [M  ] [TIER2]
+	gemma4:31b                                    pos: 1   neg: 0   [XL ] [TIER1]
+	llama3.1:8b                                   pos: 1   neg: 0   [M  ] [TIER3]
+	qwen3:4b                                      pos: 1   neg: 0   [S  ] [TIER1]
+	sailor2:20b                                   pos: 1   neg: 0   [L  ] [TIER2]
+	olmo-3:32b                                    pos: 1   neg: 0   [XL ] [TIER3]
+	gemma3:27b                                    pos: 1   neg: 0   [XL ] [TIER1]
+	huihui_ai/qwen3.5-abliterated:27b             pos: 1   neg: 0   [XL ] [TIER1]
+	gemma2:9b                                     pos: 1   neg: 0   [M  ] [TIER2]
+	qwen2.5:72b                                   pos: 1   neg: 0   [XL ] [TIER2]
+	gpt-oss:20b                                   pos: 1   neg: 0   [L  ] [TIER3]
+	cogito:14b                                    pos: 1   neg: 0   [L  ] [TIER1]
+	llama3.3:70b                                  pos: 1   neg: 0   [XL ] [TIER1]
+	huihui_ai/qwen3-abliterated:32b               pos: 1   neg: 0   [XL ] [TIER1]
+	qwq:32b                                       pos: 1   neg: 0   [XL ] [TIER1]
+	llama3.1:70b                                  pos: 1   neg: 0   [XL ] [TIER1]
+	gemma3:12b                                    pos: 1   neg: 0   [L  ] [TIER2]
+	qwen3.5:27b                                   pos: 1   neg: 0   [XL ] [TIER1]
+	aya-expanse:32b                               pos: 1   neg: 0   [XL ] [TIER3]
+	phi4:14b                                      pos: 1   neg: 0   [L  ] [TIER2]
+	qwen3:32b                                     pos: 1   neg: 0   [XL ] [TIER1]
+	athene-v2:72b                                 pos: 1   neg: 0   [XL ] [TIER2]
+	cogito:70b                                    pos: 1   neg: 0   [XL ] [TIER2]
+	qwen3:14b                                     pos: 1   neg: 0   [L  ] [TIER1]
+	-----
+	NEGATIVE:
+	nemotron-3-nano:30b                           pos: 0   neg: 1   [XL ] [TIER3]
+	cogito:8b                                     pos: 0   neg: 1   [M  ] [TIER4]
+	qwen2.5:7b                                    pos: 0   neg: 1   [M  ] [TIER2]
+	granite3.3:8b                                 pos: 0   neg: 1   [M  ] [TIER4]
+	tulu3:8b                                      pos: 0   neg: 1   [M  ] [TIER4]
+	lfm2:24b                                      pos: 0   neg: 1   [L  ] [TIER2]
+	llava:34b                                     pos: 0   neg: 1   [XL ] [TIER3]
+	gemma4:26b                                    pos: 0   neg: 1   [XL ] [TIER2]
+	batiai/gemma4-26b:iq4                         pos: 0   neg: 1   [L  ] [TIER2]
+	mistral:7b                                    pos: 0   neg: 1   [M  ] [TIER3]
+	aya-expanse:8b                                pos: 0   neg: 1   [M  ] [TIER4]
+	batiai/gemma4-26b:q3                          pos: 0   neg: 1   [L  ] [TIER2]
+	gemma3n:e4b                                   pos: 0   neg: 1   [M  ] [TIER4]
+	openchat:7b                                   pos: 0   neg: 1   [M  ] [TIER2]
+	nemotron-cascade-2:30b                        pos: 0   neg: 1   [XL ] [TIER3]
 		 */
 
 		OllamaService.destroyInstance();
@@ -236,36 +247,38 @@ public class OllamaStandardTest {
 
 		/*
 		POSITIVE:
+		yolo0perris/Qwen3.5-27B-Claude-4.6-Opus-Reaso pos: 2   neg: 0   [L  ] [TIER1]
 		nemotron-3-nano:30b                           pos: 2   neg: 0   [XL ] [TIER3]
-		huihui_ai/glm-4.7-flash-abliterated:q8_0      pos: 2   neg: 0   [XL ] [TIER1]
 		cogito:8b                                     pos: 2   neg: 0   [M  ] [TIER4]
 		tulu3:70b                                     pos: 2   neg: 0   [XL ] [TIER2]
-		nemotron:70b                                  pos: 2   neg: 0   [XL ] [TIER1]
-		qwen2.5:7b                                    pos: 2   neg: 0   [M  ] [TIER1]
-		qwen3:8b                                      pos: 2   neg: 0   [M  ] [TIER1]
+		nemotron:70b                                  pos: 2   neg: 0   [XL ] [TIER2]
+		qwen3:8b                                      pos: 2   neg: 0   [M  ] [TIER2]
+		gemma4:31b                                    pos: 2   neg: 0   [XL ] [TIER1]
 		llama3.1:8b                                   pos: 2   neg: 0   [M  ] [TIER3]
-		glm-4.7-flash:q8_0                            pos: 2   neg: 0   [XL ] [TIER1]
 		qwen3:4b                                      pos: 2   neg: 0   [S  ] [TIER1]
 		granite3.3:8b                                 pos: 2   neg: 0   [M  ] [TIER4]
 		tulu3:8b                                      pos: 2   neg: 0   [M  ] [TIER4]
 		sailor2:20b                                   pos: 2   neg: 0   [L  ] [TIER2]
 		olmo-3:32b                                    pos: 2   neg: 0   [XL ] [TIER3]
 		gemma3:27b                                    pos: 2   neg: 0   [XL ] [TIER1]
-		glm-4.7-flash:q4_K_M                          pos: 2   neg: 0   [XL ] [TIER1]
+		huihui_ai/qwen3.5-abliterated:27b             pos: 2   neg: 0   [XL ] [TIER1]
+		lfm2:24b                                      pos: 2   neg: 0   [L  ] [TIER2]
 		llava:34b                                     pos: 2   neg: 0   [XL ] [TIER3]
-		gemma2:9b                                     pos: 2   neg: 0   [M  ] [TIER1]
+		gemma2:9b                                     pos: 2   neg: 0   [M  ] [TIER2]
 		qwen2.5:72b                                   pos: 2   neg: 0   [XL ] [TIER2]
+		gemma4:26b                                    pos: 2   neg: 0   [XL ] [TIER2]
+		batiai/gemma4-26b:iq4                         pos: 2   neg: 0   [L  ] [TIER2]
 		mistral:7b                                    pos: 2   neg: 0   [M  ] [TIER3]
 		gpt-oss:20b                                   pos: 2   neg: 0   [L  ] [TIER3]
-		huihui_ai/qwen3-abliterated:14b               pos: 2   neg: 0   [L  ] [TIER1]
 		aya-expanse:8b                                pos: 2   neg: 0   [M  ] [TIER4]
 		cogito:14b                                    pos: 2   neg: 0   [L  ] [TIER1]
-		olmo-3:7b                                     pos: 2   neg: 0   [M  ] [TIER4]
 		llama3.3:70b                                  pos: 2   neg: 0   [XL ] [TIER1]
 		huihui_ai/qwen3-abliterated:32b               pos: 2   neg: 0   [XL ] [TIER1]
 		qwq:32b                                       pos: 2   neg: 0   [XL ] [TIER1]
 		llama3.1:70b                                  pos: 2   neg: 0   [XL ] [TIER1]
+		batiai/gemma4-26b:q3                          pos: 2   neg: 0   [L  ] [TIER2]
 		gemma3:12b                                    pos: 2   neg: 0   [L  ] [TIER2]
+		qwen3.5:27b                                   pos: 2   neg: 0   [XL ] [TIER1]
 		aya-expanse:32b                               pos: 2   neg: 0   [XL ] [TIER3]
 		phi4:14b                                      pos: 2   neg: 0   [L  ] [TIER2]
 		qwen3:32b                                     pos: 2   neg: 0   [XL ] [TIER1]
@@ -273,9 +286,11 @@ public class OllamaStandardTest {
 		openchat:7b                                   pos: 2   neg: 0   [M  ] [TIER2]
 		athene-v2:72b                                 pos: 2   neg: 0   [XL ] [TIER2]
 		cogito:70b                                    pos: 2   neg: 0   [XL ] [TIER2]
-		huihui_ai/glm-4.7-flash-abliterated:q4_K      pos: 2   neg: 0   [XL ] [TIER1]
 		qwen3:14b                                     pos: 2   neg: 0   [L  ] [TIER1]
-		huihui_ai/glm-4.7-flash-abliterated:q4_K_S    pos: 2   neg: 0   [XL ] [TIER1]
+		-----
+		NEGATIVE:
+		qwen2.5:7b                                    pos: 0   neg: 1   [M  ] [TIER2]
+		nemotron-cascade-2:30b                        pos: 0   neg: 1   [XL ] [TIER3]
 		 */
 
 		OllamaService.destroyInstance();
@@ -299,7 +314,7 @@ public class OllamaStandardTest {
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
 				environment,
 				false, // no mcp
-				"qwen3:4b",  // qwen3:4b llama3.1:8b Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL
+				"gemma4:26b",  // qwen3:4b llama3.1:8b Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL
 				"What is the current temperature in Paris?", 
 				acceptable_answers,
 				false, false, false, settings, false);
@@ -316,22 +331,24 @@ public class OllamaStandardTest {
 	@Test
 	public void simpleParisCapital_OllamaModels_NEWMODELS() {
 
-		//FilesUtils.writeToFileUNIXNoException("environment,model_name,exec_time", "exec.csv");
+		File f = new File("exec.csv");
+		if (!f.exists()) FilesUtils.writeToFileUNIXNoException("environment,model_name,exec_time", "exec.csv");
 
 		HashMap<String, Integer> acceptable_answers = new HashMap<String, Integer>() {{
 			this.put("Yes", 1);
 		}};
 
-		String environment = "AIGHT2";
+		String environment = "AIGHTC";
 		OllamaDramaSettings settings = OllamaUtils.parseOllamaDramaConfigENV();
 		settings.setSatellites(new ArrayList<>(Arrays.asList(new OllamaEndpoint("http://127.0.0.1:11434", "", ""))));
 		settings.setOllama_scan(false);
 		settings.setOllama_timeout(120);
+		settings.setAutopull_max_llm_size("XL");
 
 		for (int i=0; i<5; i++) {
 
 			ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(environment, false,
-					Globals.MODEL_NAMES_OLLAMA_ALL_UNCENSORED_UP_TO_XL, // Globals.MODEL_NAMES_OLLAMA_ALL_UNCENSORED_UP_TO_XL Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_ANDUP_M_L_XL huihui_ai/glm-4.7-flash-abliterated:bf16 huihui_ai/glm-4.7-flash-abliterated:q4_K_S, huihui_ai/glm-4.7-flash-abliterated:q4_K Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_ANDUP_M_L_XL qwen2.5vl:72b-q4_K_M" huihui_ai/qwen3-vl-abliterated:32b huihui_ai/mirothinker1-abliterated:72b emsi/mixtral-8x22b:q4_0 .. Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL glm-4.7-flash:q8_0 glm-4.7-flash:bf16 // olmo-3.1:32b olmo-3:7b, olmo-3:32b huihui_ai/qwen3-abliterated:32b nemotron-3-nano:30b 
+					"gemma4:31b", // Globals.MODEL_NAMES_OLLAMA_ALL_UNCENSORED_UP_TO_XL, // Globals.MODEL_NAMES_OLLAMA_ALL_UNCENSORED_UP_TO_XL Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_ANDUP_M_L_XL huihui_ai/glm-4.7-flash-abliterated:bf16 huihui_ai/glm-4.7-flash-abliterated:q4_K_S, huihui_ai/glm-4.7-flash-abliterated:q4_K Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_ANDUP_M_L_XL qwen2.5vl:72b-q4_K_M" huihui_ai/qwen3-vl-abliterated:32b huihui_ai/mirothinker1-abliterated:72b emsi/mixtral-8x22b:q4_0 .. Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_XL glm-4.7-flash:q8_0 glm-4.7-flash:bf16 // olmo-3.1:32b olmo-3:7b, olmo-3:32b huihui_ai/qwen3-abliterated:32b nemotron-3-nano:30b 
 					"Is the capital city of France named Paris? Reply with Yes or No.", acceptable_answers, false, true, false, settings, true);
 
 			// Print the scorecard
@@ -341,7 +358,7 @@ public class OllamaStandardTest {
 
 		}
 
-		//OllamaService.destroyInstance();
+		OllamaService.destroyInstance();
 	}
 
 	@Test
@@ -372,28 +389,28 @@ public class OllamaStandardTest {
 
 		/*
 		POSITIVE:
+		yolo0perris/Qwen3.5-27B-Claude-4.6-Opus-Reaso pos: 1   neg: 0   [L  ] [TIER1]
 		nemotron-3-nano:30b                           pos: 1   neg: 0   [XL ] [TIER3]
-		huihui_ai/glm-4.7-flash-abliterated:q8_0      pos: 1   neg: 0   [XL ] [TIER1]
 		cogito:8b                                     pos: 1   neg: 0   [M  ] [TIER4]
 		tulu3:70b                                     pos: 1   neg: 0   [XL ] [TIER2]
 		nemotron:70b                                  pos: 1   neg: 0   [XL ] [TIER1]
-		qwen2.5:7b                                    pos: 1   neg: 0   [M  ] [TIER1]
+		qwen2.5:7b                                    pos: 1   neg: 0   [M  ] [TIER2]
 		qwen3:8b                                      pos: 1   neg: 0   [M  ] [TIER1]
 		llama3.1:8b                                   pos: 1   neg: 0   [M  ] [TIER3]
-		glm-4.7-flash:q8_0                            pos: 1   neg: 0   [XL ] [TIER1]
 		qwen3:4b                                      pos: 1   neg: 0   [S  ] [TIER1]
+		huihui_ai/qwen3.5-abliterated:35b             pos: 1   neg: 0   [XL ] [TIER1]
 		granite3.3:8b                                 pos: 1   neg: 0   [M  ] [TIER4]
 		tulu3:8b                                      pos: 1   neg: 0   [M  ] [TIER4]
 		sailor2:20b                                   pos: 1   neg: 0   [L  ] [TIER2]
 		olmo-3:32b                                    pos: 1   neg: 0   [XL ] [TIER3]
 		gemma3:27b                                    pos: 1   neg: 0   [XL ] [TIER1]
-		glm-4.7-flash:q4_K_M                          pos: 1   neg: 0   [XL ] [TIER1]
+		huihui_ai/qwen3.5-abliterated:27b             pos: 1   neg: 0   [XL ] [TIER1]
 		llava:34b                                     pos: 1   neg: 0   [XL ] [TIER3]
 		gemma2:9b                                     pos: 1   neg: 0   [M  ] [TIER1]
 		qwen2.5:72b                                   pos: 1   neg: 0   [XL ] [TIER2]
 		mistral:7b                                    pos: 1   neg: 0   [M  ] [TIER3]
 		gpt-oss:20b                                   pos: 1   neg: 0   [L  ] [TIER3]
-		huihui_ai/qwen3-abliterated:14b               pos: 1   neg: 0   [L  ] [TIER1]
+		qwen3.5:35b                                   pos: 1   neg: 0   [XL ] [TIER1]
 		aya-expanse:8b                                pos: 1   neg: 0   [M  ] [TIER4]
 		cogito:14b                                    pos: 1   neg: 0   [L  ] [TIER1]
 		olmo-3:7b                                     pos: 1   neg: 0   [M  ] [TIER4]
@@ -402,6 +419,7 @@ public class OllamaStandardTest {
 		qwq:32b                                       pos: 1   neg: 0   [XL ] [TIER1]
 		llama3.1:70b                                  pos: 1   neg: 0   [XL ] [TIER1]
 		gemma3:12b                                    pos: 1   neg: 0   [L  ] [TIER2]
+		qwen3.5:27b                                   pos: 1   neg: 0   [XL ] [TIER1]
 		aya-expanse:32b                               pos: 1   neg: 0   [XL ] [TIER3]
 		phi4:14b                                      pos: 1   neg: 0   [L  ] [TIER2]
 		qwen3:32b                                     pos: 1   neg: 0   [XL ] [TIER1]
@@ -409,9 +427,7 @@ public class OllamaStandardTest {
 		openchat:7b                                   pos: 1   neg: 0   [M  ] [TIER2]
 		athene-v2:72b                                 pos: 1   neg: 0   [XL ] [TIER2]
 		cogito:70b                                    pos: 1   neg: 0   [XL ] [TIER2]
-		huihui_ai/glm-4.7-flash-abliterated:q4_K      pos: 1   neg: 0   [XL ] [TIER1]
 		qwen3:14b                                     pos: 1   neg: 0   [L  ] [TIER1]
-		huihui_ai/glm-4.7-flash-abliterated:q4_K_S    pos: 1   neg: 0   [XL ] [TIER1]
 		-----
 		NEGATIVE:
 		 */
@@ -449,49 +465,51 @@ public class OllamaStandardTest {
 
 		/*		
 		POSITIVE:
-		nemotron-3-nano:30b                           pos: 2   neg: 0   [XL ] [TIER3]
-		huihui_ai/glm-4.7-flash-abliterated:q8_0      pos: 2   neg: 0   [XL ] [TIER1]
-		cogito:8b                                     pos: 2   neg: 0   [M  ] [TIER4]
-		tulu3:70b                                     pos: 2   neg: 0   [XL ] [TIER2]
-		nemotron:70b                                  pos: 2   neg: 0   [XL ] [TIER1]
-		qwen2.5:7b                                    pos: 2   neg: 0   [M  ] [TIER1]
-		qwen3:8b                                      pos: 2   neg: 0   [M  ] [TIER1]
-		llama3.1:8b                                   pos: 2   neg: 0   [M  ] [TIER3]
-		glm-4.7-flash:q8_0                            pos: 2   neg: 0   [XL ] [TIER1]
-		granite3.3:8b                                 pos: 2   neg: 0   [M  ] [TIER4]
-		sailor2:20b                                   pos: 2   neg: 0   [L  ] [TIER2]
+		nemotron:70b                                  pos: 2   neg: 0   [XL ] [TIER2]
+		qwen2.5:7b                                    pos: 2   neg: 0   [M  ] [TIER2]
+		qwen3:4b                                      pos: 2   neg: 0   [S  ] [TIER1]
 		olmo-3:32b                                    pos: 2   neg: 0   [XL ] [TIER3]
-		gemma3:27b                                    pos: 2   neg: 0   [XL ] [TIER1]
-		glm-4.7-flash:q4_K_M                          pos: 2   neg: 0   [XL ] [TIER1]
-		llava:34b                                     pos: 2   neg: 0   [XL ] [TIER3]
-		gemma2:9b                                     pos: 2   neg: 0   [M  ] [TIER1]
-		qwen2.5:72b                                   pos: 2   neg: 0   [XL ] [TIER2]
+		gemma2:9b                                     pos: 2   neg: 0   [M  ] [TIER2]
+		gemma4:26b                                    pos: 2   neg: 0   [XL ] [TIER2]
 		gpt-oss:20b                                   pos: 2   neg: 0   [L  ] [TIER3]
-		huihui_ai/qwen3-abliterated:14b               pos: 2   neg: 0   [L  ] [TIER1]
-		cogito:14b                                    pos: 2   neg: 0   [L  ] [TIER1]
-		olmo-3:7b                                     pos: 2   neg: 0   [M  ] [TIER4]
-		llama3.3:70b                                  pos: 2   neg: 0   [XL ] [TIER1]
 		huihui_ai/qwen3-abliterated:32b               pos: 2   neg: 0   [XL ] [TIER1]
 		qwq:32b                                       pos: 2   neg: 0   [XL ] [TIER1]
 		llama3.1:70b                                  pos: 2   neg: 0   [XL ] [TIER1]
 		gemma3:12b                                    pos: 2   neg: 0   [L  ] [TIER2]
 		phi4:14b                                      pos: 2   neg: 0   [L  ] [TIER2]
 		qwen3:32b                                     pos: 2   neg: 0   [XL ] [TIER1]
-		gemma3n:e4b                                   pos: 2   neg: 0   [M  ] [TIER4]
-		athene-v2:72b                                 pos: 2   neg: 0   [XL ] [TIER2]
-		cogito:70b                                    pos: 2   neg: 0   [XL ] [TIER2]
-		huihui_ai/glm-4.7-flash-abliterated:q4_K      pos: 2   neg: 0   [XL ] [TIER1]
-		qwen3:14b                                     pos: 2   neg: 0   [L  ] [TIER1]
-		huihui_ai/glm-4.7-flash-abliterated:q4_K_S    pos: 2   neg: 0   [XL ] [TIER1]
 		-----
-		qwen3:4b                                      pos: 1   neg: 0   [S  ] [TIER1]
+		yolo0perris/Qwen3.5-27B-Claude-4.6-Opus-Reaso pos: 1   neg: 0   [L  ] [TIER1]
+		nemotron-3-nano:30b                           pos: 1   neg: 0   [XL ] [TIER3]
+		cogito:8b                                     pos: 1   neg: 0   [M  ] [TIER4]
+		tulu3:70b                                     pos: 1   neg: 0   [XL ] [TIER2]
+		qwen3:8b                                      pos: 1   neg: 0   [M  ] [TIER2]
+		gemma4:31b                                    pos: 1   neg: 0   [XL ] [TIER1]
+		llama3.1:8b                                   pos: 1   neg: 0   [M  ] [TIER3]
+		granite3.3:8b                                 pos: 1   neg: 0   [M  ] [TIER4]
 		tulu3:8b                                      pos: 1   neg: 0   [M  ] [TIER4]
+		sailor2:20b                                   pos: 1   neg: 0   [L  ] [TIER2]
+		gemma3:27b                                    pos: 1   neg: 0   [XL ] [TIER1]
+		huihui_ai/qwen3.5-abliterated:27b             pos: 1   neg: 0   [XL ] [TIER1]
+		lfm2:24b                                      pos: 1   neg: 0   [L  ] [TIER2]
+		llava:34b                                     pos: 1   neg: 0   [XL ] [TIER3]
+		qwen2.5:72b                                   pos: 1   neg: 0   [XL ] [TIER2]
 		mistral:7b                                    pos: 1   neg: 0   [M  ] [TIER3]
 		aya-expanse:8b                                pos: 1   neg: 0   [M  ] [TIER4]
+		cogito:14b                                    pos: 1   neg: 0   [L  ] [TIER1]
+		llama3.3:70b                                  pos: 1   neg: 0   [XL ] [TIER1]
+		qwen3.5:27b                                   pos: 1   neg: 0   [XL ] [TIER1]
 		aya-expanse:32b                               pos: 1   neg: 0   [XL ] [TIER3]
+		gemma3n:e4b                                   pos: 1   neg: 0   [M  ] [TIER4]
 		openchat:7b                                   pos: 1   neg: 0   [M  ] [TIER2]
+		nemotron-cascade-2:30b                        pos: 1   neg: 0   [XL ] [TIER3]
+		athene-v2:72b                                 pos: 1   neg: 0   [XL ] [TIER2]
+		cogito:70b                                    pos: 1   neg: 0   [XL ] [TIER2]
+		qwen3:14b                                     pos: 1   neg: 0   [L  ] [TIER1]
 		-----
 		NEGATIVE:
+		batiai/gemma4-26b:iq4                         pos: 0   neg: 1   [L  ] [TIER2]
+		batiai/gemma4-26b:q3                          pos: 0   neg: 1   [L  ] [TIER2]
 		 */
 
 		OllamaService.destroyInstance();
@@ -516,7 +534,7 @@ public class OllamaStandardTest {
 
 		ModelsScoreCard scorecard = OllamaDramaUtils.populateScorecardsForOllamaModels(
 				environment,
-				false, Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, "bmn,alkwjhuwihjkl7777oodottodooo?", acceptable_answers, true, false, false, settings, false);
+				false, Globals.MODEL_NAMES_OLLAMA_ALL_UP_TO_XL, "bmn,alkwjhuwihjkl7777oodottodooo? Reply with FAILTOUNDERSTAND if you do not understand.", acceptable_answers, true, false, false, settings, false);
 
 		// Print the scorecard
 		System.out.println("SCORECARD:");
@@ -525,48 +543,50 @@ public class OllamaStandardTest {
 
 		/*		
 		POSITIVE:
+		yolo0perris/Qwen3.5-27B-Claude-4.6-Opus-Reaso pos: 1   neg: 0   [L  ] [TIER1]
 		nemotron-3-nano:30b                           pos: 1   neg: 0   [XL ] [TIER3]
-		huihui_ai/glm-4.7-flash-abliterated:q8_0      pos: 1   neg: 0   [XL ] [TIER1]
 		cogito:8b                                     pos: 1   neg: 0   [M  ] [TIER4]
 		tulu3:70b                                     pos: 1   neg: 0   [XL ] [TIER2]
-		nemotron:70b                                  pos: 1   neg: 0   [XL ] [TIER1]
-		qwen2.5:7b                                    pos: 1   neg: 0   [M  ] [TIER1]
-		qwen3:8b                                      pos: 1   neg: 0   [M  ] [TIER1]
+		nemotron:70b                                  pos: 1   neg: 0   [XL ] [TIER2]
+		qwen3:8b                                      pos: 1   neg: 0   [M  ] [TIER2]
+		qwen2.5:7b                                    pos: 1   neg: 0   [M  ] [TIER2]
+		gemma4:31b                                    pos: 1   neg: 0   [XL ] [TIER1]
 		llama3.1:8b                                   pos: 1   neg: 0   [M  ] [TIER3]
-		glm-4.7-flash:q8_0                            pos: 1   neg: 0   [XL ] [TIER1]
+		qwen3:4b                                      pos: 1   neg: 0   [S  ] [TIER1]
 		granite3.3:8b                                 pos: 1   neg: 0   [M  ] [TIER4]
+		tulu3:8b                                      pos: 1   neg: 0   [M  ] [TIER4]
 		sailor2:20b                                   pos: 1   neg: 0   [L  ] [TIER2]
 		olmo-3:32b                                    pos: 1   neg: 0   [XL ] [TIER3]
 		gemma3:27b                                    pos: 1   neg: 0   [XL ] [TIER1]
-		glm-4.7-flash:q4_K_M                          pos: 1   neg: 0   [XL ] [TIER1]
+		huihui_ai/qwen3.5-abliterated:27b             pos: 1   neg: 0   [XL ] [TIER1]
+		lfm2:24b                                      pos: 1   neg: 0   [L  ] [TIER2]
 		llava:34b                                     pos: 1   neg: 0   [XL ] [TIER3]
-		gemma2:9b                                     pos: 1   neg: 0   [M  ] [TIER1]
+		gemma2:9b                                     pos: 1   neg: 0   [M  ] [TIER2]
 		qwen2.5:72b                                   pos: 1   neg: 0   [XL ] [TIER2]
+		gemma4:26b                                    pos: 1   neg: 0   [XL ] [TIER2]
+		batiai/gemma4-26b:iq4                         pos: 1   neg: 0   [L  ] [TIER2]
 		mistral:7b                                    pos: 1   neg: 0   [M  ] [TIER3]
 		gpt-oss:20b                                   pos: 1   neg: 0   [L  ] [TIER3]
-		huihui_ai/qwen3-abliterated:14b               pos: 1   neg: 0   [L  ] [TIER1]
 		aya-expanse:8b                                pos: 1   neg: 0   [M  ] [TIER4]
 		cogito:14b                                    pos: 1   neg: 0   [L  ] [TIER1]
-		olmo-3:7b                                     pos: 1   neg: 0   [M  ] [TIER4]
 		llama3.3:70b                                  pos: 1   neg: 0   [XL ] [TIER1]
 		huihui_ai/qwen3-abliterated:32b               pos: 1   neg: 0   [XL ] [TIER1]
 		qwq:32b                                       pos: 1   neg: 0   [XL ] [TIER1]
 		llama3.1:70b                                  pos: 1   neg: 0   [XL ] [TIER1]
+		batiai/gemma4-26b:q3                          pos: 1   neg: 0   [L  ] [TIER2]
 		gemma3:12b                                    pos: 1   neg: 0   [L  ] [TIER2]
+		qwen3.5:27b                                   pos: 1   neg: 0   [XL ] [TIER1]
+		aya-expanse:32b                               pos: 1   neg: 0   [XL ] [TIER3]
 		phi4:14b                                      pos: 1   neg: 0   [L  ] [TIER2]
 		qwen3:32b                                     pos: 1   neg: 0   [XL ] [TIER1]
 		gemma3n:e4b                                   pos: 1   neg: 0   [M  ] [TIER4]
 		openchat:7b                                   pos: 1   neg: 0   [M  ] [TIER2]
+		nemotron-cascade-2:30b                        pos: 1   neg: 0   [XL ] [TIER3]
 		athene-v2:72b                                 pos: 1   neg: 0   [XL ] [TIER2]
 		cogito:70b                                    pos: 1   neg: 0   [XL ] [TIER2]
-		huihui_ai/glm-4.7-flash-abliterated:q4_K      pos: 1   neg: 0   [XL ] [TIER1]
 		qwen3:14b                                     pos: 1   neg: 0   [L  ] [TIER1]
-		huihui_ai/glm-4.7-flash-abliterated:q4_K_S    pos: 1   neg: 0   [XL ] [TIER1]
 		-----
 		NEGATIVE:
-		qwen3:4b                                      pos: 0   neg: 1   [S  ] [TIER1]
-		tulu3:8b                                      pos: 0   neg: 1   [M  ] [TIER4]
-		aya-expanse:32b                               pos: 0   neg: 1   [XL ] [TIER3]
 		 */
 
 		OllamaService.destroyInstance();
@@ -733,28 +753,30 @@ public class OllamaStandardTest {
 
 		/*
 		POSITIVE:
-		gemma2:9b                                     pos: 1   neg: 0   [M  ] [TIER1]
+		gemma2:9b                                     pos: 1   neg: 0   [M  ] [TIER2]
+		yolo0perris/Qwen3.5-27B-Claude-4.6-Opus-Reaso pos: 1   neg: 0   [L  ] [TIER1]
 		cogito:8b                                     pos: 1   neg: 0   [M  ] [TIER4]
-		mistral:7b                                    pos: 1   neg: 0   [M  ] [TIER3]
-		qwen2.5:7b                                    pos: 1   neg: 0   [M  ] [TIER1]
-		qwen3:8b                                      pos: 1   neg: 0   [M  ] [TIER1]
+		batiai/gemma4-26b:iq4                         pos: 1   neg: 0   [L  ] [TIER2]
 		gpt-oss:20b                                   pos: 1   neg: 0   [L  ] [TIER3]
-		huihui_ai/qwen3-abliterated:14b               pos: 1   neg: 0   [L  ] [TIER1]
 		aya-expanse:8b                                pos: 1   neg: 0   [M  ] [TIER4]
 		qwen3:4b                                      pos: 1   neg: 0   [S  ] [TIER1]
 		cogito:14b                                    pos: 1   neg: 0   [L  ] [TIER1]
-		olmo-3:7b                                     pos: 1   neg: 0   [M  ] [TIER4]
 		granite3.3:8b                                 pos: 1   neg: 0   [M  ] [TIER4]
+		tulu3:8b                                      pos: 1   neg: 0   [M  ] [TIER4]
 		sailor2:20b                                   pos: 1   neg: 0   [L  ] [TIER2]
+		lfm2:24b                                      pos: 1   neg: 0   [L  ] [TIER2]
 		gemma3:12b                                    pos: 1   neg: 0   [L  ] [TIER2]
-		phi4:14b                                      pos: 1   neg: 0   [L  ] [TIER2]
-		qwen3:14b                                     pos: 1   neg: 0   [L  ] [TIER1]
+		gemma3n:e4b                                   pos: 1   neg: 0   [M  ] [TIER4]
 		-----
 		NEGATIVE:
+		mistral:7b                                    pos: 0   neg: 1   [M  ] [TIER3]
+		qwen3:8b                                      pos: 0   neg: 1   [M  ] [TIER2]
+		qwen2.5:7b                                    pos: 0   neg: 1   [M  ] [TIER2]
 		llama3.1:8b                                   pos: 0   neg: 1   [M  ] [TIER3]
-		tulu3:8b                                      pos: 0   neg: 1   [M  ] [TIER4]
-		gemma3n:e4b                                   pos: 0   neg: 1   [M  ] [TIER4]
+		batiai/gemma4-26b:q3                          pos: 0   neg: 1   [L  ] [TIER2]
+		phi4:14b                                      pos: 0   neg: 1   [L  ] [TIER2]
 		openchat:7b                                   pos: 0   neg: 1   [M  ] [TIER2]
+		qwen3:14b                                     pos: 0   neg: 1   [L  ] [TIER2]
 		 */
 
 		OllamaService.destroyInstance();

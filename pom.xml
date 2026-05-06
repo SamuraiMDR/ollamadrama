@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>ntt.security</groupId>
   <artifactId>ollamadrama</artifactId>
-  <version>1.0.7.1</version>
+  <version>1.0.12</version>
   <name>ollamadrama</name>
 
 	<properties>
@@ -66,14 +66,14 @@
 	      </executions>
 	    </plugin>
 	  </plugins>
-</build>
+         </build>
 
 
 	<scm>
-		<connection>scm:svn:http://127.0.0.1/dummy</connection>
-		<developerConnection>scm:svn:https://127.0.0.1/dummy</developerConnection>
+		<connection>scm:git:https://github.com/SamuraiMDR/ollamadrama.git</connection>
+		<developerConnection>scm:git:https://github.com/SamuraiMDR/ollamadrama.git</developerConnection>
 		<tag>HEAD</tag>
-		<url>http://127.0.0.1/dummy</url>
+		<url>https://github.com/SamuraiMDR/ollamadrama</url>
 	</scm>
 	
 		<dependencies>
@@ -123,17 +123,17 @@
 		<dependency>
 			<groupId>com.alibaba</groupId>
 			<artifactId>fastjson</artifactId>
-			<version>2.0.60</version>
+			<version>2.0.61</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
-			<version>2.21.0</version>
+			<version>2.21.1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-core</artifactId>
-			<version>2.21.0</version>
+			<version>2.21.1</version>
 		</dependency>
 		<dependency>
 		    <groupId>com.google.code.gson</groupId>
@@ -144,11 +144,18 @@
 		
 		<!-- OpenAI -->
 		<dependency>
-		    <groupId>com.theokanning.openai-gpt3-java</groupId>
-		    <artifactId>service</artifactId>
-		    <version>0.18.2</version>       
+		    <groupId>com.openai</groupId>
+		    <artifactId>openai-java</artifactId>
+		    <version>4.34.0</version>
 	    </dependency>
 	    
+	    <!-- Claude / Anthropic -->
+	    <dependency>
+	        <groupId>com.anthropic</groupId>
+	        <artifactId>anthropic-java</artifactId>
+	        <version>2.17.0</version>
+	    </dependency>
+
 	    <!-- MCP -->
 		<dependency>
 		    <groupId>io.modelcontextprotocol.sdk</groupId>

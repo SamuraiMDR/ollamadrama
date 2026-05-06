@@ -1,4 +1,4 @@
-package ntt.security.ollamadrama.memoryloss;
+package ntt.security.ollamadrama.strict.memoryloss;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -72,6 +72,7 @@ public class MCPUtils {
 		}
 		if (!client.isInitialized()) {
 			LOGGER.info("Failed to initialize MCP client against " + _mcp_url + " with path " + _mcp_endpoint_path);
+			try { client.close(); } catch (Exception ignored) {}
 		} else {
 			LOGGER.info("Calling listTools");
 			tools = client.listTools();
@@ -97,7 +98,7 @@ public class MCPUtils {
 						.capabilities(ClientCapabilities.builder().roots(true).build())
 						.build();
 				client.initialize();
-
+				
 				result = client.callTool(
 						new CallToolRequest(_toolname, _arguments)
 						);
@@ -238,11 +239,13 @@ public class MCPUtils {
 	public static String prettyPrint(ListToolsResult tools) {
 		StringBuilder sb = new StringBuilder();
 		for (Tool tool : tools.tools()) {
+			if (null == tool || null == tool.name()) continue;
 			sb.append("\n---\n");
 			sb.append("Tool: ").append(tool.name()).append("\n");
 			sb.append("Description: ").append(
 					StringsUtils.cutAndPadStringToN(
-							tool.description().split("\\.")[0], 100
+							tool.description() != null ? tool.description().split("\\.")[0] : "",
+							100
 							)
 					).append("\n");
 

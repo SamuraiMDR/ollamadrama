@@ -177,7 +177,7 @@ public class SingleStringEnsembleResponse {
 				HashMap<String, Boolean> llms = this.getUniq_confident_replies().get(resp);
 				for (String model_name : llms.keySet()) {
 					SingleStringQuestionResponse session_response = this.getSession_responses().get(model_name);
-					if (session_response.getProbability() > max_confident_percent) {
+					if (session_response != null && session_response.getProbability() > max_confident_percent) {
 						confident_response = session_response.getResponse();
 						max_confident_percent = session_response.getProbability();
 					}
@@ -234,7 +234,7 @@ public class SingleStringEnsembleResponse {
 				HashMap<String, Boolean> llms = this.getUniq_confident_replies().get(resp);
 				for (String model_name : llms.keySet()) {
 					SingleStringQuestionResponse session_response = this.getSession_responses().get(model_name);
-					if (session_response.getProbability() > max_confident_percent) {
+					if (session_response != null && session_response.getProbability() > max_confident_percent) {
 						confident_response = session_response.getResponse();
 						max_confident_percent = session_response.getProbability();
 					}
@@ -249,7 +249,7 @@ public class SingleStringEnsembleResponse {
 	// getRandomBestConfidentMotivation variants
 	// -------------------------------------------------------------------------
 
-	public String getRandomBestConfidentMotivation() {
+	public String getBestConfidentMotivation() {
 		String confident_motivation = "";
 
 		// Pick the motivation from the most certain LLM across all confident replies
@@ -259,7 +259,7 @@ public class SingleStringEnsembleResponse {
 				HashMap<String, Boolean> llms = this.getUniq_confident_replies().get(resp);
 				for (String model_name : llms.keySet()) {
 					SingleStringQuestionResponse session_response = this.getSession_responses().get(model_name);
-					if (session_response.getProbability() > max_confident_percent) {
+					if (session_response != null && session_response.getProbability() > max_confident_percent) {
 						confident_motivation = session_response.getMotivation();
 						max_confident_percent = session_response.getProbability();
 					}
@@ -280,6 +280,9 @@ public class SingleStringEnsembleResponse {
 		String confident_motivation = "";
 		int max_confident_percent = 0;
 		HashMap<String, Boolean> winning_llms = this.getUniq_confident_replies().get(winning_response);
+		if (winning_llms == null) {
+			return confident_motivation;
+		}
 		for (String model_name : winning_llms.keySet()) {
 			SingleStringQuestionResponse sr = this.getSession_responses().get(model_name);
 			if (sr != null && sr.getProbability() > max_confident_percent) {
@@ -305,6 +308,9 @@ public class SingleStringEnsembleResponse {
 		String confident_motivation = "";
 		int max_confident_percent = 0;
 		HashMap<String, Boolean> winning_llms = this.getUniq_confident_replies().get(winning_response);
+		if (winning_llms == null) {
+			return confident_motivation;
+		}
 		for (String model_name : winning_llms.keySet()) {
 			SingleStringQuestionResponse sr = this.getSession_responses().get(model_name);
 			if (sr != null && sr.getProbability() > max_confident_percent) {

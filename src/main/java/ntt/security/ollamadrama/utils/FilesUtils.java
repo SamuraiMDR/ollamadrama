@@ -8,8 +8,10 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 import org.apache.commons.io.IOUtils;
@@ -29,6 +31,18 @@ public class FilesUtils {
 		appendToFile(outString, filePath, "\r\n");
 	}
 
+    public static void deleteFilesAndFoldersInFolderNoException(final String folderpath) {
+        Path path = Paths.get(folderpath);
+        try {
+            Files.walk(path)
+            .sorted(Comparator.reverseOrder())
+            .map(Path::toFile)
+            .forEach(File::delete);
+        } catch (Exception e) {
+            LOGGER.warn("Unable to delete folderpath " + folderpath + ", exception: " + e.getMessage());
+        }
+    }
+	
 	public static void appendToFile(final String outString, final String filePath, final String delimiter) throws Exception {
 		Writer out = null;
 		try {
@@ -83,8 +97,11 @@ public class FilesUtils {
         ArrayList<File> files = new ArrayList<>();
         File folder = new File(folderpath);
         if (folder.exists()) {
-            for (final File fileEntry : folder.listFiles()) {
-                if (fileEntry.isFile()) files.add(fileEntry);
+            File[] listedFiles = folder.listFiles();
+            if (listedFiles != null) {
+                for (final File fileEntry : listedFiles) {
+                    if (fileEntry.isFile()) files.add(fileEntry);
+                }
             }
         }
         return files;

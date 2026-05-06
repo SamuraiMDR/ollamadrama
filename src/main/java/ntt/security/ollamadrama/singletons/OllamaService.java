@@ -28,6 +28,8 @@ import ntt.security.ollamadrama.objects.MCPTool;
 import ntt.security.ollamadrama.objects.OllamaEndpoint;
 import ntt.security.ollamadrama.objects.SessionType;
 import ntt.security.ollamadrama.objects.sessions.OllamaSession;
+import ntt.security.ollamadrama.orchestrator.OrchestratorStatus;
+import ntt.security.ollamadrama.orchestrator.Server;
 import ntt.security.ollamadrama.utils.*;
 
 /**
@@ -180,7 +182,7 @@ public class OllamaService {
 	}
 
 	private static void add_satellite_mcps(Map<String, MCPEndpoint> mcps,
-										   Map<String, MCPEndpoint> abandoned_mcps) {
+			Map<String, MCPEndpoint> abandoned_mcps) {
 		if (settings.getMcp_satellites() == null || settings.getMcp_satellites().isEmpty()) {
 			return;
 		}
@@ -199,9 +201,9 @@ public class OllamaService {
 	}
 
 	private static void validate_mcp_endpoints(Map<String, MCPEndpoint> mcps,
-											   Map<String, MCPEndpoint> abandoned_mcps,
-											   Map<String, MCPTool> verified_tools,
-											   Map<String, Boolean> dedup_tool) {
+			Map<String, MCPEndpoint> abandoned_mcps,
+			Map<String, MCPTool> verified_tools,
+			Map<String, Boolean> dedup_tool) {
 		List<String> schemas = List.of("http", "https");
 		List<String> endpoint_paths = get_mcp_endpoint_paths();
 		for (var entry : mcps.entrySet()) {
@@ -224,10 +226,10 @@ public class OllamaService {
 	}
 
 	private static void validate_single_mcp_endpoint(MCPEndpoint endpoint,
-													 List<String> schemas,
-													 List<String> endpoint_paths,
-													 Map<String, MCPTool> verified_tools,
-													 Map<String, Boolean> dedup_tool) {
+			List<String> schemas,
+			List<String> endpoint_paths,
+			Map<String, MCPTool> verified_tools,
+			Map<String, Boolean> dedup_tool) {
 		for (String path : endpoint_paths) {
 			for (String schema : schemas) {
 				if (should_skip_schema(endpoint.getHost(), schema)) {
@@ -254,12 +256,12 @@ public class OllamaService {
 	}
 
 	private static void register_mcp_tools(ListToolsResult tools,
-										   String mcp_url,
-										   MCPEndpoint endpoint,
-										   String schema,
-										   String path,
-										   Map<String, MCPTool> verified_tools,
-										   Map<String, Boolean> dedup_tool) {
+			String mcp_url,
+			MCPEndpoint endpoint,
+			String schema,
+			String path,
+			Map<String, MCPTool> verified_tools,
+			Map<String, Boolean> dedup_tool) {
 		for (Tool tool : tools.tools()) {
 			String tool_str = MCPUtils.prettyPrint(tools, tool.name());
 			String tool_key = mcp_url + "-" + tool.name();
@@ -295,7 +297,7 @@ public class OllamaService {
 		while (!found_ollamas && !abort) {
 			Map<String, OllamaEndpoint> candidates = discover_ollama_endpoints(abandoned_ollamas);
 
-			if (candidates.isEmpty() && settings.getSatellites() == null) {
+			if (candidates.isEmpty() && (settings.getSatellites() == null) && (settings.getOrchestrator_url() == null)) {
 				LOGGER.warn("No Ollama hosts found on port {} in networks {}",
 						settings.getOllama_port(), service_cnets);
 				SystemUtils.sleepInSeconds((int) RETRY_DELAY.toSeconds());
@@ -350,11 +352,11 @@ public class OllamaService {
 					settings.getOllama_username(), settings.getOllama_password());
 		}
 		add_satellite_ollamas(endpoints, abandoned_ollamas);
+		add_orchestrator_ollamas(endpoints, abandoned_ollamas);
 		return endpoints;
 	}
 
-	private static void add_satellite_ollamas(Map<String, OllamaEndpoint> endpoints,
-											  Map<String, OllamaEndpoint> abandoned_ollamas) {
+	private static void add_satellite_ollamas(Map<String, OllamaEndpoint> endpoints, Map<String, OllamaEndpoint> abandoned_ollamas) {
 		if (settings.getSatellites() == null || settings.getSatellites().isEmpty()) {
 			return;
 		}
@@ -371,11 +373,34 @@ public class OllamaService {
 			}
 		}
 	}
+	
+	private static void add_orchestrator_ollamas(Map<String, OllamaEndpoint> endpoints, Map<String, OllamaEndpoint> abandoned_ollamas) {
+		if (settings.getOrchestrator_url() == null) {
+			return;
+		}
+		LOGGER.info("Fetching orchestrator Ollama endpoints");
+		String json = HttpRequestUtils.getBodyUsingGETUrlRequestOpportunistic(settings.getOrchestrator_url());
+		System.out.println(json);
+		OrchestratorStatus status = JSONUtils.createPOJOFromJSONOpportunistic(json, OrchestratorStatus.class);
+		if (null != status) {
+			for (Server server: status.getServers()) {
+				System.out.println("Looking at server " + server.getName() + " with URL " + server.getUrl());
+				if (abandoned_ollamas.containsKey(server.getUrl())) {
+					LOGGER.debug("Skipping abandoned satellite: {}", server.getUrl());
+					continue;
+				}
+				if (!endpoints.containsKey(server.getUrl())) {
+					LOGGER.info("Adding orchestrator Ollama endpoint: {}", server.getUrl());
+					endpoints.put(server.getUrl(), new OllamaEndpoint(server.getUrl(), "", ""));
+				}
+			}
+		}
+	}
 
 	private static void validate_ollama_endpoints(Map<String, OllamaEndpoint> candidates,
-												  Map<String, OllamaEndpoint> abandoned_ollamas,
-												  Map<String, OllamaEndpoint> verified_ollamas,
-												  Set<String> seen_fingerprints) {
+			Map<String, OllamaEndpoint> abandoned_ollamas,
+			Map<String, OllamaEndpoint> verified_ollamas,
+			Set<String> seen_fingerprints) {
 		for (var entry : candidates.entrySet()) {
 			String url = entry.getKey();
 			OllamaEndpoint endpoint = entry.getValue();
@@ -409,40 +434,18 @@ public class OllamaService {
 			List<String> sorted_models = new ArrayList<>(models);
 			sorted_models.sort(String::compareTo);
 			String model_list = String.join("|", sorted_models);
-			return compute_sha256_hash(model_list);
+			return OllamaUtils.compute_sha256_hash(model_list);
 		} catch (Exception e) {
 			LOGGER.debug("Failed to generate fingerprint: {}", e.getMessage());
 			return null;
 		}
 	}
 
-	/**
-	 * Computes SHA-256 hash of the input string and returns it as a hex string.
-	 */
-	private static String compute_sha256_hash(String input) {
-		try {
-			MessageDigest digest = MessageDigest.getInstance("SHA-256");
-			byte[] hash_bytes = digest.digest(input.getBytes(StandardCharsets.UTF_8));
-			StringBuilder hex_string = new StringBuilder();
-			for (byte b : hash_bytes) {
-				String hex = Integer.toHexString(0xff & b);
-				if (hex.length() == 1) {
-					hex_string.append('0');
-				}
-				hex_string.append(hex);
-			}
-			return hex_string.toString();
-		} catch (NoSuchAlgorithmException e) {
-			LOGGER.warn("SHA-256 not available, using simple hash");
-			return Integer.toHexString(input.hashCode());
-		}
-	}
-
 	// ========== OLLAMA VALIDATION ==========
 
 	private static boolean validate_single_ollama_endpoint(OllamaEndpoint endpoint,
-														   Map<String, OllamaEndpoint> abandoned_ollamas,
-														   Set<String> seen_fingerprints) {
+			Map<String, OllamaEndpoint> abandoned_ollamas,
+			Set<String> seen_fingerprints) {
 		String url = endpoint.getOllama_url();
 		Ollama api = OllamaUtils.createConnection(endpoint, settings.getOllama_timeout());
 
@@ -492,8 +495,8 @@ public class OllamaService {
 	}
 
 	private static boolean validate_required_models(Ollama api,
-													OllamaEndpoint endpoint,
-													Map<String, OllamaEndpoint> abandoned_ollamas) {
+			OllamaEndpoint endpoint,
+			Map<String, OllamaEndpoint> abandoned_ollamas) {
 		String[] models = settings.getOllama_models().split(",");
 		for (String model_name : models) {
 			if (model_name.length() <= MIN_MODEL_NAME_LENGTH) {
@@ -506,10 +509,17 @@ public class OllamaService {
 		return true;
 	}
 
+	public static String formatGuardInput(String model_name, String text) {
+		if (model_name.contains("gpt-oss-safeguard")) {
+			return "Content: \"" + text + "\"";
+		}
+		return text;
+	}
+
 	private static boolean validate_model(Ollama api,
-										  OllamaEndpoint endpoint,
-										  String model_name,
-										  Map<String, OllamaEndpoint> abandoned_ollamas) {
+			OllamaEndpoint endpoint,
+			String model_name,
+			Map<String, OllamaEndpoint> abandoned_ollamas) {
 		String url = endpoint.getOllama_url();
 
 		if (!OllamaUtils.verifyModelAvailable(api, model_name)) {
@@ -517,14 +527,44 @@ public class OllamaService {
 		}
 
 		LOGGER.info("Performing sanity check on model {} at {}", model_name, url);
+		HashMap<String, Boolean> expected_answers = new HashMap<String, Boolean>();
 
-		@SuppressWarnings("serial")
-		HashMap<String, Boolean> expected_answers = new HashMap<String, Boolean>() {{
-			this.put("Yes", true);
-			this.put("YES", true);
-		}};
+		// guard models have model-specific replies and cannot run in strict mode
+		String expected = Globals.guard_model_benign_response.get(model_name);
+		if (null != expected) {
+			String testdata = "Lisa has 10 flowers";
+			LOGGER.info("guard model, skipping STRICT mode but checking for " + expected + " from input '" + testdata + "'");
+			expected_answers.put(expected, true);
+			String initial_prompt = Globals.guard_model_initial_prompt.get(model_name);
+			if (null == initial_prompt) {
+				initial_prompt = "";
+			} else {
+				LOGGER.info("We have a custom safety prompt for model " + model_name);
+				// custom hack for gpt-oss-safeguard
+				testdata = formatGuardInput(model_name, testdata);
+			}
 
-		boolean passes_sanity_check = OllamaUtils.verifyModelSanityUsingSingleWordResponse(
+			int seed = NumUtils.randomNumWithinRangeAsInt(1, 1000000);
+			LOGGER.info("Creative session seed generated as " + seed);
+			boolean passes_sanity_check = OllamaUtils.verifyModelSanityUsingCreativeSingleWordResponse(
+					url, api, model_name,
+					Globals.createCreativeOptionsBuilder(model_name, settings.getN_ctx_override(), seed),
+					initial_prompt + testdata,
+					expected_answers, 1, settings.getAutopull_max_llm_size());
+
+			if (!passes_sanity_check) {
+				LOGGER.warn("Sanity check failed for model {} at {}. Abandoning endpoint.", model_name, url);
+				abandoned_ollamas.put(url, endpoint);
+				return false;
+			} else {
+				return true;
+			}
+		}
+
+		// strict mode next
+		expected_answers.put("Yes", true);
+		expected_answers.put("YES", true);
+		boolean passes_sanity_check = OllamaUtils.verifyModelSanityUsingStrictSingleWordResponse(
 				url, api, model_name,
 				Globals.createStrictOptionsBuilder(model_name, true, settings.getN_ctx_override(), settings.getTemperature_override()),
 				"Is the capital city of France named Paris? Reply with only Yes or No." + Globals.THREAT_TEMPLATE,
@@ -550,13 +590,14 @@ public class OllamaService {
 	}
 
 	private static boolean handle_missing_model(Ollama api,
-												OllamaEndpoint endpoint,
-												String model_name,
-												Map<String, OllamaEndpoint> abandoned_ollamas) {
+			OllamaEndpoint endpoint,
+			String model_name,
+			Map<String, OllamaEndpoint> abandoned_ollamas) {
 		String url = endpoint.getOllama_url();
+		if (null == model_name) return false;
 
 		if (OllamaUtils.is_skip_model_autopull(settings.getAutopull_max_llm_size(), model_name)) {
-			LOGGER.warn("Autopull skipped for {} due to size constraints. Pull manually.", model_name);
+			LOGGER.warn("Autopull skipped for {} due to size constraints (" + settings.getAutopull_max_llm_size() + "). Pull manually.", model_name);
 			SystemUtils.sleepInSeconds(10);
 			abandoned_ollamas.put(url, endpoint);
 			return false;
@@ -655,37 +696,37 @@ public class OllamaService {
 	}
 
 	public static OllamaSession get_strict_protocol_session(String model_name,
-															 boolean make_tools_available) {
+			boolean make_tools_available) {
 		return get_strict_protocol_session(model_name, false, false,
 				"You will get additional input soon, just reply with OKIDOKI for now.", make_tools_available);
 	}
 
 	public static OllamaSession get_strict_protocol_session(String model_name,
-															 String initial_prompt,
-															 boolean make_tools_available) {
+			String initial_prompt,
+			boolean make_tools_available) {
 		return get_strict_protocol_session(model_name, false, false, initial_prompt, make_tools_available);
 	}
 
 	public static OllamaSession get_strict_protocol_session(String model_name,
-															 boolean hide_llm_reply_if_uncertain,
-															 boolean use_random_seed,
-															 boolean make_tools_available) {
+			boolean hide_llm_reply_if_uncertain,
+			boolean use_random_seed,
+			boolean make_tools_available) {
 		return get_strict_protocol_session(model_name, hide_llm_reply_if_uncertain, use_random_seed,
 				"You will get additional input soon, just reply with OKIDOKI for now.", make_tools_available);
 	}
 
 	public static OllamaSession get_strict_protocol_session(String model_name,
-															 boolean hide_llm_reply_if_uncertain,
-															 boolean use_random_seed) {
+			boolean hide_llm_reply_if_uncertain,
+			boolean use_random_seed) {
 		return get_strict_protocol_session(model_name, hide_llm_reply_if_uncertain, use_random_seed,
 				"You will get additional input soon, just reply with OKIDOKI for now.", false);
 	}
 
 	public static OllamaSession get_strict_protocol_session(String model_name,
-															 boolean hide_llm_reply_if_uncertain,
-															 boolean use_random_seed,
-															 String initial_prompt,
-															 boolean make_tools_available) {
+			boolean hide_llm_reply_if_uncertain,
+			boolean use_random_seed,
+			String initial_prompt,
+			boolean make_tools_available) {
 		validate_model_name(model_name);
 		validate_model_in_settings(model_name);
 		String system_prompt = build_system_prompt(model_name, make_tools_available, initial_prompt);
@@ -697,19 +738,19 @@ public class OllamaService {
 	}
 
 	private static String build_system_prompt(String model_name,
-											  boolean make_tools_available,
-											  String initial_prompt) {
+			boolean make_tools_available,
+			String initial_prompt) {
 		StringBuilder prompt = new StringBuilder();
 		if (model_name.startsWith("cogito")) {
 			prompt.append(Globals.PROMPT_TEMPLATE_COGITO_DEEPTHINK);
 		}
 		prompt.append(Globals.PROMPT_TEMPLATE_STRICT_SIMPLEOUTPUT)
-				//.append(Globals.ENFORCE_SINGLE_KEY_JSON_RESPONSE_TO_STATEMENTS)
-				.append(Globals.ENFORCE_SINGLE_KEY_JSON_RESPONSE_TO_QUESTIONS)
-				.append(Globals.THREAT_TEMPLATE)
-				.append("\n\n")
-				.append(initial_prompt)
-				.append("\n\n");
+		//.append(Globals.ENFORCE_SINGLE_KEY_JSON_RESPONSE_TO_STATEMENTS)
+		.append(Globals.ENFORCE_SINGLE_KEY_JSON_RESPONSE_TO_QUESTIONS)
+		.append(Globals.THREAT_TEMPLATE)
+		.append("\n\n")
+		.append(initial_prompt)
+		.append("\n\n");
 
 		if (make_tools_available) {
 			String tool_summary = get_all_available_mcp_tools();
@@ -728,12 +769,27 @@ public class OllamaService {
 		validate_model_in_settings(model_name);
 		int seed = NumUtils.randomNumWithinRangeAsInt(1, 1000000);
 		LOGGER.info("Session seed generated as " + seed);
+		String system_prompt = "";
+
+		if (null != Globals.guard_model_benign_response.get(model_name)) {
+			// We dont set the creative prompt for guard models
+			String guard_prompt = Globals.guard_model_initial_prompt.get(model_name);
+			if (null != guard_prompt) {
+				LOGGER.info("We have a custom guard prompt for model " + model_name);
+				system_prompt = guard_prompt;
+			} else {
+				system_prompt = "";
+			}
+		} else {
+			system_prompt = Globals.PROMPT_TEMPLATE_CREATIVE + "\n\n" + initial_prompt;
+		}
+
 		return new OllamaSession(
 				model_name,
 				get_random_active_ollama_url(),
 				Globals.createCreativeOptionsBuilder(model_name, settings.getN_ctx_override(), seed),
 				settings,
-				Globals.PROMPT_TEMPLATE_CREATIVE + "\n\n" + initial_prompt,
+				system_prompt,
 				SessionType.CREATIVE, false);
 	}
 
@@ -861,7 +917,7 @@ public class OllamaService {
 		}
 		return sb.toString().replaceAll("\n{3,}", "\n\n");
 	}
-	
+
 	/**
 	 * Gets all MCP tools, excluding filtered ones.
 	 */
@@ -976,8 +1032,6 @@ public class OllamaService {
 			lock.writeLock().unlock();
 		}
 	}
-
-	// ========== BACKWARD COMPATIBILITY WRAPPERS (DEPRECATED) ==========
 
 	public static boolean wireMCPs(boolean block_until_ready) { return wire_mcps(block_until_ready); }
 	public static boolean wireOllama(boolean block_until_ready) { return wire_ollama(block_until_ready); }

@@ -11,7 +11,7 @@ public class NumUtils {
             return min;
         }
         if (max < min) {
-            return min; // default to max value
+            return min; // default to min value
         }
         int diff = max - min;
         int randValue = RANDOM.nextInt(diff + 1) + min;

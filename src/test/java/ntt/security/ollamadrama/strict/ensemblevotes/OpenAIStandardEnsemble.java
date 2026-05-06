@@ -1,4 +1,4 @@
-package ntt.security.ollamadrama.ensemblevotes;
+package ntt.security.ollamadrama.strict.ensemblevotes;
 
 import static org.junit.Assert.assertEquals;
 

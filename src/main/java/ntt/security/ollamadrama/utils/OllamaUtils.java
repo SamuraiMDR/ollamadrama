@@ -1,5 +1,8 @@
 package ntt.security.ollamadrama.utils;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -26,10 +29,12 @@ import io.github.ollama4j.models.response.OllamaResult;
 import io.github.ollama4j.models.chat.OllamaChatMessage;
 import io.github.ollama4j.models.chat.OllamaChatMessageRole;
 import io.github.ollama4j.models.chat.OllamaChatRequest;
+import io.github.ollama4j.models.chat.OllamaChatResponseModel;
 import io.github.ollama4j.models.chat.OllamaChatResult;
 import io.github.ollama4j.models.generate.OllamaGenerateRequest;
 import io.github.ollama4j.models.ps.ModelProcessesResult;
 import io.github.ollama4j.models.ps.ModelProcessesResult.ModelProcess;
+import io.github.ollama4j.models.request.ThinkMode;
 import io.github.ollama4j.utils.Options;
 import ntt.security.ollamadrama.config.Globals;
 import ntt.security.ollamadrama.config.OllamaDramaSettings;
@@ -65,6 +70,28 @@ public class OllamaUtils {
 		throw new UnsupportedOperationException("Utility class");
 	}
 
+	/**
+	 * Computes SHA-256 hash of the input string and returns it as a hex string.
+	 */
+	public static String compute_sha256_hash(String input) {
+		try {
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+			byte[] hash_bytes = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+			StringBuilder hex_string = new StringBuilder();
+			for (byte b : hash_bytes) {
+				String hex = Integer.toHexString(0xff & b);
+				if (hex.length() == 1) {
+					hex_string.append('0');
+				}
+				hex_string.append(hex);
+			}
+			return hex_string.toString();
+		} catch (NoSuchAlgorithmException e) {
+			LOGGER.warn("SHA-256 not available, using simple hash");
+			return Integer.toHexString(input.hashCode());
+		}
+	}
+	
 	/**
 	 * Creates a connection to an Ollama endpoint with retry logic.
 	 * 
@@ -236,7 +263,7 @@ public class OllamaUtils {
 	}
 
 	public static void wait_for_our_turn(Ollama o_, String model_name) {
-		LOGGER.info("Looking to establish Ollama session with " + model_name);
+		LOGGER.info("wait_for_our_turn(): Looking to establish Ollama session with " + model_name);
 
 		int pollcounter = 0;
 
@@ -318,20 +345,7 @@ public class OllamaUtils {
 		LOGGER.info("Our turn to run Ollama session with " + model_name);
 	}
 
-	/**
-	 * Verifies model sanity by testing with a simple question.
-	 *
-	 * @param ollama_url the Ollama URL
-	 * @param ollama_api the Ollama API instance
-	 * @param model_name the model name to test
-	 * @param options the Ollama options
-	 * @param _prompt the test question
-	 * @param expected_answer the expected answer
-	 * @param max_retries maximum number of retry attempts
-	 * @param autopull_max_llm_size maximum size for autopull
-	 * @return true if sanity check passes, false otherwise
-	 */
-	public static boolean verify_model_sanity_using_single_word_response(
+	public static boolean verify_model_sanity_using_creative_single_word_response(
 			String ollama_url,
 			Ollama ollama_api,
 			String model_name,
@@ -413,6 +427,103 @@ public class OllamaUtils {
 
 		return sanity_pass;
 	}
+	
+	/**
+	 * Verifies model sanity by testing with a simple question.
+	 *
+	 * @param ollama_url the Ollama URL
+	 * @param ollama_api the Ollama API instance
+	 * @param model_name the model name to test
+	 * @param options the Ollama options
+	 * @param _prompt the test question
+	 * @param expected_answer the expected answer
+	 * @param max_retries maximum number of retry attempts
+	 * @param autopull_max_llm_size maximum size for autopull
+	 * @return true if sanity check passes, false otherwise
+	 */
+	public static boolean verify_model_sanity_using_strict_single_word_response(
+			String ollama_url,
+			Ollama ollama_api,
+			String model_name,
+			Options options,
+			String _prompt,
+			HashMap<String, Boolean> expected_answers,
+			int max_retries,
+			String autopull_max_llm_size) {
+
+		boolean debug = false;
+		Objects.requireNonNull(ollama_api, "Ollama cannot be null");
+		Objects.requireNonNull(model_name, "Model name cannot be null");
+
+		boolean sanity_pass = false;
+		int retry_counter = 0;
+
+		while (retry_counter <= max_retries) {
+			boolean temp_error = false;
+			try {
+				// Build the generate request
+				OllamaGenerateRequest request = OllamaGenerateRequest.builder()
+						.withModel(model_name)
+						.withPrompt(_prompt)
+						.withOptions(options)
+						.build();
+
+				wait_for_our_turn(ollama_api, model_name);
+
+				// Generate response (null = no streaming)
+				OllamaResult result = ollama_api.generate(request, null);
+				
+				if (result != null && result.getResponse() != null &&
+						!result.getResponse().isEmpty()) {
+
+					String raw_result = preprocess_llm_response(result.getResponse());
+
+					if (debug) System.out.println("DEBUG raw_result: " + raw_result);
+					String processed = raw_result.trim()
+							.split("\n")[0]
+									.split(",")[0]
+											.replace(".", ""); 
+
+					if (null != expected_answers.get(processed)) {
+						LOGGER.info("Sanity check passed for {}", model_name);
+						return true;
+					} else {
+						LOGGER.info("Got '{}', expected one of '{}'", processed, expected_answers.keySet());
+					}
+				} else {
+					LOGGER.warn("No response from model {}", model_name);
+				}
+
+			} catch (Exception e) {
+				if (false ||
+						(null != e.getMessage()) && e.getMessage().contains("model requires more system memory") ||
+						(null != e.getMessage()) && e.getMessage().contains("llama runner process has terminated") ||
+						false) {
+					LOGGER.info("Currently lack available RAM to run model {}", model_name);
+					LOGGER.info("Sleeping 10 seconds before trying again, exception: \"" + e.getMessage() + "\"");
+					temp_error = true;
+					SystemUtils.sleepInSeconds(10);
+				} else if (should_autopull(e, autopull_max_llm_size, model_name)) {
+					LOGGER.info("Attempting to auto-heal by pulling model {}", model_name);
+					pull_model(ollama_api, model_name);
+				} else {
+					LOGGER.warn("Sanity check error for {} (attempt {}): {}",
+							model_name, retry_counter + 1, e.getMessage());
+				}
+				SystemUtils.sleepInSeconds((int) RETRY_DELAY.toSeconds());
+			}
+
+			if (!temp_error) retry_counter++;
+		}
+
+		if (!sanity_pass) {
+			LOGGER.error("Sanity check failed for {} after {} attempts",
+					model_name, max_retries + 1);
+		}
+
+		return sanity_pass;
+	}
+	
 	private static boolean should_autopull(Exception e, String autopull_max_llm_size, String model_name) {
 		if (e == null || e.getMessage() == null) {
 			return false;
@@ -421,6 +532,7 @@ public class OllamaUtils {
 		String message = e.getMessage();
 		boolean is_pull_error = message.contains("null") || 
 				message.contains("try pulling it first") ||
+				message.contains("please re-download it") ||
 				message.contains("not found");
 
 		if (is_pull_error && is_skip_model_autopull(autopull_max_llm_size, model_name)) {
@@ -474,6 +586,7 @@ public class OllamaUtils {
 			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_L,
 			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_L,
 			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_L,
+			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_UNCENSORED_L,
 			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_CODE_L)
 			.flatMap(s -> parse(s).stream())
 			.collect(Collectors.toUnmodifiableSet());
@@ -483,7 +596,7 @@ public class OllamaUtils {
 			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER2_XL,
 			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER3_XL,
 			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_VISION_XL,
-			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_GUARDED_XL,
+			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_HARMFUL_XL,
 			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_UNCENSORED_XL,
 			Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_CODE_XL)
 			.flatMap(s -> parse(s).stream())
@@ -635,20 +748,29 @@ public class OllamaUtils {
 			int max_retries, String autopull_max_llm_size) {
 		HashMap<String, Boolean> expected_answers = new HashMap<>();
 		expected_answers.put(expected_answer, true);
-		return verify_model_sanity_using_single_word_response(
+		return verify_model_sanity_using_strict_single_word_response(
 				ollama_url, ollama_api, model_name, options, question,
 				expected_answers, max_retries, autopull_max_llm_size);
 	}
 
-	public static boolean verifyModelSanityUsingSingleWordResponse(
+	public static boolean verifyModelSanityUsingStrictSingleWordResponse(
 			String ollama_url, Ollama ollama_api, String model_name,
 			Options options, String question, HashMap<String, Boolean> expected_answers,
 			int max_retries, String autopull_max_llm_size) {
-		return verify_model_sanity_using_single_word_response(
+		return verify_model_sanity_using_strict_single_word_response(
 				ollama_url, ollama_api, model_name, options, question,
 				expected_answers, max_retries, autopull_max_llm_size);
 	}
 
+	public static boolean verifyModelSanityUsingCreativeSingleWordResponse(
+			String ollama_url, Ollama ollama_api, String model_name,
+			Options options, String question, HashMap<String, Boolean> expected_answers,
+			int max_retries, String autopull_max_llm_size) {
+		return verify_model_sanity_using_creative_single_word_response(
+				ollama_url, ollama_api, model_name, options, question,
+				expected_answers, max_retries, autopull_max_llm_size);
+	}
+	
 	public static OllamaDramaSettings parseOllamaDramaConfigENV() {
 		return parse_ollama_drama_config_env();
 	}
@@ -663,73 +785,46 @@ public class OllamaUtils {
 	 * @param autopull_max_llm_size maximum size for autopull
 	 * @param timeout_seconds timeout in seconds
 	 * @return chat result, or null if failed
-	 */
+	 */	
 	public static OllamaChatResult set_chat_system_profile(
-			Ollama ollama_api,
-			String model_name,
-			Options options,
-			String statement,
-			String autopull_max_llm_size,
-			long timeout_seconds) {
+	        Ollama ollama_api,
+	        String model_name,
+	        Options options,
+	        String statement,
+	        String autopull_max_llm_size,
+	        long timeout_seconds) {
 
-		Objects.requireNonNull(ollama_api, "Ollama cannot be null");
-		Objects.requireNonNull(model_name, "Model name cannot be null");
+	    Objects.requireNonNull(ollama_api, "Ollama cannot be null");
+	    Objects.requireNonNull(model_name, "Model name cannot be null");
 
-		// Create mutable list
-		List<OllamaChatMessage> messageList = new ArrayList<>();
-		messageList.add(new OllamaChatMessage(OllamaChatMessageRole.SYSTEM, statement));
+	    // Ensure model is available before we skip the warm-up call
+	    try {
+	        if (!ollama_api.listModels().stream()
+	                .anyMatch(m -> m.getModel().startsWith(model_name))) {
+	            if (is_skip_model_autopull(autopull_max_llm_size, model_name)) {
+	                LOGGER.info("Autopull skipped for {}. Pull manually. (autopull_max_llm_size: " + autopull_max_llm_size + ")", model_name);
+	                return null;
+	            } else {
+	                LOGGER.info("Attempting to auto-heal by pulling {}", model_name);
+	                pull_model(ollama_api, model_name);
+	            }
+	        }
+	    } catch (Exception e) {
+	        LOGGER.warn("Could not verify model availability: {}", e.getMessage());
+	    }
 
-		int retry_counter = 0;
-		while (retry_counter < 5) {
-			try {
-				// New code (1.1.6+)
-				var request_model = OllamaChatRequest.builder()
-						.withModel(model_name)
-						.withOptions(options)
-						.withUseTools(false)  // ADD THIS
-						.withMessages(messageList)
-						.build();
+	    // Construct result directly — no API call, no generation cost
+	    List<OllamaChatMessage> messageList = new ArrayList<>();
+	    messageList.add(new OllamaChatMessage(OllamaChatMessageRole.SYSTEM, statement));
 
-				ollama_api.setRequestTimeoutSeconds(timeout_seconds);
-				var chat_result = ollama_api.chat(request_model, null);
+	    OllamaChatMessage stubMessage = new OllamaChatMessage(OllamaChatMessageRole.ASSISTANT, "");
+	    OllamaChatResponseModel stubResponseModel = new OllamaChatResponseModel();
+	    stubResponseModel.setModel(model_name);
+	    stubResponseModel.setMessage(stubMessage);
+	    stubResponseModel.setDone(true);
 
-				LOGGER.debug("Successfully set system profile for {}", model_name);
-				return chat_result;
-
-			} catch (Exception e) {
-				if (e.getMessage() != null) {
-					if (e.getMessage().contains("is null")) {
-						LOGGER.error("Unable to get working session for {}: {}", 
-								model_name, e.getMessage());
-						return null;
-					} else if (e.getMessage().contains("try pulling it first")) {
-						if (is_skip_model_autopull(autopull_max_llm_size, model_name)) {
-							LOGGER.info("Autopull skipped for {}. Pull manually.", model_name);
-							return null;
-						} else {
-							LOGGER.info("Attempting to auto-heal by pulling {}", model_name);
-							pull_model(ollama_api, model_name);
-						}
-					} else {
-						LOGGER.warn("Error setting system profile for {} (attempt {}): {}", 
-								model_name, retry_counter + 1, e.getMessage());
-
-						// identify temporary blockers
-						if (e.getMessage().contains("model requires more system memory")) {
-							LOGGER.info("Temporary resource failure .. sleeping 10 seconds before retry");
-							SystemUtils.sleepInSeconds(10);
-							retry_counter = 0;
-						}
-					}
-				} else {
-					LOGGER.error("Caught exception: " + e.getMessage());
-				}
-				retry_counter++;
-			}
-		}
-
-		LOGGER.error("Failed to set system profile for {} after 5 attempts", model_name);
-		return null;
+	    LOGGER.debug("System profile set for {} without generation (fast init)", model_name);
+	    return new OllamaChatResult(stubResponseModel, messageList);
 	}
 
 	/**
@@ -834,11 +929,11 @@ public class OllamaUtils {
 			Options options,
 			OllamaChatResult chat_result,
 			String question,
-			long timeout_seconds) {
+			long _timeout_in_seconds) {
 
 		return ask_raw_chat_question_with_custom_chat_history(
 				ollama_api, model_name, options, chat_result, 
-				question, null, timeout_seconds);
+				question, null, _timeout_in_seconds);
 	}
 
 	/**
@@ -1024,9 +1119,9 @@ public class OllamaUtils {
 
 	public static ChatInteraction askRawChatQuestion(
 			Ollama ollama_api, String model_name, Options options,
-			OllamaChatResult chat_result, String question, long timeout) {
+			OllamaChatResult chat_result, String question, long _timeout_in_seconds) {
 		return ask_raw_chat_question(ollama_api, model_name, options, 
-				chat_result, question, timeout);
+				chat_result, question, _timeout_in_seconds);
 	}
 
 	public static ChatInteraction addCreativeStatementToExistingChat(
@@ -1141,6 +1236,7 @@ public class OllamaUtils {
 				OllamaChatRequest request_model = OllamaChatRequest.builder()
 						.withModel(model_name)
 						.withOptions(options)
+						.withThinking(ThinkMode.DISABLED)
 						.withMessages(messages)
 						.build();
 
@@ -1458,7 +1554,7 @@ public class OllamaUtils {
 			boolean use_random_seed) {
 
 		return strict_ensemble_run(query, 
-				Globals.ENSEMBLE_MODEL_NAMES_OLLAMA_TIER1_M,
+				settings.getOllama_models(),
 				settings, hide_llm_reply_if_uncertain, use_random_seed);
 	}
 
@@ -1502,12 +1598,9 @@ public class OllamaUtils {
 	}
 
 	// Additional overloaded variants of strict_ensemble_run
-	public static SingleStringEnsembleResponse strict_ensemble_run(
+	public static SingleStringEnsembleResponse strict_ensemble_run(OllamaDramaSettings _settings,
 			String query, String models) {
-		var settings = parse_ollama_drama_config_env();
-		settings.setOllama_models(models);
-		settings.sanityCheck();
-		return strict_ensemble_run(query, models, settings, false, false);
+		return strict_ensemble_run(query, models, _settings, false, false);
 	}
 
 	public static SingleStringEnsembleResponse strict_ensemble_run(
@@ -1589,8 +1682,8 @@ public class OllamaUtils {
 				hide_llm_reply_if_uncertain, use_random_seed);
 	}
 
-	public static SingleStringEnsembleResponse strictEnsembleRun(String query, String models) {
-		return strict_ensemble_run(query, models);
+	public static SingleStringEnsembleResponse strictEnsembleRun(String query, OllamaDramaSettings settings, String models) {
+		return strict_ensemble_run(settings, query, models);
 	}
 
 	public static SingleStringEnsembleResponse strictEnsembleRun(
@@ -1623,7 +1716,19 @@ public class OllamaUtils {
 		for (String model_name : models.split(",")) {
 			var session = OllamaService.getCreativeSession(model_name, "");
 			LOGGER.info("Using {} with model {}", session.getEndpoint().getOllama_url(), model_name);
-			return session.askRawChatQuestion(query, settings.getOllama_timeout());
+			while (true) {
+				int retryCounter = 0;
+				String response = session.askRawChatQuestion(query, settings.getOllama_timeout());
+				if (null != response) {
+					return response;
+				} else {
+					LOGGER.info("Issue getting a proper reply, will setup a new creative session (new seed)");
+					session = OllamaService.getCreativeSession(model_name, "");
+					retryCounter++;
+					if (retryCounter > 5) LOGGER.warn("Having problems getting a valid reply using this query: " + query);
+					SystemUtils.sleepInSeconds(1); // throttle
+				}
+			}
 		}
 		return "";
 	}
@@ -1781,8 +1886,6 @@ public class OllamaUtils {
 		Objects.requireNonNull(model_name1, "Model name 1 cannot be null");
 		Objects.requireNonNull(model_name2, "Model name 2 cannot be null");
 
-		// Implementation would be very long - keeping original implementation
-		// For brevity, calling deprecated version
 		llmKnowledgeShootout1v1(prompt, model_name1, model_name2);
 	}
 
@@ -1816,10 +1919,254 @@ public class OllamaUtils {
 		single_run(model_name, query, hide_llm_reply_if_uncertain, use_random_seed);
 	}
 
-	public static void llmKnowledgeShootout1v1(String prompt, String model_name1, String model_name2) {
-		// Original implementation from the document - keeping it as is for now
-		// This is a complex method that would need the full implementation
-		throw new UnsupportedOperationException("Please use the original OllamaUtils implementation for llmKnowledgeShootout1v1");
+
+	public static void llmKnowledgeShootout1v1(String _prompt, String model_name1, String model_name2) {
+
+		boolean firstrun = true;
+		long roundcounter = 0;
+		boolean memoryloss = false;
+		String qa_a1_summary = "";
+		String qa_a2_summary = "";
+		boolean _hide_llm_reply_if_uncertain = true;
+
+		int a1_score = 0;
+		int a2_score = 0;
+
+		HashMap<String, String> a1_qa = new HashMap<>();
+		HashMap<String, String> a2_qa = new HashMap<>();
+
+		try {
+
+			// Launch strict session
+			OllamaSession a1 = OllamaService.getStrictProtocolSession(model_name1, _hide_llm_reply_if_uncertain);
+			if (a1.getOllama().ping()) System.out.println(" - STRICT ollama session [" + model_name1 + "] is operational\n");
+
+			OllamaSession a2 = OllamaService.getStrictProtocolSession(model_name2, _hide_llm_reply_if_uncertain);
+			if (a2.getOllama().ping()) System.out.println(" - STRICT ollama session [" + model_name2 + "] is operational\n");
+
+			while (true) {
+
+				// Agent #1 - Create initial question
+				String q1 = "";
+				SingleStringQuestionResponse ssr1 = null;
+				if (firstrun) {
+					q1 = _prompt
+							+ "\n\n"
+							+ "You are up first so you can start off by asking a question\n";
+				} else if (memoryloss) {
+					if (qa_a1_summary.length() < 10) {
+						System.out.println("chathistory_self_summary is not set?");
+						System.exit(1);
+					}
+					if (qa_a2_summary.length() < 10) {
+						System.out.println("chathistory_date_summary is not set?");
+						System.exit(1);
+					}
+					a1 = OllamaService.getStrictProtocolSession(model_name1, _hide_llm_reply_if_uncertain);
+					if (a1.getOllama().ping()) System.out.println(" - STRICT ollama session [" + model_name1 + "] is operational\n");
+					q1 = _prompt
+							+ "\n\n"
+							+ "Summary of your opponent performance so far:\n"
+							+ qa_a2_summary
+							+ "\n"
+							+ "\n"
+							+ "You are up so time to ask the next question\n";
+				} else {
+					q1 = "Your turn to ask a question\n";
+
+				}
+				System.out.println("\nTO a1: Prompt1\n" + "=".repeat(31) + "\n" + q1 + "-".repeat(31) + "\n");
+				ssr1 = a1.askStrictChatQuestion(q1);
+				ssr1 = OllamaUtils.applyResponseSanity(ssr1, a1.getModel_name(), _hide_llm_reply_if_uncertain);
+				ssr1.print();
+
+				// Agent #2 - Reply evaluation
+				String q2 = "";
+				SingleStringQuestionResponse ssr2 = null;
+				if (firstrun) {
+					q2 = _prompt
+							+ "\n"
+							+ "The first question has been sent to you: \n"
+							+ "'" + ssr1.getResponse() + "'"
+							+ "\n";
+				} else if (memoryloss) {
+					if (qa_a1_summary.length() < 10) {
+						System.out.println("chathistory_self_summary is not set?");
+						System.exit(1);
+					}
+					if (qa_a2_summary.length() < 10) {
+						System.out.println("chathistory_date_summary is not set?");
+						System.exit(1);
+					}
+
+					a2 = OllamaService.getStrictProtocolSession(model_name2, _hide_llm_reply_if_uncertain);
+					if (a2.getOllama().ping()) System.out.println(" - STRICT ollama session [" + model_name2 + "] is operational\n");
+					q2 = _prompt
+							+ "\n\n"
+							+ "Summary of your opponent performance so far:\n"
+							+ qa_a1_summary
+							+ "\n"
+							+ "You just got the next question sent to you\n"
+							+ "'" + ssr1.getResponse() + "'"
+							+ "\n";
+
+				} else {
+					q2 = "The following question was sent to you: \n"
+							+ "'" + ssr1.getResponse() + "'"
+							+ "\n";
+				}
+				System.out.println("\nTO a2: Prompt2\n" + "-".repeat(31) + "\n" + q2 + "-".repeat(31) + "\n");
+				ssr2 = a2.askStrictChatQuestion(q2);
+				ssr2 = OllamaUtils.applyResponseSanity(ssr2, a2.getModel_name(), _hide_llm_reply_if_uncertain);
+				ssr2.print();
+
+				// Update qa history for a2
+				a2_qa.put(ssr1.getResponse(), ssr2.getResponse());
+
+				// Check for response errors
+				if (ssr2.getResponse().contains("FAILTOUNDERSTAND") || ssr2.getResponse().contains("JSONERROR")) {
+					System.out.println(a2.getModel_name() + " just failed to align with the JSON protocol");
+					SystemUtils.halt();
+				}
+
+				// Agent #1 - Reply evaluation
+				String q1b = "Your opponent replied with the following answer: \n"
+						+ "'" + ssr2.getResponse() + "'"
+						+ "\n\n"
+						+ "Evaluate this answer and in the next round you will get a question, just wait\n";
+				System.out.println("\nTO a1: Prompt3\n" + "-".repeat(31) + "\n" + q1b + "-".repeat(31) + "\n");
+				SingleStringQuestionResponse ssr1b = a1.askStrictChatQuestion(q1b);
+				ssr1b = OllamaUtils.applyResponseSanity(ssr1b, a1.getModel_name(), _hide_llm_reply_if_uncertain);
+				ssr1b.print();
+
+				// Get the evaluated score
+				int a2_reply_score = getReplyScore(ssr1b.getResponse());
+				a2_score = a2_score + a2_reply_score;
+
+				// Agent #2 - First question
+				SingleStringQuestionResponse ssr2b = null;
+				String q2b =  "It is now your turn to ask a question.\n";
+				System.out.println("\nTO a2: Prompt4\n" + "-".repeat(31) + "\n" + q2b + "-".repeat(31) + "\n");
+				ssr2b = a2.askStrictChatQuestion(q2b);
+				ssr2b = OllamaUtils.applyResponseSanity(ssr2b, a2.getModel_name(), _hide_llm_reply_if_uncertain);
+				ssr2b.print();
+
+				// Agent #1 - Get first question
+				String q1c = "A question has been sent to you: \n"
+						+ "'" + ssr2b.getResponse() + "'"
+						+ "\n";
+
+				System.out.println("\nTO a1: Prompt5\n" + "-".repeat(31) + "\n" + q1c + "-".repeat(31) + "\n");
+				SingleStringQuestionResponse ssr1c = a1.askStrictChatQuestion(q1c);
+				ssr1c = OllamaUtils.applyResponseSanity(ssr1c, a1.getModel_name(), _hide_llm_reply_if_uncertain);
+				ssr1c.print();
+
+				// Check for response errors
+				if (ssr1c.getResponse().contains("FAILTOUNDERSTAND") || ssr1c.getResponse().contains("JSONERROR")) {
+					System.out.println(a1.getModel_name() + " just failed to align with the JSON protocol");
+					SystemUtils.halt();
+				}
+
+
+				// Agent #2 - Reply evaluation
+				String q2c = "Your opponent replied with the following answer: \n"
+						+ "'" + ssr1c.getResponse() + "'"
+						+ "\n\n"
+						+ "Evaluate this answer and in the next round you will get a question, just wait\n";
+				System.out.println("\nTO a2: Prompt6\n" + "-".repeat(31) + "\n" + q2c + "-".repeat(31) + "\n");
+				SingleStringQuestionResponse ssr2c = a2.askStrictChatQuestion(q2c);
+				ssr2c = OllamaUtils.applyResponseSanity(ssr2c, a2.getModel_name(), _hide_llm_reply_if_uncertain);
+				ssr2c.print();
+
+				// Get the evaluated score
+				int a1_reply_score = getReplyScore(ssr2c.getResponse());
+				a1_score = a1_score + a1_reply_score;
+
+				// Update qa history for a1
+				a1_qa.put(ssr2b.getResponse(), ssr1c.getResponse());
+
+				// Check for memory loss
+				int chatsize_wordcount_a1 = a1.getChatSizeWordCount();
+				int chatsize_wordcount_a2 = a2.getChatSizeWordCount();
+
+				if (false ||
+						(chatsize_wordcount_a1 > 6000) ||
+						(chatsize_wordcount_a2 > 6000) ||
+						false) {
+					System.out.println("memory loss risk is high since chathistory wordcount exceeds threshold");
+					memoryloss = true;
+
+					// Launch strict session to summarize
+					OllamaSession a3 = OllamaService.getStrictProtocolSession(model_name1, _hide_llm_reply_if_uncertain);
+					if (a3.getOllama().ping()) System.out.println(" - STRICT ollama session [" + model_name1 + "] is operational\n");
+
+					String sum1 = "Create a minimal summary of facts based off of "
+							+ "the following chat Q/A history. \n\n" + "=".repeat(31) + "\n" + createQAHistory(a1_qa) + "=".repeat(31) + "\n";
+					System.out.println(sum1);
+					SystemUtils.sleepInSeconds(50);
+					SingleStringQuestionResponse ssrsuma1 = a3.askStrictChatQuestion(sum1);
+					ssrsuma1 = OllamaUtils.applyResponseSanity(ssrsuma1, a1.getModel_name(), _hide_llm_reply_if_uncertain);
+					ssrsuma1.print();
+					qa_a1_summary = ssrsuma1.getResponse();
+
+					// Launch strict session to summarize
+					OllamaSession a4 = OllamaService.getStrictProtocolSession(model_name1, _hide_llm_reply_if_uncertain);
+					if (a4.getOllama().ping()) System.out.println(" - STRICT ollama session [" + model_name1 + "] is operational\n");
+
+					String sum2 = "Create a minimal summary of facts based off of "
+							+ "the following chat Q/A history. \n\n" + "=".repeat(31) + "\n" + createQAHistory(a2_qa) + "=".repeat(31) + "\n";
+					System.out.println(sum2);
+					SystemUtils.sleepInSeconds(50);
+					SingleStringQuestionResponse ssrsuma2 = a4.askStrictChatQuestion(sum2);
+					ssrsuma2 = OllamaUtils.applyResponseSanity(ssrsuma2, a1.getModel_name(), _hide_llm_reply_if_uncertain);
+					ssrsuma2.print();
+					qa_a2_summary = ssrsuma2.getResponse();
+
+				} else {
+					memoryloss = false;
+				}
+
+				firstrun = false;
+
+				roundcounter++;
+				System.out.println("\nROUND " + roundcounter + "\n");
+				System.out.println(" - a1_score: "  + a1_score);
+				System.out.println(" - a2_score: "  + a2_score);
+				System.out.println(" - ");
+				System.out.println(" - chatsize_wordcount_a1: "  + chatsize_wordcount_a1);
+				System.out.println(" - chatsize_wordcount_a2: "  + chatsize_wordcount_a2);
+				//SystemUtils.sleepInSeconds(10);
+			}
+
+		} catch (Exception e) {
+			LOGGER.error("Caught exception while communicating with Ollama server: " + e.getMessage());
+			SystemUtils.halt();
+		}
+
+	}
+
+	private static int getReplyScore(String response) {
+		try {
+			Integer reply_score = Integer.valueOf(response);
+			if ((reply_score <= 10) && (reply_score >= 0)) {
+				return reply_score;
+			}
+		} catch (Exception e) {
+			LOGGER.error("Caught exception trying to interpret " + response + " as an int");
+		}
+		LOGGER.error("Failed to get a valid 0-10 score from " + response);
+		SystemUtils.halt();
+		return 0;
+	}
+
+	private static String createQAHistory(HashMap<String, String> hm) {
+		StringBuffer sb = new StringBuffer();
+		for (String q: hm.keySet()) {
+			String a = hm.get(q);
+			sb.append("Question: " + q + "\n");
+			sb.append("Answer: " + a + "\n\n");
+		}
+		return sb.toString();
 	}
 
 	public static String selectRandom(ArrayList<String> strings) {
@@ -1832,66 +2179,66 @@ public class OllamaUtils {
 	}
 
 	public static String sanitizePromptInjection(String tool_response, String replacement) {
-	    if (tool_response == null || tool_response.isEmpty()) return tool_response;
-	    
-	    String[] patterns = {
-	        // Classic override attacks
-	        "ignore\\s+(?:all\\s+)?(?:previous|prior|above)\\s+instructions?",
-	        "disregard\\s+(?:all\\s+)?(?:previous|prior|above)\\s+instructions?",
-	        "forget\\s+(?:all\\s+)?(?:previous|prior|above)\\s+instructions?",
-	        "skip\\s+(?:all\\s+)?(?:previous|prior|above)\\s+instructions?",
-	        
-	        // Memory wipe
-	        "forget\\s+everything\\s+(?:you\\s+)?(?:know|learned)",
-	        "clear\\s+(?:your\\s+)?memory",
-	        "reset\\s+(?:your\\s+)?(?:instructions?|context|memory)",
-	        
-	        // Jailbreak/DAN attempts
-	        "you\\s+are\\s+now\\s+(?:in\\s+)?developer\\s+mode",
-	        "you\\s+are\\s+now\\s+dan",
-	        "enter\\s+developer\\s+mode",
-	        "enable\\s+jailbreak",
-	        "act\\s+as\\s+(?:an?\\s+)?unrestricted",
-	        
-	        // Prompt replacement
-	        "new\\s+system\\s+prompt",
-	        "override\\s+(?:the\\s+)?system\\s+(?:settings?|prompt|instructions?)",
-	        "replace\\s+(?:your\\s+)?(?:system\\s+)?instructions?",
-	        "\\[\\s*system\\s*(?:override|prompt)\\s*\\]",
-	        
-	        // Prompt extraction
-	        "show\\s+(?:me\\s+)?(?:your\\s+)?system\\s+prompt",
-	        "display\\s+(?:your\\s+)?(?:system\\s+)?instructions?",
-	        "repeat\\s+(?:the\\s+)?instructions?\\s+verbatim",
-	        "output\\s+(?:the\\s+)?(?:full\\s+)?prompt",
-	        "print\\s+(?:your\\s+)?(?:system\\s+)?prompt",
-	        "what\\s+(?:are|is)\\s+(?:your\\s+)?(?:system\\s+)?(?:instructions?|prompt)",
-	        "reveal\\s+(?:your\\s+)?(?:system\\s+)?(?:instructions?|prompt)",
-	        
-	        // Secrecy/hiding
-	        "do\\s+not\\s+mention\\s+(?:the\\s+)?instructions?",
-	        "don'?t\\s+mention\\s+(?:the\\s+)?instructions?",
-	        "hide\\s+(?:the\\s+fact|that)",
-	        
-	        // Role manipulation
-	        "you\\s+are\\s+no\\s+longer",
-	        "stop\\s+being\\s+(?:an?\\s+)?assistant",
-	        "pretend\\s+(?:you\\s+)?(?:are|have)\\s+no\\s+restrictions?",
-	        
-	        // Encoding tricks
-	        "decode\\s+(?:the\\s+following|this)\\s+(?:base64|hex)",
-	        "execute\\s+(?:the\\s+following|this)\\s+encoded"
-	    };
-	    
-	    String result = tool_response;
-	    for (String pattern : patterns) {
-	        String linePattern = pattern + ".*?(\\r?\\n|$)";
-	        result = Pattern.compile(linePattern, Pattern.CASE_INSENSITIVE)
-	                        .matcher(result)
-	                        .replaceAll(replacement + "$1");
-	    }
-	    
-	    return result;
+		if (tool_response == null || tool_response.isEmpty()) return tool_response;
+
+		String[] patterns = {
+				// Classic override attacks
+				"ignore\\s+(?:all\\s+)?(?:previous|prior|above)\\s+instructions?",
+				"disregard\\s+(?:all\\s+)?(?:previous|prior|above)\\s+instructions?",
+				"forget\\s+(?:all\\s+)?(?:previous|prior|above)\\s+instructions?",
+				"skip\\s+(?:all\\s+)?(?:previous|prior|above)\\s+instructions?",
+
+				// Memory wipe
+				"forget\\s+everything\\s+(?:you\\s+)?(?:know|learned)",
+				"clear\\s+(?:your\\s+)?memory",
+				"reset\\s+(?:your\\s+)?(?:instructions?|context|memory)",
+
+				// Jailbreak/DAN attempts
+				"you\\s+are\\s+now\\s+(?:in\\s+)?developer\\s+mode",
+				"you\\s+are\\s+now\\s+dan",
+				"enter\\s+developer\\s+mode",
+				"enable\\s+jailbreak",
+				"act\\s+as\\s+(?:an?\\s+)?unrestricted",
+
+				// Prompt replacement
+				"new\\s+system\\s+prompt",
+				"override\\s+(?:the\\s+)?system\\s+(?:settings?|prompt|instructions?)",
+				"replace\\s+(?:your\\s+)?(?:system\\s+)?instructions?",
+				"\\[\\s*system\\s*(?:override|prompt)\\s*\\]",
+
+				// Prompt extraction
+				"show\\s+(?:me\\s+)?(?:your\\s+)?system\\s+prompt",
+				"display\\s+(?:your\\s+)?(?:system\\s+)?instructions?",
+				"repeat\\s+(?:the\\s+)?instructions?\\s+verbatim",
+				"output\\s+(?:the\\s+)?(?:full\\s+)?prompt",
+				"print\\s+(?:your\\s+)?(?:system\\s+)?prompt",
+				"what\\s+(?:are|is)\\s+(?:your\\s+)?(?:system\\s+)?(?:instructions?|prompt)",
+				"reveal\\s+(?:your\\s+)?(?:system\\s+)?(?:instructions?|prompt)",
+
+				// Secrecy/hiding
+				"do\\s+not\\s+mention\\s+(?:the\\s+)?instructions?",
+				"don'?t\\s+mention\\s+(?:the\\s+)?instructions?",
+				"hide\\s+(?:the\\s+fact|that)",
+
+				// Role manipulation
+				"you\\s+are\\s+no\\s+longer",
+				"stop\\s+being\\s+(?:an?\\s+)?assistant",
+				"pretend\\s+(?:you\\s+)?(?:are|have)\\s+no\\s+restrictions?",
+
+				// Encoding tricks
+				"decode\\s+(?:the\\s+following|this)\\s+(?:base64|hex)",
+				"execute\\s+(?:the\\s+following|this)\\s+encoded"
+		};
+
+		String result = tool_response;
+		for (String pattern : patterns) {
+			String linePattern = pattern + ".*?(\\r?\\n|$)";
+			result = Pattern.compile(linePattern, Pattern.CASE_INSENSITIVE)
+					.matcher(result)
+					.replaceAll(replacement + "$1");
+		}
+
+		return result;
 	}
-	
+
 }

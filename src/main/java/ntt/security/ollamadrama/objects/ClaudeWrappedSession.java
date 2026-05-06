@@ -3,21 +3,21 @@ package ntt.security.ollamadrama.objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import ntt.security.ollamadrama.objects.sessions.OllamaSession;
+import ntt.security.ollamadrama.objects.sessions.ClaudeSession;
 import ntt.security.ollamadrama.utils.SystemUtils;
 
-public class OllamaWrappedSession {
+public class ClaudeWrappedSession {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(OllamaWrappedSession.class);
-	
-	private OllamaSession session;
+	private static final Logger LOGGER = LoggerFactory.getLogger(ClaudeWrappedSession.class);
+
+	private ClaudeSession session;
 	private Integer probability_threshold;
-	
-	public OllamaWrappedSession(OllamaSession _session, Integer _probability_threshold) {
+
+	public ClaudeWrappedSession(ClaudeSession _session, Integer _probability_threshold) {
 		super();
 		this.session = _session;
 		this.probability_threshold = _probability_threshold;
-		
+
 		// Sanity
 		if (null == _session) {
 			LOGGER.error("Provided agent cannot be null");
@@ -29,11 +29,11 @@ public class OllamaWrappedSession {
 		}
 	}
 
-	public OllamaSession getSession() {
+	public ClaudeSession getSession() {
 		return session;
 	}
 
-	public void setSession(OllamaSession session) {
+	public void setSession(ClaudeSession session) {
 		this.session = session;
 	}
 

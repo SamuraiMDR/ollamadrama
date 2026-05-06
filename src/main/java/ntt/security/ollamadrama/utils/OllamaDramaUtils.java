@@ -1,5 +1,6 @@
 package ntt.security.ollamadrama.utils;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -15,8 +16,10 @@ import ntt.security.ollamadrama.objects.ConfidenceThresholdCard;
 import ntt.security.ollamadrama.objects.ModelsScoreCard;
 import ntt.security.ollamadrama.objects.response.SingleStringEnsembleResponse;
 import ntt.security.ollamadrama.objects.response.SingleStringQuestionResponse;
+import ntt.security.ollamadrama.objects.sessions.ClaudeSession;
 import ntt.security.ollamadrama.objects.sessions.OllamaSession;
 import ntt.security.ollamadrama.objects.sessions.OpenAISession;
+import ntt.security.ollamadrama.singletons.ClaudeService;
 import ntt.security.ollamadrama.singletons.OllamaService;
 import ntt.security.ollamadrama.singletons.OpenAIService;
 
@@ -41,6 +44,56 @@ public class OllamaDramaUtils {
 		SingleStringEnsembleResponse sser2 = OpenAIUtils.strictEnsembleRun(_query, _openai_model_names, _ollama_settings, _hide_llm_reply_if_uncertain);
 		SingleStringEnsembleResponse sser = OllamaUtils.merge(sser1, sser2);
 		return sser;
+	}
+
+	public static SingleStringEnsembleResponse collectEnsembleVotes(String _query, String _ollama_model_names, String _openai_model_names, String _claude_model_names, OllamaDramaSettings _ollama_settings, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
+		if (_ollama_settings.getClaudekey().length() < 10) {
+			LOGGER.error("To use Claude you need to define a valid API key");
+			return new SingleStringEnsembleResponse();
+		}
+		SingleStringEnsembleResponse sser1 = OllamaUtils.strictEnsembleRun(_query, _ollama_model_names, _ollama_settings, _hide_llm_reply_if_uncertain, _use_random_seed);
+		SingleStringEnsembleResponse sser2 = OpenAIUtils.strictEnsembleRun(_query, _openai_model_names, _ollama_settings, _hide_llm_reply_if_uncertain);
+		SingleStringEnsembleResponse sser3 = ClaudeUtils.strictEnsembleRun(_query, _claude_model_names, _ollama_settings, _hide_llm_reply_if_uncertain);
+		SingleStringEnsembleResponse sser = OllamaUtils.merge(OllamaUtils.merge(sser1, sser2), sser3);
+		return sser;
+	}
+
+	public static SingleStringEnsembleResponse collectClaudeEnsembleVotes(String _query, String _claude_model_names, OllamaDramaSettings _settings, boolean _hide_llm_reply_if_uncertain) {
+		if (_settings.getClaudekey().length() < 10) {
+			LOGGER.error("To use Claude you need to define a valid API key");
+			return new SingleStringEnsembleResponse();
+		}
+		ClaudeService.getInstance(_settings);
+		return ClaudeUtils.strictEnsembleRun(_query, _claude_model_names, _settings, _hide_llm_reply_if_uncertain);
+	}
+
+	public static ModelsScoreCard populateScorecardsForClaudeModels(boolean _use_mcp, String _models, OllamaDramaSettings _settings, String _question, HashMap<String, Integer> _acceptable_answers, boolean _hide_llm_reply_if_uncertain) {
+		ModelsScoreCard scorecard = new ModelsScoreCard();
+		if (_use_mcp) {
+			_settings.setMcp_scan(true);
+		} else {
+			_settings.setMcp_scan(false);
+		}
+		ClaudeService.getInstance(_settings);
+		for (String model_name : _models.split(",")) {
+			int queryindex = 1;
+			if (_settings.isUse_claude()) {
+				ClaudeSession a1 = ClaudeService.getStrictSession(model_name, _settings);
+				System.out.println(" - STRICT claude session [" + model_name + "] is operational\n");
+				String q1 = _question;
+				System.out.println("Question: " + q1);
+				SingleStringQuestionResponse ssr1 = a1.askChatQuestion(q1, _hide_llm_reply_if_uncertain);
+				ssr1 = OllamaUtils.applyResponseSanity(ssr1, model_name, _hide_llm_reply_if_uncertain);
+				scorecard = OllamaUtils.updateScoreCard(scorecard, model_name, "q" + queryindex, q1, _acceptable_answers, ssr1);
+			} else {
+				LOGGER.info("Configured not to use Claude");
+			}
+		}
+		return scorecard;
+	}
+
+	public static ModelsScoreCard populateScorecardsForClaudeModels(String _models, OllamaDramaSettings _settings, String _question, String _expectedresponse, boolean _hide_llm_reply_if_uncertain) {
+		return populateScorecardsForClaudeModels(_settings.isMcp_scan(), _models, _settings, _question, OllamaUtils.singleValScore(_expectedresponse, 1), _hide_llm_reply_if_uncertain);
 	}
 
 	public static SingleStringEnsembleResponse collectIterativeEnsembleVotes(String _query, String _models, OllamaDramaSettings _settings, boolean _printFirstrun, boolean _hide_llm_reply_if_uncertain, boolean _use_random_seed) {
@@ -598,4 +651,16 @@ public class OllamaDramaUtils {
 		return scorecard;
 	}
 
+	public static void deletePromptLogs(String directory) {
+	    File dir = new File(directory);
+	    File[] files = dir.listFiles((d, name) ->
+	        name.matches("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}_prompt_at_depth_\\d+\\.log")
+	    );
+	    if (files != null) {
+	        for (File f : files) {
+	            f.delete();
+	        }
+	    }
+	}
+	
 }

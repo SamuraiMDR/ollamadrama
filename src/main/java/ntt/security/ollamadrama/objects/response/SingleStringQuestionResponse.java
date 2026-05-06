@@ -9,6 +9,7 @@ public class SingleStringQuestionResponse {
 	private String assumptions_made = "";
 	private String tool_calls = "";
 	private Double exec_time = 0d;
+	private boolean promptinject = false;
 
 	public SingleStringQuestionResponse() {
 		super();
@@ -112,4 +113,13 @@ public class SingleStringQuestionResponse {
 	    sb.append("exec_time : ").append(this.exec_time).append("\n");
 	    return sb.toString();
 	}
+
+	public boolean isPromptinject() {
+		return promptinject;
+	}
+
+	public void setPromptinject(boolean promptinject) {
+		this.promptinject = promptinject;
+	}
+
 }

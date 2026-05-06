@@ -1,7 +1,9 @@
 package ntt.security.ollamadrama.objects;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
@@ -9,53 +11,53 @@ import org.slf4j.LoggerFactory;
 
 import ntt.security.ollamadrama.objects.response.SingleStringEnsembleResponse;
 import ntt.security.ollamadrama.objects.response.SingleStringQuestionResponse;
-import ntt.security.ollamadrama.objects.sessions.OpenAISession;
+import ntt.security.ollamadrama.objects.sessions.ClaudeSession;
 
 /**
- * Manages an ensemble of OpenAI sessions for consensus-based responses.
+ * Manages an ensemble of Claude sessions for consensus-based responses.
  * Multiple sessions can be queried simultaneously, with their responses
  * aggregated and analyzed for confidence and agreement.
  */
-public class OpenAIEnsemble {
+public class ClaudeEnsemble {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(OpenAIEnsemble.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ClaudeEnsemble.class);
 
-    private final ConcurrentHashMap<String, OpenAIWrappedSession> sessions = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ClaudeWrappedSession> sessions = new ConcurrentHashMap<>();
 
     /**
-     * Creates a new empty OpenAIEnsemble.
+     * Creates a new empty ClaudeEnsemble.
      */
-    public OpenAIEnsemble() {
-        LOGGER.debug("Created new OpenAIEnsemble instance");
+    public ClaudeEnsemble() {
+        LOGGER.debug("Created new ClaudeEnsemble instance");
     }
 
     /**
      * Adds a wrapped session to this ensemble.
      * If a session with the same UUID already exists, it will not be replaced.
-     * 
+     *
      * @param wrapped_session the wrapped session to add
      * @throws IllegalArgumentException if wrapped_session is null
      */
-    public void add_wrapped_session(OpenAIWrappedSession wrapped_session) {
+    public void add_wrapped_session(ClaudeWrappedSession wrapped_session) {
         Objects.requireNonNull(wrapped_session, "Wrapped session cannot be null");
         Objects.requireNonNull(wrapped_session.getSession(), "Session within wrapped session cannot be null");
-        
+
         String uuid = wrapped_session.getSession().getUuid();
-        
+
         sessions.putIfAbsent(uuid, wrapped_session);
-        
+
         LOGGER.debug("Added session with UUID: {} (total sessions: {})", uuid, sessions.size());
     }
 
     /**
      * Asks a question to all sessions in the ensemble and aggregates responses.
-     * 
+     *
      * @param question the question to ask
      * @param hide_llm_reply_if_uncertain whether to hide uncertain replies
      * @return ensemble response containing all replies and aggregated results
      * @throws IllegalArgumentException if question is null or empty
      */
-    public SingleStringEnsembleResponse ask_chat_question(String question, 
+    public SingleStringEnsembleResponse ask_chat_question(String question,
                                                            boolean hide_llm_reply_if_uncertain) {
         validate_question(question);
 
@@ -67,19 +69,19 @@ public class OpenAIEnsemble {
         var unique_replies = new HashMap<String, HashMap<String, Boolean>>();
         var unique_confident_replies = new HashMap<String, HashMap<String, Boolean>>();
 
-        LOGGER.info("Querying {} OpenAI sessions in ensemble with question: {}", sessions.size(), question);
+        LOGGER.info("Querying {} Claude sessions in ensemble with question: {}", sessions.size(), question);
 
         for (var entry : sessions.entrySet()) {
             String uuid = entry.getKey();
-            OpenAIWrappedSession wrapped_session = entry.getValue();
-            
+            ClaudeWrappedSession wrapped_session = entry.getValue();
+
             process_session_response(
-                    wrapped_session, 
-                    uuid, 
-                    question, 
+                    wrapped_session,
+                    uuid,
+                    question,
                     hide_llm_reply_if_uncertain,
-                    ensemble_response, 
-                    unique_replies, 
+                    ensemble_response,
+                    unique_replies,
                     unique_confident_replies);
         }
 
@@ -94,20 +96,20 @@ public class OpenAIEnsemble {
     /**
      * Processes a single session's response and updates aggregated data.
      */
-    private void process_session_response(OpenAIWrappedSession wrapped_session,
+    private void process_session_response(ClaudeWrappedSession wrapped_session,
                                          String uuid,
                                          String question,
                                          boolean hide_llm_reply_if_uncertain,
                                          SingleStringEnsembleResponse ensemble_response,
                                          HashMap<String, HashMap<String, Boolean>> unique_replies,
                                          HashMap<String, HashMap<String, Boolean>> unique_confident_replies) {
-        OpenAISession session = wrapped_session.getSession();
+        ClaudeSession session = wrapped_session.getSession();
         String model_name = session.getModel_name();
         String session_key = model_name + "::" + uuid;
 
         try {
             SingleStringQuestionResponse response = session.askChatQuestion(
-                    question, 
+                    question,
                     hide_llm_reply_if_uncertain);
 
             ensemble_response.addReply(session_key, response);
@@ -119,13 +121,13 @@ public class OpenAIEnsemble {
                 track_unique_reply(unique_confident_replies, response_text, session_key);
             }
 
-            LOGGER.debug("Session {} responded: {} (confidence: {})", 
-                    session_key, 
-                    response_text, 
+            LOGGER.debug("Session {} responded: {} (confidence: {})",
+                    session_key,
+                    response_text,
                     response.getProbability());
 
         } catch (Exception e) {
-            LOGGER.error("Error querying OpenAI session {}: {}", session_key, e.getMessage(), e);
+            LOGGER.error("Error querying Claude session {}: {}", session_key, e.getMessage(), e);
         }
     }
 
@@ -143,9 +145,9 @@ public class OpenAIEnsemble {
      * Determines if a response meets the confidence threshold.
      */
     private boolean is_confident_response(SingleStringQuestionResponse response,
-                                         OpenAIWrappedSession wrapped_session) {
+                                         ClaudeWrappedSession wrapped_session) {
         Integer probability = response.getProbability();
-        
+
         if (probability == null) {
             return false;
         }
@@ -158,14 +160,14 @@ public class OpenAIEnsemble {
      */
     private void log_ensemble_results(HashMap<String, HashMap<String, Boolean>> unique_replies,
                                      HashMap<String, HashMap<String, Boolean>> unique_confident_replies) {
-        LOGGER.info("Ensemble results: {} unique replies, {} confident replies", 
-                unique_replies.size(), 
+        LOGGER.info("Ensemble results: {} unique replies, {} confident replies",
+                unique_replies.size(),
                 unique_confident_replies.size());
 
         if (LOGGER.isDebugEnabled()) {
             for (var entry : unique_replies.entrySet()) {
-                LOGGER.debug("Reply '{}' from {} session(s)", 
-                        entry.getKey(), 
+                LOGGER.debug("Reply '{}' from {} session(s)",
+                        entry.getKey(),
                         entry.getValue().size());
             }
         }
@@ -182,7 +184,7 @@ public class OpenAIEnsemble {
 
     /**
      * Gets the number of sessions in this ensemble.
-     * 
+     *
      * @return the number of sessions
      */
     public int get_session_count() {
@@ -191,7 +193,7 @@ public class OpenAIEnsemble {
 
     /**
      * Checks if this ensemble has any sessions.
-     * 
+     *
      * @return true if the ensemble contains at least one session
      */
     public boolean has_sessions() {
@@ -200,27 +202,27 @@ public class OpenAIEnsemble {
 
     /**
      * Gets a wrapped session by UUID.
-     * 
+     *
      * @param uuid the session UUID
      * @return the wrapped session, or null if not found
      */
-    public OpenAIWrappedSession get_session(String uuid) {
+    public ClaudeWrappedSession get_session(String uuid) {
         return sessions.get(uuid);
     }
 
     /**
      * Removes a session from the ensemble.
-     * 
+     *
      * @param uuid the UUID of the session to remove
      * @return the removed session, or null if not found
      */
-    public OpenAIWrappedSession remove_session(String uuid) {
-        OpenAIWrappedSession removed = sessions.remove(uuid);
-        
+    public ClaudeWrappedSession remove_session(String uuid) {
+        ClaudeWrappedSession removed = sessions.remove(uuid);
+
         if (removed != null) {
             LOGGER.debug("Removed session with UUID: {} (remaining: {})", uuid, sessions.size());
         }
-        
+
         return removed;
     }
 
@@ -235,14 +237,14 @@ public class OpenAIEnsemble {
 
     /**
      * Gets an unmodifiable view of all session UUIDs.
-     * 
+     *
      * @return set of session UUIDs
      */
-    public java.util.Set<String> get_session_uuids() {
-        return java.util.Collections.unmodifiableSet(sessions.keySet());
+    public Set<String> get_session_uuids() {
+        return Collections.unmodifiableSet(sessions.keySet());
     }
 
-    public void addWrappedSession(OpenAIWrappedSession wrapped_session) {
+    public void addWrappedSession(ClaudeWrappedSession wrapped_session) {
         add_wrapped_session(wrapped_session);
     }
 
@@ -251,27 +253,4 @@ public class OpenAIEnsemble {
         return ask_chat_question(question, hide_llm_reply_if_uncertain);
     }
 
-    public int getSessionCount() {
-        return get_session_count();
-    }
-
-    public boolean hasSessions() {
-        return has_sessions();
-    }
-
-    public OpenAIWrappedSession getSession(String uuid) {
-        return get_session(uuid);
-    }
-
-    public OpenAIWrappedSession removeSession(String uuid) {
-        return remove_session(uuid);
-    }
-
-    public void clearSessions() {
-        clear_sessions();
-    }
-
-    public java.util.Set<String> getSessionUuids() {
-        return get_session_uuids();
-    }
 }
